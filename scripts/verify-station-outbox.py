@@ -40,6 +40,15 @@ def main():
             else: raise RuntimeError('Station server did not start')
             req('/api/auth/login',{'email':'admin@suite.test','password':'SuiteDemo!2026','site':'shop'})
             identity=req('/api/auth/me?site=shop'); tenant='station_'+hashlib.sha256(identity['organizationId'].encode()).hexdigest()[:48]
+            req('/api/auth/login',{'email':'admin@suite.test','password':'SuiteDemo!2026','site':'mes'})
+            reading_code='''import json,os,sys,datetime\nimport paho.mqtt.publish as publish\ntenant=sys.argv[1]\npayload={'tenant':tenant,'device':'station-test','event_id':'station-reading-1','timestamp':datetime.datetime.now(datetime.timezone.utc).isoformat(),'value':42}\npublish.single(f'factory/{tenant}/station-test/telemetry',json.dumps(payload),qos=1,hostname='mqtt',auth={'username':os.environ['MQTT_USER'],'password':os.environ['MQTT_PASSWORD']})'''
+            subprocess.run(['docker','compose','-f','compose.yaml','exec','-T','gateway','python','-c',reading_code,tenant],cwd=ROOT/'infra',check=True)
+            for _ in range(40):
+                readings=req('/api/stations/mes/industrial')['measurements']
+                if any(row['device']=='station-test' and row['value']==42 for row in readings): break
+                time.sleep(.5)
+            else: raise RuntimeError('Station did not receive its equipment reading')
+            req('/api/auth/login',{'email':'admin@suite.test','password':'SuiteDemo!2026','site':'shop'})
             view=req('/api/stations/shop/data?view=back');variant=next(v for v in view['variants'] if v['stockQuantity']>0)
             checkout=req('/api/stations/shop/business',{'action':'checkout','variantId':variant['id'],'quantity':1,'idempotencyKey':'ci-checkout-00001'})
             order=checkout['orderId']; req('/api/stations/shop/business',{'action':'pay','orderId':order,'idempotencyKey':'ci-payment-000001'})
@@ -56,7 +65,7 @@ def main():
                 if check.stdout.strip()=='1': break
                 time.sleep(.5)
             else: raise RuntimeError('Fulfillment consumer did not create one job')
-            print('PASS: Go checkout -> simulated payment -> outbox -> RabbitMQ -> exactly one PostgreSQL fulfillment job')
+            print('PASS: MQTT equipment reading -> station API; Go checkout -> outbox -> exactly one PostgreSQL fulfillment job')
         finally:
             process.terminate()
             try: process.wait(timeout=10)

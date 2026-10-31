@@ -61,4 +61,3 @@ export function teardown(data) {
   if(drained.queued!==0 || drained.processed!==capacity || replay.processed!==capacity) fail('Consumer invariant failed');
   console.log(`${site}: capacity=${capacity}; committed=${state.committed}; pending=${state.queued}; processed=${drained.processed}; retry and consumer checks passed`);
 }
-

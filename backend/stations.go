@@ -84,6 +84,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.operationsSnapshot(w, r, id, g, site)
 		return
 	}
+	if action == "barcode" && site == "pos" {
+		a.posBarcode(w, r, id)
+		return
+	}
 	if action == "service" && site == "dining" {
 		a.diningService(w, r, id, g)
 		return

@@ -415,7 +415,34 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 	mux.ServeHTTP(w, r)
 }
+func backupDatabase(file, destination string) error {
+	if file == "" {
+		return errors.New("SUITE_DB is required for backup")
+	}
+	if _, err := os.Stat(file); err != nil {
+		return fmt.Errorf("source database unavailable: %w", err)
+	}
+	if _, err := os.Stat(destination); !os.IsNotExist(err) {
+		return errors.New("backup destination already exists or cannot be checked")
+	}
+	db, err := sql.Open("sqlite", file)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if _, err = db.Exec("PRAGMA busy_timeout=10000"); err != nil {
+		return err
+	}
+	_, err = db.Exec("VACUUM INTO ?", destination)
+	return err
+}
 func main() {
+	if len(os.Args) == 3 && os.Args[1] == "--backup" {
+		if err := backupDatabase(os.Getenv("SUITE_DB"), os.Args[2]); err != nil {
+			log.Fatalf("Database backup failed: %v", err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "--healthcheck" {
 		client := &http.Client{Timeout: 3 * time.Second}
 		response, err := client.Get("http://127.0.0.1:8095/api/health")

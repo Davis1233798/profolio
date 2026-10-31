@@ -29,6 +29,10 @@ for service in "${services[@]}"; do
 done
 compose "$release" config --quiet
 compose "$release" build "${services[@]}"
+# Snapshot the station database using the newly built binary against the existing
+# volume. VACUUM INTO creates a consistent snapshot even while the service runs.
+station_backup="/srv/station/data/backup-before-$(basename "$release").sqlite"
+compose "$release" run --rm --no-deps station /srv/station/station-server --backup "$station_backup"
 # Take a consistent SQLite snapshot in the existing volume before replacing services.
 backup="/srv/app/.data/backup-before-$(basename "$release").sqlite"
 sudo -n docker exec business-suite-web-1 node --input-type=commonjs -e \

@@ -2,6 +2,11 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "LIVE INVENTORY OPERATIONS":"庫存作業", "Transfer stock between warehouses":"跨倉庫調撥",
+  "A transfer records both sides atomically. Inventory cannot go below zero; retry keys prevent duplicate transfers.":"調撥會以原子交易記錄兩端；庫存不得為負，重試識別鍵可避免重複調撥。",
+  "Item":"品項", "Source warehouse":"來源倉庫", "Destination warehouse":"目的倉庫", "Transfer stock":"調撥庫存", "Transfer recorded":"已記錄調撥", "Source balance":"來源倉餘額", "Destination balance":"目的倉餘額",
+  "Core MES reporting, ERP stock transfers, POS cash sales and simulated commerce checkout are available in this station. Other transaction workflows are still being migrated.":"本站已支援 MES 報工、ERP 調撥、POS 現金銷售及模擬電商結帳，其他交易流程仍在移植。",
+
   "LIVE POINT-OF-SALE OPERATIONS":"門市收銀作業", "Shifts, checkout and returns":"開班、結帳與退貨",
   "Cash sales, inventory and shift totals are recorded in this station. This is a demo; no external payment is charged.":"本站記錄現金銷售、庫存與班次總額。這是示範，不會實際扣款。",
   "Register":"收銀機", "Opening cash":"開班現金", "Open shift":"開班", "Closing cash":"結班現金", "Your shift":"您的班次", "Other cashier":"其他收銀員", "Product":"商品", "Cash tender":"實收現金", "Sale line to refund":"退款明細", "Return reason":"退貨原因", "Complete cash sale":"完成現金銷售", "Refund selected line":"退還所選明細", "Close shift":"結班", "Shift opened.":"已開班。", "Sale saved. Receipt":"已儲存銷售，小票", "Cash change":"找零", "Refund saved. Amount":"已儲存退款，金額", "Shift closed. Expected cash":"已結班，應有現金", "Discrepancy":"差額",

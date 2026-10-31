@@ -38,12 +38,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
       - run: pip install -r infra/runtime/requirements.txt
       - run: python -m unittest discover -s tests -v
         working-directory: infra
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up -d --build --wait --wait-timeout 180
       - run: python infra/tests/smoke.py
+      - run: python scripts/verify-station-outbox.py
       - if: always()
         run: docker compose -f infra/compose.yaml stop
   station-delivery:

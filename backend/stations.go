@@ -79,6 +79,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		fail(w, 403, "No access to this workspace")
 		return
 	}
+	if action == "business" && site == "erp" {
+		a.erpBusiness(w, r, id, g)
+		return
+	}
 	if action == "business" && site == "pos" {
 		a.posBusiness(w, r, id, g)
 		return

@@ -26,7 +26,7 @@ func (a *App) dispatchStationCommerce(ctx context.Context, gateway, secret strin
 	if e != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
 		return 0, errors.New("invalid infrastructure gateway URL")
 	}
-	rows, e := a.db.QueryContext(ctx, "SELECT id,organization_id,payload FROM outbox_events WHERE event_type='shop.paid' AND status='pending' AND retry_count<10 ORDER BY created_at,id LIMIT 25")
+	rows, e := a.db.QueryContext(ctx, "SELECT id,organization_id,payload FROM outbox_events WHERE event_type='shop.paid' AND status='pending' ORDER BY retry_count,created_at,id LIMIT 25")
 	if e != nil {
 		return 0, e
 	}
@@ -75,7 +75,7 @@ func (a *App) dispatchStationCommerce(ctx context.Context, gateway, secret strin
 			}
 		}
 		if e != nil {
-			if _, updateErr := a.db.ExecContext(ctx, "UPDATE outbox_events SET retry_count=retry_count+1 WHERE id=? AND organization_id=? AND status='pending'", event.ID, event.OrganizationID); updateErr != nil {
+			if _, updateErr := a.db.ExecContext(ctx, "UPDATE outbox_events SET retry_count=CASE WHEN retry_count<1000000 THEN retry_count+1 ELSE retry_count END WHERE id=? AND organization_id=? AND status='pending'", event.ID, event.OrganizationID); updateErr != nil {
 				return sent, updateErr
 			}
 			continue

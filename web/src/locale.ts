@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Quantity exceeds displayed availability; refresh to check current stock.":"數量超過畫面顯示的可售庫存；請重新整理確認目前庫存。", "Read-only access: browsing is available but checkout is disabled.":"唯讀身分可瀏覽商品，無法結帳。",
   "THE COLLECTION":"商品精選", "Explore products":"探索商品", "Search products":"搜尋商品", "Product image unavailable":"尚無商品圖片", "No matching products":"找不到符合條件的商品",
   "Refresh tickets":"重新整理廚房票卡",
   "Received at":"接單時間",

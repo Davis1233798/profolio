@@ -352,7 +352,7 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if action == "print" && r.Method == "GET" {
-		if g.Scope != "back" {
+		if g.Scope != "back" && !(site == "pos" && r.URL.Query().Get("kind") == "pos-receipt") {
 			fail(w, 403, "Print center requires back-office access")
 			return
 		}
@@ -455,6 +455,10 @@ func (a *App) printData(w http.ResponseWriter, r *http.Request, id *Identity, si
 	}
 	query := "SELECT * FROM " + table + " WHERE organization_id=? AND id=?"
 	args := []any{id.OrganizationID, recordID}
+	if site == "pos" && kind.Dataset == "sales" && id.grant(site).Scope != "back" {
+		query += " AND cashier_id=?"
+		args = append(args, id.UserID)
+	}
 	if site == "crm" && kind.Dataset == "quotes" && id.grant(site).Role != "admin" {
 		query += " AND opportunity_id IN (SELECT id FROM crm_opportunities WHERE organization_id=? AND owner_id=?)"
 		args = append(args, id.OrganizationID, id.UserID)

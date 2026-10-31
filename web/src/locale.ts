@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Showing up to 500 recent orders in this workspace.":"顯示此工作區最近最多 500 筆訂單。", "No orders available":"目前沒有訂單",
   "Paid demo revenue":"示範已付款收入", "Demo refunds":"示範退款", "Net demo revenue":"示範淨收入", "Demo revenue includes shipping and subtracts recorded demo refunds; no external payment is charged.":"示範收入包含運費並扣除已記錄的示範退款，不會進行外部扣款。",
   "OPERATIONS OVERVIEW":"營運概覽", "Purchasing, sales and outstanding balances":"採購、銷售與未結帳款", "Organization-wide totals from current records; invoice amounts are internal demo balances.":"依目前組織資料彙總；帳款金額為內部示範紀錄。", "Open purchase orders":"未完成採購單", "Open sales orders":"未完成銷售單", "Receivable balance":"應收餘額", "Payable balance":"應付餘額", "ERP summary":"ERP 摘要",
   "Model status":"模型狀態", "Model ID":"模型識別碼",

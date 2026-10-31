@@ -1,0 +1,9 @@
+import React, {useState} from 'react';
+import {tr} from './locale';
+
+type Reading={time:string;device:string;value:number;anomaly:boolean;assessment?:{status:string;samples:number;score:number|null;threshold:number|null}|null};
+export function MesIndustrial(){
+ const [rows,setRows]=useState<Reading[]>([]),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ async function refresh(){setBusy(true);setError('');try{const response=await fetch('/api/stations/mes/industrial',{credentials:'same-origin',cache:'no-store'});const value=await response.json() as {success:boolean;data?:{measurements:Reading[]};error?:{message:string}};if(!response.ok||!value.success||!Array.isArray(value.data?.measurements))throw new Error(value.error?.message||`HTTP ${response.status}`);setRows(value.data.measurements);setLoaded(true)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ return <section className="panel mes-actions"><p className="eyebrow">{tr('EQUIPMENT MONITORING')}</p><h2>{tr('Equipment measurements and anomalies')}</h2><p>{tr('Readings belong to this station workspace. Anomaly scores require human review and are not validated factory-failure predictions.')}</p><button type="button" disabled={busy} onClick={()=>void refresh()}>{busy?tr('Refreshing…'):tr('Refresh measurements')}</button>{error&&<p role="alert" className="error">{error}</p>}{loaded&&<div className="table-scroll"><table><thead><tr><th>{tr('Time')}</th><th>{tr('Equipment')}</th><th>{tr('Value')}</th><th>{tr('Assessment')}</th></tr></thead><tbody>{rows.map((row,i)=><tr key={`${row.device}:${row.time}:${i}`}><td>{row.time}</td><td>{row.device}</td><td>{row.value}</td><td>{row.anomaly?tr('Anomaly signal'):tr('No anomaly flag')}{row.assessment&&<> · {row.assessment.status} · {row.assessment.samples} {tr('samples')}</>}</td></tr>)}</tbody></table>{rows.length===0&&<p>{tr('No equipment measurements available')}</p>}</div>}</section>
+}

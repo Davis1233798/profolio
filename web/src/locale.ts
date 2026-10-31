@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "THE COLLECTION":"商品精選", "Explore products":"探索商品", "Search products":"搜尋商品", "Product image unavailable":"尚無商品圖片", "No matching products":"找不到符合條件的商品",
   "Refresh tickets":"重新整理廚房票卡",
   "Received at":"接單時間",
   "SALES PIPELINE":"銷售管線", "Opportunities by stage":"階段商機看板", "Showing up to 500 opportunities available to your role. Use Activities and opportunities to update a stage.":"顯示此角色可查看的最近 500 筆商機；可在「活動與商機」更新階段。", "No sales stages available":"尚無銷售階段", "No opportunities":"尚無商機", "Weighted value":"加權金額",

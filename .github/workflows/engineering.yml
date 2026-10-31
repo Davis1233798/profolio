@@ -75,7 +75,8 @@ jobs:
       - run: npm run install:ci
       - run: npx tsc --noEmit
       - run: npm run web:build
-      - run: go -C backend test ./...
+      - name: Test station transactions with race detector
+        run: go -C backend test -race ./...
       - name: Build Linux station server
         working-directory: backend
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../release/station-server .

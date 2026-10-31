@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Sales funnel":"銷售漏斗", "Inventory balances":"庫存餘額", "Trial balance":"試算表", "Marketing recipients":"行銷同意名單",
   "Select a receipt line":"選擇收貨明細",
   "Capture displayed balance":"採用畫面上的帳面庫存",
   "Approve stock count":"核准庫存盤點", "Stock count recorded":"盤點已記錄", "Expected balance":"盤點前帳面庫存", "Counted balance":"實際盤點數量", "Enter the balance observed before counting. The count is rejected if inventory has changed.":"請輸入盤點前看到的帳面庫存；庫存若已變動，系統會拒絕盤點。",

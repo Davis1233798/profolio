@@ -2,6 +2,9 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Core MES reporting, ERP transfers, POS sales, CRM lead conversion and simulated commerce checkout are available. Other workflows are still being migrated.":"本站已支援 MES 報工、ERP 調撥、POS 銷售、CRM 潛客轉換與模擬電商結帳；其他流程仍在移植。",
+  "CUSTOMER WORKSPACE":"客戶工作區", "Lead management":"潛客管理", "Create a lead, then convert it into a customer, contact and opportunity in one transaction.":"建立潛客後，可一次轉換為客戶、聯絡人及商機。",
+  "Lead created":"已建立潛客", "Lead was already converted":"潛客已轉換", "Customer, contact and opportunity created":"已建立客戶、聯絡人與商機", "Company":"公司", "Create lead":"建立潛客", "Lead":"潛客", "Select a lead":"選擇潛客", "Opportunity amount":"商機金額", "Convert lead":"轉換潛客",
   "LIVE INVENTORY OPERATIONS":"庫存作業", "Transfer stock between warehouses":"跨倉庫調撥",
   "A transfer records both sides atomically. Inventory cannot go below zero; retry keys prevent duplicate transfers.":"調撥會以原子交易記錄兩端；庫存不得為負，重試識別鍵可避免重複調撥。",
   "Item":"品項", "Source warehouse":"來源倉庫", "Destination warehouse":"目的倉庫", "Transfer stock":"調撥庫存", "Transfer recorded":"已記錄調撥", "Source balance":"來源倉餘額", "Destination balance":"目的倉餘額",

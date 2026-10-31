@@ -83,6 +83,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.erpBusiness(w, r, id, g)
 		return
 	}
+	if action == "business" && site == "crm" {
+		a.crmBusiness(w, r, id, g)
+		return
+	}
 	if action == "business" && site == "pos" {
 		a.posBusiness(w, r, id, g)
 		return

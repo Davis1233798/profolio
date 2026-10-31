@@ -19,7 +19,9 @@ Commerce reservations expire after 15 minutes, and a station worker releases exp
 
 `load-tests/station-business-race.js` tests actual Go station checkout and MES report writes under contention. The isolated k6 runner also tests the corresponding legacy Node APIs and the separate educational lab. All tests use temporary local databases; results are not production capacity claims.
 
-ERP stock issues proportionally remove inventory cost and preserve rounding remainders; purchase returns are recorded against the supplied reference and do not create external logistics or supplier credits.
+ERP stock issues proportionally remove inventory cost and preserve rounding remainders. Supplier returns are limited to the original receipt line and warehouse, including prior returns; they do not create external logistics or supplier credits. Administrator stock counts use a captured ledger version to reject stale balances, and update inventory and moving-average costing together. A positive adjustment requires an existing nonzero costing quantity, because a reliable cost cannot otherwise be inferred.
+
+Before replacing services, the deployment script snapshots both the existing Node database and the station database. Snapshots are retained on their respective volumes; rollback of application images does not automatically restore a snapshot or merge the two separate databases.
 
 ERP invoice payments are demo ledger entries and do not initiate bank transfers. Journal posting requires balanced nonzero debits and credits and rejects closed fiscal periods.
 

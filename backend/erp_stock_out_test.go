@@ -92,13 +92,35 @@ func TestERPStockOutPreservesQuantityAndCost(t *testing.T) {
 	if _, e := a.db.Exec("INSERT INTO erp_receipt_lines(id,organization_id,receipt_id,item_id,quantity,unit_cost) VALUES('receipt-line-test',?,'receipt-test',?,?,0)", org, item, remaining); e != nil {
 		t.Fatal(e)
 	}
-	returnAll := map[string]any{"action": "return", "receiptLineId": "receipt-line-test", "warehouseId": warehouse, "quantity": remaining, "reference": "DEMO-RETURN", "reason": "Return to supplier", "idempotencyKey": "purchase-return-0001"}
-	if w := request(a, "POST", path, returnAll, office...); w.Code != 200 {
-		t.Fatalf("return %d %s", w.Code, w.Body.String())
+	returnInput := func(i int) map[string]any {
+		return map[string]any{"action": "return", "receiptLineId": "receipt-line-test", "warehouseId": warehouse, "quantity": remaining, "reason": "Return to supplier", "idempotencyKey": fmt.Sprintf("purchase-return-%08d", i)}
 	}
-	returnAll["idempotencyKey"] = "purchase-return-0002"
-	if w := request(a, "POST", path, returnAll, office...); w.Code != 409 {
-		t.Fatalf("excess return %d", w.Code)
+	returnResults := make(chan outcome, 12)
+	for i := 0; i < 12; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			returnResults <- outcome{request(a, "POST", path, returnInput(i), office...).Code, i}
+		}(i)
+	}
+	wg.Wait()
+	close(returnResults)
+	ok, conflicts, winner = 0, 0, 0
+	for r := range returnResults {
+		if r.code == 200 {
+			ok++
+			winner = r.index
+		} else if r.code == 409 {
+			conflicts++
+		} else {
+			t.Errorf("return %d", r.code)
+		}
+	}
+	if ok != 1 || conflicts != 11 {
+		t.Fatalf("returns success %d conflicts %d", ok, conflicts)
+	}
+	if w := request(a, "POST", path, returnInput(winner), office...); w.Code != 200 {
+		t.Fatalf("return retry %d", w.Code)
 	}
 	a.db.QueryRow("SELECT total_quantity,total_cost FROM erp_item_costing WHERE organization_id=? AND item_id=?", org, item).Scan(&newQty, &newCost)
 	if newQty != 0 || newCost != 0 {

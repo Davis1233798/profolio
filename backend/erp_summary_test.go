@@ -43,4 +43,20 @@ func TestERPSummaryTenantIsolation(t *testing.T) {
 	if summary := read("/api/stations/erp/data?view=front", front...); summary != nil {
 		t.Fatal("front received financial summary")
 	}
+	before := own["openPurchases"].(float64)
+	if _, e := a.db.Exec("INSERT INTO erp_purchase_orders(id,organization_id,po_number,supplier_id,status,total_amount) VALUES('summary-po',?,'SUMMARY-PO','supplier','approved',100)", org); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := a.db.Exec("INSERT INTO erp_purchase_order_lines(id,organization_id,po_id,item_id,quantity,unit_price,received_quantity) VALUES('summary-line',?,'summary-po','item',10,10,4)", org); e != nil {
+		t.Fatal(e)
+	}
+	if got := read("/api/stations/erp/data?view=back", admin...)["openPurchases"].(float64); got != before+1 {
+		t.Fatalf("partially received count %v", got)
+	}
+	if _, e := a.db.Exec("UPDATE erp_purchase_order_lines SET received_quantity=10 WHERE id='summary-line'"); e != nil {
+		t.Fatal(e)
+	}
+	if got := read("/api/stations/erp/data?view=back", admin...)["openPurchases"].(float64); got != before {
+		t.Fatalf("fully received count %v", got)
+	}
 }

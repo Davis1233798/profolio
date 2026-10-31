@@ -21,6 +21,9 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
+      - run: npm run web:build
+      - name: Validate Linux deployment package
+        run: python3 scripts/package-linux.py
       - run: python3 scripts/verify-control-graph.py
       - run: docker compose -f infra/compose.yaml -f infra/linux/compose.web.yaml up -d --build --wait --wait-timeout 180
       - run: node scripts/smoke-http.mjs http://127.0.0.1:8090

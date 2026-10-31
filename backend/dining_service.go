@@ -13,6 +13,7 @@ type diningServiceRequest struct {
 	Action          string `json:"action"`
 	TicketID        string `json:"ticketId"`
 	ItemID          string `json:"itemId"`
+	OrderID         string `json:"orderId"`
 	Reason          string `json:"reason"`
 	TableID         string `json:"tableId"`
 	Name            string `json:"name"`
@@ -32,7 +33,7 @@ func (a *App) diningService(w http.ResponseWriter, r *http.Request, id *Identity
 		return
 	}
 	var in diningServiceRequest
-	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.TicketID) > 256 || len(in.ItemID) > 256 || len(in.TableID) > 256 || (in.Action != "reserve" && in.Action != "urge" && in.Action != "cancel") {
+	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.TicketID) > 256 || len(in.ItemID) > 256 || len(in.OrderID) > 256 || len(in.TableID) > 256 || (in.Action != "reserve" && in.Action != "urge" && in.Action != "cancel" && in.Action != "refund") {
 		fail(w, 400, "Invalid dining request")
 		return
 	}
@@ -56,6 +57,16 @@ func (a *App) diningService(w http.ResponseWriter, r *http.Request, id *Identity
 	if in.Action == "cancel" && (in.ItemID == "" || len(in.Reason) == 0 || len(in.Reason) > 500) {
 		fail(w, 400, "Select an item and provide a reason")
 		return
+	}
+	if in.Action == "refund" {
+		if g.Role != "admin" {
+			fail(w, 403, "Manager role required for refunds")
+			return
+		}
+		if in.OrderID == "" || len(in.Reason) == 0 || len(in.Reason) > 500 {
+			fail(w, 400, "Select an order and provide a reason")
+			return
+		}
 	}
 	tx, e := a.db.BeginTx(r.Context(), nil)
 	if e != nil {
@@ -155,6 +166,37 @@ func (a *App) diningService(w http.ResponseWriter, r *http.Request, id *Identity
 			_, e = tx.Exec("UPDATE dining_kitchen_tickets SET status='served' WHERE organization_id=? AND order_item_id=?", id.OrganizationID, entity)
 		}
 		result["cancelledItemId"] = entity
+	case "refund":
+		entity = in.OrderID
+		var bill, status string
+		var paid int64
+		e = tx.QueryRow("SELECT b.id,b.status,b.paid_amount FROM dining_bills b JOIN dining_orders o ON o.id=b.order_id AND o.organization_id=b.organization_id WHERE o.organization_id=? AND o.id=? AND o.order_type='takeout'", id.OrganizationID, entity).Scan(&bill, &status, &paid)
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Takeout order not found")
+			return
+		}
+		if e != nil {
+			fail(w, 503, "Cannot read takeout bill")
+			return
+		}
+		if status != "paid" || paid < 0 {
+			fail(w, 409, "Order is already refunded or cannot be refunded")
+			return
+		}
+		_, e = tx.Exec("UPDATE dining_bills SET paid_amount=0,status='refunded' WHERE organization_id=? AND id=? AND status='paid'", id.OrganizationID, bill)
+		if e == nil {
+			_, e = tx.Exec("INSERT INTO dining_payments(id,organization_id,bill_id,amount,payment_method,split_index) VALUES(?,?,?,?,'mock_refund',1)", "pay_"+token(), id.OrganizationID, bill, -paid)
+		}
+		if e == nil {
+			_, e = tx.Exec("UPDATE dining_orders SET status='cancelled' WHERE organization_id=? AND id=?", id.OrganizationID, entity)
+		}
+		if e == nil {
+			_, e = tx.Exec("UPDATE dining_order_items SET status='cancelled',cancelled_reason=? WHERE organization_id=? AND order_id=?", in.Reason, id.OrganizationID, entity)
+		}
+		if e == nil {
+			_, e = tx.Exec("UPDATE dining_kitchen_tickets SET status='served' WHERE organization_id=? AND order_id=?", id.OrganizationID, entity)
+		}
+		result["refundAmount"] = paid
 	}
 	if e != nil {
 		fail(w, 503, "Cannot save dining operation")

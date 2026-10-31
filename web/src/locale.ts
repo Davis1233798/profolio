@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "MANAGER OPERATIONS":"主管作業", "Takeout refund":"外帶退款", "Records a demo refund and cancels the order and kitchen tickets; no external payment is reversed.":"記錄示範退款並取消訂單與出餐單，不會退回外部付款。", "Takeout order":"外帶訂單", "Select an order":"選擇訂單", "Record demo refund":"記錄示範退款", "Demo refund recorded":"已記錄示範退款",
   "Urgent":"催單",
   "GUEST SERVICE":"顧客服務", "Reservations and order changes":"訂位與餐點異動", "Reservation recorded":"訂位已記錄", "Item voided":"已退菜", "Kitchen notified":"已通知廚房", "Table":"桌位", "Phone":"電話", "Reservation time":"訂位時間", "Reserve table":"預約桌位", "Item to void":"要退的餐點", "Reason":"原因", "A manager must void items after preparation starts. Takeout refunds are handled separately.":"餐點開始製作後須由主管退菜；外帶退款需另行處理。", "Void item":"退菜", "Urgent kitchen tickets":"催單", "Urge":"催單",
   "DINING ORDERS":"餐飲點餐", "Place an order":"建立點餐", "Takeout payment is a demo. Select required modifiers for drinks before adding them.":"外帶收款為示範；加入飲品前請選擇必填規格。", "Order sent to kitchen":"訂單已送至廚房", "Order type":"用餐方式", "Dine in":"內用", "Takeout":"外帶", "Menu item":"餐點", "maximum":"最多", "Add to order":"加入點餐", "Remove":"移除", "Send order":"送出點餐",

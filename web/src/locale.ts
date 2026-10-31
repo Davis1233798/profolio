@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Select a receipt line":"選擇收貨明細",
   "Capture displayed balance":"採用畫面上的帳面庫存",
   "Approve stock count":"核准庫存盤點", "Stock count recorded":"盤點已記錄", "Expected balance":"盤點前帳面庫存", "Counted balance":"實際盤點數量", "Enter the balance observed before counting. The count is rejected if inventory has changed.":"請輸入盤點前看到的帳面庫存；庫存若已變動，系統會拒絕盤點。",
   "ERP ADMINISTRATION":"ERP 管理", "Partners and fiscal periods":"往來對象與會計期間", "Partner type":"往來對象類型", "Create partner":"建立往來對象", "Partner created":"已建立往來對象", "Fiscal period":"會計期間", "Select a fiscal period":"選擇會計期間", "Closing prevents posting into the period and cannot be undone here.":"關帳後無法在此期間過帳，且此處無法撤銷關帳。", "Close fiscal period":"會計期間關帳", "Fiscal period closed":"會計期間已關帳",

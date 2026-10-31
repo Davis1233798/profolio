@@ -13,15 +13,16 @@ type stockOutLine struct {
 	Quantity int64  `json:"quantity"`
 }
 type stockOutRequest struct {
-	Action       string         `json:"action"`
-	SalesOrderID string         `json:"salesOrderId"`
-	WarehouseID  string         `json:"warehouseId"`
-	ItemID       string         `json:"itemId"`
-	Quantity     int64          `json:"quantity"`
-	Reason       string         `json:"reason"`
-	Reference    string         `json:"reference"`
-	Lines        []stockOutLine `json:"lines"`
-	Key          string         `json:"idempotencyKey"`
+	Action        string         `json:"action"`
+	SalesOrderID  string         `json:"salesOrderId"`
+	WarehouseID   string         `json:"warehouseId"`
+	ItemID        string         `json:"itemId"`
+	ReceiptLineID string         `json:"receiptLineId"`
+	Quantity      int64          `json:"quantity"`
+	Reason        string         `json:"reason"`
+	Reference     string         `json:"reference"`
+	Lines         []stockOutLine `json:"lines"`
+	Key           string         `json:"idempotencyKey"`
 }
 
 func (a *App) erpStockOut(w http.ResponseWriter, r *http.Request, id *Identity, g *Grant) {
@@ -34,13 +35,13 @@ func (a *App) erpStockOut(w http.ResponseWriter, r *http.Request, id *Identity, 
 		return
 	}
 	var in stockOutRequest
-	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WarehouseID) == 0 || len(in.WarehouseID) > 256 || len(in.SalesOrderID) > 256 || len(in.ItemID) > 256 || (in.Action != "return" && in.Action != "ship") {
+	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WarehouseID) == 0 || len(in.WarehouseID) > 256 || len(in.SalesOrderID) > 256 || len(in.ItemID) > 256 || len(in.ReceiptLineID) > 256 || (in.Action != "return" && in.Action != "ship") {
 		fail(w, 400, "Invalid stock request")
 		return
 	}
 	in.Reason = strings.TrimSpace(in.Reason)
 	in.Reference = strings.TrimSpace(in.Reference)
-	if in.Action == "return" && (in.ItemID == "" || in.Quantity < 1 || in.Quantity > 1000000 || in.Reason == "" || len(in.Reason) > 500 || in.Reference == "" || len(in.Reference) > 128) {
+	if in.Action == "return" && (in.ReceiptLineID == "" || in.Quantity < 1 || in.Quantity > 1000000 || in.Reason == "" || len(in.Reason) > 500) {
 		fail(w, 400, "Select an item, quantity, reference and reason")
 		return
 	}
@@ -118,21 +119,37 @@ func (a *App) erpStockOut(w http.ResponseWriter, r *http.Request, id *Identity, 
 	entity := ""
 	result := map[string]any{}
 	if in.Action == "return" {
-		e = tx.QueryRow("SELECT count(*) FROM erp_items WHERE organization_id=? AND id=? AND is_active=1", id.OrganizationID, in.ItemID).Scan(&active)
+		var item, warehouse string
+		var received, returned int64
+		e = tx.QueryRow("SELECT l.item_id,r.warehouse_id,l.quantity FROM erp_receipt_lines l JOIN erp_receipts r ON r.id=l.receipt_id AND r.organization_id=l.organization_id WHERE l.organization_id=? AND l.id=? AND r.status='completed'", id.OrganizationID, in.ReceiptLineID).Scan(&item, &warehouse, &received)
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Receipt line not found")
+			return
+		}
 		if e != nil {
-			fail(w, 503, "Cannot read item")
+			fail(w, 503, "Cannot read receipt line")
 			return
 		}
-		if active != 1 {
-			fail(w, 404, "Active item not found")
+		if warehouse != in.WarehouseID {
+			fail(w, 409, "Return must use the receipt warehouse")
 			return
 		}
-		_, e = remove(in.ItemID, in.Quantity, "purchase_return", in.Reference)
+		ref := "RETURN:" + in.ReceiptLineID
+		e = tx.QueryRow("SELECT COALESCE(-SUM(quantity_change),0) FROM erp_stock_ledger WHERE organization_id=? AND reference_doc=? AND change_type='purchase_return'", id.OrganizationID, ref).Scan(&returned)
+		if e != nil {
+			fail(w, 503, "Cannot read prior returns")
+			return
+		}
+		if returned < 0 || returned > received || in.Quantity > received-returned {
+			fail(w, 409, "Return exceeds remaining received quantity")
+			return
+		}
+		_, e = remove(item, in.Quantity, "purchase_return", ref)
 		if e != nil {
 			fail(w, 409, "Insufficient stock or invalid costing")
 			return
 		}
-		entity = in.ItemID
+		entity = item
 		result["returnedQuantity"] = in.Quantity
 	} else {
 		var status string

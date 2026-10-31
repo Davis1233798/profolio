@@ -86,9 +86,19 @@ func TestERPStockOutPreservesQuantityAndCost(t *testing.T) {
 	if remaining != balance-amount || newQty != qty-amount || newCost != cost-removed || status != "shipped" {
 		t.Fatalf("stock/cost mismatch %d %d %d %s", remaining, newQty, newCost, status)
 	}
-	returnAll := map[string]any{"action": "return", "itemId": item, "warehouseId": warehouse, "quantity": remaining, "reference": "DEMO-RETURN", "reason": "Return to supplier", "idempotencyKey": "purchase-return-0001"}
+	if _, e := a.db.Exec("INSERT INTO erp_receipts(id,organization_id,receipt_number,po_id,warehouse_id,status) VALUES('receipt-test',?,'RECEIPT-TEST','po-test',?,'completed')", org, warehouse); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := a.db.Exec("INSERT INTO erp_receipt_lines(id,organization_id,receipt_id,item_id,quantity,unit_cost) VALUES('receipt-line-test',?,'receipt-test',?,?,0)", org, item, remaining); e != nil {
+		t.Fatal(e)
+	}
+	returnAll := map[string]any{"action": "return", "receiptLineId": "receipt-line-test", "warehouseId": warehouse, "quantity": remaining, "reference": "DEMO-RETURN", "reason": "Return to supplier", "idempotencyKey": "purchase-return-0001"}
 	if w := request(a, "POST", path, returnAll, office...); w.Code != 200 {
 		t.Fatalf("return %d %s", w.Code, w.Body.String())
+	}
+	returnAll["idempotencyKey"] = "purchase-return-0002"
+	if w := request(a, "POST", path, returnAll, office...); w.Code != 409 {
+		t.Fatalf("excess return %d", w.Code)
 	}
 	a.db.QueryRow("SELECT total_quantity,total_cost FROM erp_item_costing WHERE organization_id=? AND item_id=?", org, item).Scan(&newQty, &newCost)
 	if newQty != 0 || newCost != 0 {

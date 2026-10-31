@@ -42,3 +42,4 @@
 .operation-disclosure[open]>summary::before{content:'−'}
 .operation-disclosure>summary:focus-visible{outline:3px solid var(--station-accent);outline-offset:-3px}
 .operation-disclosure>.panel{border:0;border-top:1px solid #e7edf4;border-radius:0;box-shadow:none;margin:0}
+.station-main > .page-heading{margin-bottom:22px}

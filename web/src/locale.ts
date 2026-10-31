@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Refresh tickets":"重新整理廚房票卡",
   "Received at":"接單時間",
   "SALES PIPELINE":"銷售管線", "Opportunities by stage":"階段商機看板", "Showing up to 500 opportunities available to your role. Use Activities and opportunities to update a stage.":"顯示此角色可查看的最近 500 筆商機；可在「活動與商機」更新階段。", "No sales stages available":"尚無銷售階段", "No opportunities":"尚無商機", "Weighted value":"加權金額",
   "LIVE OPERATIONS":"即時營運", "Current workspace activity":"目前工作區狀態", "Counts come from this workspace’s business records and refresh every 10 seconds. They are separate from the isolated load test.":"數據來自此工作區的業務資料，每 10 秒更新；與隔離壓力測試分開計算。", "Pending payment":"待付款", "Paid, awaiting shipment":"已付款待出貨", "Pending dispatch events":"待派送事件", "Dispatch events retrying":"重試中的派送事件", "Running work orders":"進行中工單", "Waiting work orders":"待執行工單", "Open downtime events":"未結束停機", "Updated":"更新時間",

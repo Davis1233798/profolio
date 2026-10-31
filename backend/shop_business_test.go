@@ -20,6 +20,17 @@ func TestShopBusinessCheckoutPaymentShippingConcurrency(t *testing.T) {
 		t.Fatal(e)
 	}
 	path := "/api/stations/shop/business"
+	snapshot := func() map[string]int64 {
+		w := request(a, "GET", "/api/stations/shop/operations-snapshot", nil, admin...)
+		var value struct {
+			Data map[string]int64 `json:"data"`
+		}
+		if e := json.Unmarshal(w.Body.Bytes(), &value); e != nil || w.Code != 200 {
+			t.Fatalf("snapshot %d %v", w.Code, e)
+		}
+		return value.Data
+	}
+	before := snapshot()
 	requestFor := func(i int) map[string]any {
 		return map[string]any{"action": "checkout", "variantId": variant, "quantity": 1, "idempotencyKey": fmt.Sprintf("checkout-%08d", i)}
 	}
@@ -73,6 +84,9 @@ func TestShopBusinessCheckoutPaymentShippingConcurrency(t *testing.T) {
 		t.Fatal("missing order")
 	}
 	order := envelope.Data.OrderID
+	if s := snapshot(); s["pendingPayment"] != before["pendingPayment"]+1 {
+		t.Fatalf("checkout snapshot %+v before %+v", s, before)
+	}
 	replay := request(a, "POST", path, requestFor(winner.index), front...)
 	if replay.Code != 200 {
 		t.Fatalf("replay: %d %s", replay.Code, replay.Body.String())
@@ -98,6 +112,9 @@ func TestShopBusinessCheckoutPaymentShippingConcurrency(t *testing.T) {
 	if w := request(a, "POST", path, payment, front...); w.Code != 200 {
 		t.Fatalf("pay: %d %s", w.Code, w.Body.String())
 	}
+	if s := snapshot(); s["pendingPayment"] != before["pendingPayment"] || s["paidUnfulfilled"] != before["paidUnfulfilled"]+1 || s["pendingOutbox"] != before["pendingOutbox"]+1 {
+		t.Fatalf("payment snapshot %+v before %+v", s, before)
+	}
 	if w := request(a, "POST", path, payment, front...); w.Code != 200 {
 		t.Fatalf("pay replay: %d", w.Code)
 	}
@@ -107,6 +124,9 @@ func TestShopBusinessCheckoutPaymentShippingConcurrency(t *testing.T) {
 	}
 	if w := request(a, "POST", path, ship, admin...); w.Code != 200 {
 		t.Fatalf("ship: %d %s", w.Code, w.Body.String())
+	}
+	if s := snapshot(); s["paidUnfulfilled"] != before["paidUnfulfilled"] {
+		t.Fatalf("shipment snapshot %+v before %+v", s, before)
 	}
 	var stock, orders, events, payments, shipments, audits int
 	var status string

@@ -24,6 +24,17 @@ func TestMESBusinessConcurrencyPermissionsAndIdempotency(t *testing.T) {
 		t.Fatal(e)
 	}
 	path := "/api/stations/mes/business"
+	snapshot := func() map[string]int64 {
+		w := request(a, "GET", "/api/stations/mes/operations-snapshot", nil, admin...)
+		var value struct {
+			Data map[string]int64 `json:"data"`
+		}
+		if e := json.Unmarshal(w.Body.Bytes(), &value); e != nil || w.Code != 200 {
+			t.Fatalf("snapshot %d %v", w.Code, e)
+		}
+		return value.Data
+	}
+	before := snapshot()
 	start := map[string]any{"action": "start", "workOrderId": wo}
 	if w := request(a, "POST", path, start, front...); w.Code != http.StatusForbidden {
 		t.Fatalf("front start: %d %s", w.Code, w.Body.String())
@@ -33,6 +44,9 @@ func TestMESBusinessConcurrencyPermissionsAndIdempotency(t *testing.T) {
 	}
 	if w := request(a, "POST", path, start, admin...); w.Code != http.StatusOK {
 		t.Fatalf("start: %d %s", w.Code, w.Body.String())
+	}
+	if s := snapshot(); s["runningOrders"] != before["runningOrders"]+1 || s["waitingOrders"] != before["waitingOrders"]-1 {
+		t.Fatalf("start snapshot %+v before %+v", s, before)
 	}
 	other := loginSite(t, a, "admin@suite.test", token(), "mes")
 	if w := request(a, "POST", path, start, other...); w.Code != http.StatusNotFound {
@@ -72,6 +86,9 @@ func TestMESBusinessConcurrencyPermissionsAndIdempotency(t *testing.T) {
 	a.db.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND entity_id=?", org, wo).Scan(&audits)
 	if good != target || reports != 1 || audits != 2 {
 		t.Fatalf("persisted counts: good=%d reports=%d audits=%d", good, reports, audits)
+	}
+	if s := snapshot(); s["runningOrders"] != before["runningOrders"] || s["productionReports"] != before["productionReports"]+1 {
+		t.Fatalf("report snapshot %+v before %+v", s, before)
 	}
 	// Replaying the winner must return exactly its persisted response without another report.
 	var key string

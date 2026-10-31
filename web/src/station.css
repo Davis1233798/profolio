@@ -58,3 +58,10 @@
 [data-site="crm"] .crm-board-cards h3{font-size:14px;margin:0;color:#181d26}
 [data-site="crm"] .crm-board-cards strong{font-variant-numeric:tabular-nums}
 [data-site="crm"] .crm-board-empty{font-size:12px;margin:8px 0;color:#41454d}
+[data-site="dining"] .dining-kitchen{background:#f2f0eb;border-color:#d5d1ca;border-radius:12px}
+[data-site="dining"] .dining-kitchen h2{color:#1e3932}
+[data-site="dining"] .dining-kitchen .dataset-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+[data-site="dining"] .dining-ticket{padding:16px;background:#fff;border:1px solid #c9d4ce;border-left:5px solid #006241;border-radius:10px;overflow-wrap:anywhere}
+[data-site="dining"] .dining-ticket h3{margin:0 0 10px;font-size:16px;color:#1e3932}
+[data-site="dining"] .dining-ticket p{margin:6px 0;color:#333}
+[data-site="dining"] .dining-ticket button{min-height:44px;margin-top:10px;background:#006241;border-color:#006241;border-radius:999px;padding:8px 18px}

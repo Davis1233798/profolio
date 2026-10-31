@@ -51,7 +51,7 @@ def main():
             for command, env in [([str(binary)], go_env), (['node', 'scripts/serve-linux.mjs'], node_env)]:
                 processes.append(subprocess.Popen(command, cwd=ROOT, env=env, creationflags=flags))
             ready(go_url, processes[0]); ready(node_url, processes[1])
-            for script, url in [('traffic-lab.js', go_url), ('business-race.js', node_url)]:
+            for script, url in [('traffic-lab.js', go_url), ('station-business-race.js', go_url), ('business-race.js', node_url)]:
                 for site in ['shop', 'mes']:
                     output = results / f'{script[:-3]}-{site}.json'
                     raw_output = temp / f'{script[:-3]}-{site}-raw.json'

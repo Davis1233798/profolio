@@ -2,6 +2,30 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Fulfillment events": "履約事件", "Fulfillment event delivery": "履約事件傳送",
+  "Pending events are retried by the station dispatcher. Published means accepted by the gateway; it does not confirm physical delivery.": "站台會重試待傳送事件。已發布表示閘道已接收，並不代表實體配送完成。",
+  "Published": "已發布", "Refresh delivery status": "重新整理傳送狀態",
+
+  "Read-only accounts can inspect reports but cannot start or consume runs.": "唯讀帳號可檢視報告，但不能啟動或消費測試。",
+
+  "Core MES reporting and simulated commerce checkout are available in this station. Other transaction workflows are still being migrated.": "本站已支援 MES 核心報工與模擬電商結帳，其他交易流程仍在移植。",
+
+  "LIVE COMMERCE OPERATIONS": "電商交易作業",
+  "Checkout and fulfillment": "結帳與履約",
+  "Orders, reservations and inventory are stored in this station. Payment and shipment are simulated; no external charge or delivery is created.": "訂單、保留庫存與庫存儲存在本站。付款與出貨為模擬，不會實際扣款或寄送。",
+  "Product variant": "商品規格", "Order": "訂單", "Tracking number": "追蹤號碼", "available": "可用",
+  "Create demo order": "建立示範訂單", "Simulate payment": "模擬付款", "Simulate shipment": "模擬出貨",
+  "Order created. Complete simulated payment before the reservation expires.": "訂單已建立，請在保留期限內完成模擬付款。",
+  "Simulated payment recorded.": "模擬付款已記錄。", "Simulated shipment recorded.": "模擬出貨已記錄。",
+
+  "LIVE PRODUCTION OPERATIONS": "正式生產作業",
+  "Start work and report output": "開工與生產報工",
+  "These actions update this station’s production records. Reports use retry keys and cannot exceed the work order target.": "此處操作會更新本站生產紀錄。報工使用重試識別鍵，且不得超過工單目標。",
+  "Operation": "製程", "Operations": "製程", "No operations": "沒有製程",
+  "Good quantity": "良品數量", "Scrap quantity": "報廢數量",
+  "Start work order": "工單開工", "Submit production report": "送出生產報工",
+  "Work order started.": "工單已開工。", "Production report saved.": "報工已儲存。",
+
   "Switch system": "切換系統",
   "Choose a workspace": "選擇工作區",
   "No records yet": "尚無資料",

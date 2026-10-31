@@ -33,3 +33,4 @@
 .system-switch{display:grid;gap:8px;margin:8px 0 20px;font-size:11px;letter-spacing:.03em}.system-switch select{width:100%;min-width:0;white-space:normal;min-height:42px}.login .system-switch{color:#d5e3f9}.login .system-switch select{color:#223548}.sidebar-foot button{width:100%}
 
 @media(max-width:900px){.station-sidebar .sidebar-foot{display:flex;align-items:center;flex-wrap:wrap;gap:16px;width:100%;padding:8px 0 0;margin:0}.station-sidebar .sidebar-foot small{display:none}.station-sidebar .sidebar-foot button{width:auto;margin-left:auto}}
+.mes-actions{padding:22px;margin-bottom:22px}.mes-actions h2{font-size:20px}.mes-action-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}.mes-action-buttons{display:flex;gap:10px;flex-wrap:wrap}@media(max-width:800px){.mes-action-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.mes-action-fields{grid-template-columns:1fr}}

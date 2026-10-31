@@ -1,0 +1,24 @@
+import React,{useRef,useState} from 'react';
+import {tr} from './locale';
+type Row=Record<string,any>;
+type Props={data:Record<string,Row[]>;scope:string;role:string;userId:string;onSaved:()=>Promise<void>};
+export function ShopBusiness({data,scope,role,userId,onSaved}:Props){
+ const variants=data.variants||[],orders=data.orders||[];
+ const [variantId,setVariantId]=useState(''),[quantity,setQuantity]=useState(1),[orderId,setOrderId]=useState(''),[tracking,setTracking]=useState('DEMO-TRACK-001'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ const attempt=useRef({signature:'',key:''});
+ const order=orders.find(o=>o.id===orderId);
+ async function send(action:'checkout'|'pay'|'ship'){
+  setBusy(true);setError('');setMessage('');
+  try{
+   const payload=action==='checkout'?{action,variantId,quantity}:action==='ship'?{action,orderId,tracking}:{action,orderId};
+   const signature=JSON.stringify(payload);if(attempt.current.signature!==signature)attempt.current={signature,key:crypto.randomUUID()};
+   const response=await fetch('/api/stations/shop/business',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,idempotencyKey:attempt.current.key})});
+   const value=await response.json() as {success:boolean;data?:{orderId?:string};error?:{message:string}};
+   if(!response.ok||!value.success)throw new Error(value.error?.message||`HTTP ${response.status}`);
+   if(action==='checkout'&&value.data?.orderId)setOrderId(value.data.orderId);
+   attempt.current={signature:'',key:''};setMessage(action==='checkout'?tr('Order created. Complete simulated payment before the reservation expires.'):action==='pay'?tr('Simulated payment recorded.'):tr('Simulated shipment recorded.'));await onSaved();
+  }catch(e){setError((e as Error).message)}finally{setBusy(false)}
+ }
+ const canPay=!!order&&order.paymentStatus==='pending'&&(scope==='front'||role==='admin'||order.userId===userId);
+ return <section className="panel mes-actions"><div><p className="eyebrow">{tr('LIVE COMMERCE OPERATIONS')}</p><h2>{tr('Checkout and fulfillment')}</h2><p>{tr('Orders, reservations and inventory are stored in this station. Payment and shipment are simulated; no external charge or delivery is created.')}</p></div><div className="mes-action-fields"><label>{tr('Product variant')}<select value={variantId} onChange={e=>setVariantId(e.target.value)}><option value="">{tr('Select an item')}</option>{variants.map(v=><option key={v.id} value={v.id}>{v.sku} · {v.title} · {v.stockQuantity} {tr('available')}</option>)}</select></label><label>{tr('Quantity')}<input type="number" min="1" max="1000" value={quantity} onChange={e=>setQuantity(Number(e.target.value))}/></label><label>{tr('Order')}<select value={orderId} onChange={e=>setOrderId(e.target.value)}><option value="">{tr('Select an item')}</option>{orders.map(o=><option key={o.id} value={o.id}>{o.orderNumber} · {o.paymentStatus} · {o.fulfillmentStatus}</option>)}</select></label>{scope==='back'&&<label>{tr('Tracking number')}<input maxLength={80} value={tracking} onChange={e=>setTracking(e.target.value)}/></label>}</div><div className="mes-action-buttons"><button type="button" disabled={busy||!variantId||!Number.isSafeInteger(quantity)||quantity<1||quantity>1000} onClick={()=>void send('checkout')}>{tr('Create demo order')}</button><button type="button" disabled={busy||!canPay} onClick={()=>void send('pay')}>{tr('Simulate payment')}</button>{scope==='back'&&<button type="button" disabled={busy||!order||order.paymentStatus!=='paid'||order.fulfillmentStatus!=='unfulfilled'||!tracking.trim()} onClick={()=>void send('ship')}>{tr('Simulate shipment')}</button>}</div>{scope==='back'&&<div className="shop-event-status"><strong>{tr('Fulfillment event delivery')}</strong><p>{tr('Pending events are retried by the station dispatcher. Published means accepted by the gateway; it does not confirm physical delivery.')}</p><p>{tr('Pending')}: {(data.fulfillmentEvents||[]).filter(e=>e.status==='pending').length} · {tr('Published')}: {(data.fulfillmentEvents||[]).filter(e=>e.status==='processed').length}</p><button type="button" className="secondary" disabled={busy} onClick={()=>void onSaved()}>{tr('Refresh delivery status')}</button></div>}{message&&<p role="status">{message}</p>}{error&&<p role="alert" className="error">{error}</p>}</section>;
+}

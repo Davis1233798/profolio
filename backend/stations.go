@@ -15,7 +15,7 @@ type Dataset struct {
 }
 
 var datasets = map[string][]Dataset{
-	"mes":    {{"products", "mes_products", "Products", []string{"id", "sku", "name", "unit", "status"}}, {"workOrders", "mes_work_orders", "Work orders", []string{"id", "order_no", "product_id", "status", "target_quantity", "completed_quantity", "scrapped_quantity"}}, {"lots", "mes_material_lots", "Material lots", []string{"id", "lot_number", "material_sku", "current_quantity", "status"}}, {"reports", "mes_production_reports", "Production reports", []string{"id", "work_order_id", "good_quantity", "scrap_quantity", "created_at"}}, {"qualityChecks", "mes_quality_checks", "Quality checks", nil}, {"workCenters", "mes_work_centers", "Work centers", []string{"id", "code", "name", "status"}}, {"materials", "mes_work_order_materials", "Material movements", nil}, {"bomVersions", "mes_bom_versions", "BOM versions", nil}, {"bomItems", "mes_bom_items", "BOM items", nil}, {"downtimeEvents", "mes_downtime_events", "Downtime", nil}},
+	"mes":    {{"products", "mes_products", "Products", []string{"id", "sku", "name", "unit", "status"}}, {"workOrders", "mes_work_orders", "Work orders", []string{"id", "order_no", "product_id", "status", "target_quantity", "completed_quantity", "scrapped_quantity", "materials_staged"}}, {"operations", "mes_operations", "Operations", []string{"id", "work_order_id", "sequence", "name", "status"}}, {"lots", "mes_material_lots", "Material lots", []string{"id", "lot_number", "material_sku", "current_quantity", "status"}}, {"reports", "mes_production_reports", "Production reports", []string{"id", "work_order_id", "good_quantity", "scrap_quantity", "created_at"}}, {"qualityChecks", "mes_quality_checks", "Quality checks", nil}, {"workCenters", "mes_work_centers", "Work centers", []string{"id", "code", "name", "status"}}, {"materials", "mes_work_order_materials", "Material movements", nil}, {"bomVersions", "mes_bom_versions", "BOM versions", nil}, {"bomItems", "mes_bom_items", "BOM items", nil}, {"downtimeEvents", "mes_downtime_events", "Downtime", nil}},
 	"erp":    {{"items", "erp_items", "Items", []string{"id", "sku", "name", "unit", "is_active"}}, {"warehouses", "erp_warehouses", "Warehouses", []string{"id", "name", "code"}}, {"stockLedger", "erp_stock_ledger", "Stock ledger", []string{"id", "item_id", "warehouse_id", "quantity_change", "created_at"}}, {"purchaseOrders", "erp_purchase_orders", "Purchase orders", nil}, {"purchaseLines", "erp_purchase_order_lines", "Purchase lines", nil}, {"salesOrders", "erp_sales_orders", "Sales orders", nil}, {"salesLines", "erp_sales_order_lines", "Sales lines", nil}, {"receipts", "erp_receipts", "Receipts", nil}, {"receiptLines", "erp_receipt_lines", "Receipt lines", nil}, {"invoices", "erp_invoices", "Receivables and payables", nil}, {"suppliers", "erp_suppliers", "Suppliers", nil}, {"customers", "erp_customers", "Customers", nil}, {"journalEntries", "erp_journal_entries", "Journal entries", nil}, {"journalLines", "erp_journal_lines", "Journal lines", nil}},
 	"pos":    {{"catalogItems", "pos_catalog_items", "Products", []string{"id", "name", "barcode", "price", "is_active"}}, {"sales", "pos_sales", "Receipts", []string{"id", "receipt_number", "total_amount", "payment_method", "created_at"}}, {"saleLines", "pos_sale_lines", "Sale lines", nil}, {"stores", "pos_stores", "Stores", []string{"id", "name", "code"}}, {"registers", "pos_registers", "Registers", []string{"id", "name", "store_id"}}, {"shifts", "pos_shifts", "Shifts", nil}, {"heldCarts", "pos_held_carts", "Held carts", nil}},
 	"crm":    {{"accounts", "crm_accounts", "Customers", nil}, {"contacts", "crm_contacts", "Contacts", nil}, {"leads", "crm_leads", "Leads", []string{"id", "name", "company", "status"}}, {"opportunities", "crm_opportunities", "Opportunities", nil}, {"activities", "crm_activities", "Activities", nil}, {"tickets", "crm_tickets", "Support tickets", []string{"id", "subject", "status", "priority", "created_at"}}, {"quotes", "crm_quotes", "Quotes", nil}, {"quoteItems", "crm_quote_items", "Quote items", nil}},
@@ -79,6 +79,14 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		fail(w, 403, "No access to this workspace")
 		return
 	}
+	if action == "business" && site == "shop" {
+		a.shopBusiness(w, r, id, g)
+		return
+	}
+	if action == "business" && site == "mes" {
+		a.mesBusiness(w, r, id, g)
+		return
+	}
 	if action == "data" && r.Method == "GET" {
 		front := r.URL.Query().Get("view") == "front"
 		if !front && g.Scope != "back" {
@@ -110,6 +118,14 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			out[d.Key] = rows
+		}
+		if site == "shop" && !front {
+			events, err := queryMaps(a.db, "SELECT id,status,retry_count,created_at FROM outbox_events WHERE organization_id=? AND event_type='shop.paid' ORDER BY rowid DESC LIMIT 100", id.OrganizationID)
+			if err != nil {
+				fail(w, 500, "Unable to read commerce events")
+				return
+			}
+			out["fulfillmentEvents"] = events
 		}
 		ok(w, out)
 		return

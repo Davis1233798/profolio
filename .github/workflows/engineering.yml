@@ -72,7 +72,7 @@ jobs:
           cp docs/engineering/STATION-DELIVERY.md release/START.md
           printf '%s\n' "$GITHUB_SHA" > release/COMMIT
       - name: Upload deployable station package
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: actions/upload-artifact@v4
         with:
           name: station-linux-amd64-${{ github.sha }}
@@ -80,10 +80,40 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  k6-isolated:
+    name: k6 isolated transaction tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '2.3.0'
+      - run: npm run install:ci
+      - run: npm run web:build
+      - run: npm run build
+      - name: Run against temporary local databases
+        run: python3 scripts/run-k6-isolated.py
+      - name: Upload k6 summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-isolated-${{ github.sha }}
+          path: outputs/k6/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
   deploy:
     name: Deploy to OCI
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [web, infrastructure, station-delivery]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: [web, infrastructure, station-delivery, k6-isolated]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
@@ -96,13 +126,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Verify this is still the latest master commit
+      - name: Verify this is still the latest default-branch commit
         env:
           GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          latest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/master" --jq .sha)
+          latest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${DEFAULT_BRANCH}" --jq .sha)
           if [ "$latest" != "$GITHUB_SHA" ]; then
-            echo "A newer commit exists; skip this deployment."
+            echo "A newer default-branch commit exists; skip this deployment."
             exit 1
           fi
       - run: npm run install:ci

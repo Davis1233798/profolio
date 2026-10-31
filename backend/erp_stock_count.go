@@ -12,6 +12,7 @@ type erpCountRequest struct {
 	ItemID      string `json:"itemId"`
 	WarehouseID string `json:"warehouseId"`
 	Expected    int64  `json:"expectedQuantity"`
+	Version     string `json:"expectedVersion"`
 	Counted     int64  `json:"countedQuantity"`
 	Reason      string `json:"reason"`
 	Key         string `json:"idempotencyKey"`
@@ -32,7 +33,7 @@ func (a *App) erpStockCount(w http.ResponseWriter, r *http.Request, id *Identity
 		return
 	}
 	in.Reason = strings.TrimSpace(in.Reason)
-	if in.ItemID == "" || len(in.ItemID) > 256 || in.WarehouseID == "" || len(in.WarehouseID) > 256 || in.Expected < 0 || in.Expected > 1000000000 || in.Counted < 0 || in.Counted > 1000000000 || in.Reason == "" || len(in.Reason) > 500 || len(in.Key) < 8 || len(in.Key) > 128 {
+	if in.ItemID == "" || len(in.ItemID) > 256 || in.WarehouseID == "" || len(in.WarehouseID) > 256 || len(in.Version) > 256 || in.Expected < 0 || in.Expected > 1000000000 || in.Counted < 0 || in.Counted > 1000000000 || in.Reason == "" || len(in.Reason) > 500 || len(in.Key) < 8 || len(in.Key) > 128 {
 		fail(w, 400, "Enter valid stock count details")
 		return
 	}
@@ -75,12 +76,13 @@ func (a *App) erpStockCount(w http.ResponseWriter, r *http.Request, id *Identity
 		return
 	}
 	var balance int64
-	e = tx.QueryRow("SELECT balance_after FROM erp_stock_ledger WHERE organization_id=? AND item_id=? AND warehouse_id=? ORDER BY rowid DESC LIMIT 1", id.OrganizationID, in.ItemID, in.WarehouseID).Scan(&balance)
+	var version string
+	e = tx.QueryRow("SELECT id,balance_after FROM erp_stock_ledger WHERE organization_id=? AND item_id=? AND warehouse_id=? ORDER BY rowid DESC LIMIT 1", id.OrganizationID, in.ItemID, in.WarehouseID).Scan(&version, &balance)
 	if e != nil && !errors.Is(e, sql.ErrNoRows) {
 		fail(w, 503, "Cannot read inventory")
 		return
 	}
-	if balance != in.Expected {
+	if balance != in.Expected || version != in.Version {
 		fail(w, 409, "Inventory changed; refresh before counting")
 		return
 	}
@@ -104,6 +106,10 @@ func (a *App) erpStockCount(w http.ResponseWriter, r *http.Request, id *Identity
 		value = (cost/quantity)*delta + ((cost%quantity)*delta+quantity/2)/quantity
 	}
 	newQuantity, newCost := quantity+delta, cost+value
+	if newCost < 0 || newCost > 1000000000000000 {
+		fail(w, 409, "Resulting inventory cost exceeds the supported range")
+		return
+	}
 	average := int64(0)
 	if newQuantity > 0 {
 		average = (newCost + newQuantity/2) / newQuantity

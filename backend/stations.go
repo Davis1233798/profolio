@@ -251,6 +251,12 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			out[d.Key] = rows
 		}
 		if site == "erp" && !front {
+			balances, err := queryMaps(a.db, `SELECT l.item_id,l.warehouse_id,l.id AS version,l.balance_after FROM erp_stock_ledger l WHERE l.organization_id=? AND l.rowid=(SELECT MAX(x.rowid) FROM erp_stock_ledger x WHERE x.organization_id=l.organization_id AND x.item_id=l.item_id AND x.warehouse_id=l.warehouse_id) ORDER BY l.rowid DESC`, id.OrganizationID)
+			if err != nil {
+				fail(w, 500, "Unable to read inventory balances")
+				return
+			}
+			out["inventoryBalances"] = balances
 			rows, err := queryMaps(a.db, `SELECT l.account_code,MAX(l.account_name) AS account_name,SUM(l.debit_amount) AS debit_total,SUM(l.credit_amount) AS credit_total FROM erp_journal_lines l JOIN erp_journal_entries j ON j.id=l.journal_id AND j.organization_id=l.organization_id WHERE l.organization_id=? AND j.status='posted' GROUP BY l.account_code ORDER BY l.account_code`, id.OrganizationID)
 			if err != nil {
 				fail(w, 500, "Unable to calculate trial balance")

@@ -34,4 +34,10 @@ func TestMESIndustrialTenantAndPermissions(t *testing.T) {
 	if w := request(a, "GET", path, nil, admin...); w.Code != 503 {
 		t.Fatalf("unconfigured %d", w.Code)
 	}
+	redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/unexpected", http.StatusFound) }))
+	defer redirect.Close()
+	t.Setenv("INFRA_GATEWAY_URL", redirect.URL)
+	if w := request(a, "GET", path, nil, admin...); w.Code != 503 {
+		t.Fatalf("redirect %d", w.Code)
+	}
 }

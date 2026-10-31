@@ -32,7 +32,8 @@ func (a *App) mesIndustrial(w http.ResponseWriter, r *http.Request, id *Identity
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+secret)
-	response, e := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	client := &http.Client{Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	response, e := client.Do(req)
 	if e != nil {
 		fail(w, 503, "Equipment data unavailable")
 		return

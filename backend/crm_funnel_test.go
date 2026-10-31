@@ -39,6 +39,52 @@ func TestCRMFunnelRoleAndTenantScope(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
+	if _, e := a.db.Exec("INSERT INTO crm_quotes(id,organization_id,quote_number,opportunity_id) VALUES('team-quote',?,'QT-TEAM','team')", org); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := a.db.Exec("INSERT INTO crm_quote_items(id,organization_id,quote_id,item_name,quantity,unit_price,line_total) VALUES('team-line',?,'team-quote','Secret',1,200,200)", org); e != nil {
+		t.Fatal(e)
+	}
+	response := request(a, "GET", "/api/stations/crm/data?view=back", nil, office...)
+	var scoped struct {
+		Data struct {
+			Opportunities []struct {
+				ID string `json:"id"`
+			} `json:"opportunities"`
+			Quotes []struct {
+				ID string `json:"id"`
+			} `json:"quotes"`
+			Lines []struct {
+				ID string `json:"id"`
+			} `json:"quoteItems"`
+		} `json:"data"`
+	}
+	if e := json.Unmarshal(response.Body.Bytes(), &scoped); e != nil || response.Code != 200 {
+		t.Fatalf("scope data %d %v", response.Code, e)
+	}
+	for _, opp := range scoped.Data.Opportunities {
+		if opp.ID == "team" {
+			t.Fatal("foreign owner opportunity visible")
+		}
+	}
+	for _, quote := range scoped.Data.Quotes {
+		if quote.ID == "team-quote" {
+			t.Fatal("foreign owner quote visible")
+		}
+	}
+	for _, line := range scoped.Data.Lines {
+		if line.ID == "team-line" {
+			t.Fatal("foreign owner quote item visible")
+		}
+	}
+	quote := map[string]any{"action": "create", "opportunityId": "team", "itemName": "Service", "quantity": 1, "unitPrice": 1, "idempotencyKey": "foreign-quote-01"}
+	if w := request(a, "POST", "/api/stations/crm/quotes", quote, office...); w.Code != 403 {
+		t.Fatalf("foreign quote write %d", w.Code)
+	}
+	stageChange := map[string]any{"action": "stage", "opportunityId": "team", "expectedStage": stage, "stageId": stage, "idempotencyKey": "foreign-stage-01"}
+	if w := request(a, "POST", "/api/stations/crm/work", stageChange, office...); w.Code != 403 {
+		t.Fatalf("foreign stage write %d", w.Code)
+	}
 	read := func(cookies ...*http.Cookie) (int64, int64) {
 		w := request(a, "GET", "/api/stations/crm/data?view=back", nil, cookies...)
 		var v struct {

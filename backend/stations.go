@@ -205,6 +205,19 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 				query += " AND owner_id=?"
 				args = append(args, id.UserID)
 			}
+			if site == "crm" && !front && g.Role != "admin" {
+				switch d.Key {
+				case "opportunities":
+					query += " AND owner_id=?"
+					args = append(args, id.UserID)
+				case "quotes":
+					query += " AND opportunity_id IN (SELECT id FROM crm_opportunities WHERE organization_id=? AND owner_id=?)"
+					args = append(args, id.OrganizationID, id.UserID)
+				case "quoteItems":
+					query += " AND quote_id IN (SELECT q.id FROM crm_quotes q JOIN crm_opportunities o ON o.id=q.opportunity_id AND o.organization_id=q.organization_id WHERE q.organization_id=? AND o.owner_id=?)"
+					args = append(args, id.OrganizationID, id.UserID)
+				}
+			}
 			if front && site == "pos" && d.Key == "heldCarts" {
 				query += " AND (status='held' OR (status='retrieved' AND locked_by=?))"
 				args = append(args, id.UserID)

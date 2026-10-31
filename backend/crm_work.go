@@ -94,14 +94,18 @@ func (a *App) crmWork(w http.ResponseWriter, r *http.Request, id *Identity, g *G
 	case "stage":
 		entity = in.OpportunityID
 		var amount int64
-		var previous string
-		e = tx.QueryRow("SELECT stage_id,amount FROM crm_opportunities WHERE organization_id=? AND id=?", id.OrganizationID, entity).Scan(&previous, &amount)
+		var previous, owner string
+		e = tx.QueryRow("SELECT stage_id,amount,owner_id FROM crm_opportunities WHERE organization_id=? AND id=?", id.OrganizationID, entity).Scan(&previous, &amount, &owner)
 		if errors.Is(e, sql.ErrNoRows) {
 			fail(w, 404, "Opportunity not found")
 			return
 		}
 		if e != nil {
 			fail(w, 503, "Cannot read opportunity")
+			return
+		}
+		if g.Role != "admin" && owner != id.UserID {
+			fail(w, 403, "Opportunity belongs to another user")
 			return
 		}
 		if previous != in.ExpectedStage {

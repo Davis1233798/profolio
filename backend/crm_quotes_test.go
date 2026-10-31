@@ -21,6 +21,15 @@ func TestCRMQuoteVersionsAndApproval(t *testing.T) {
 	if e := a.db.QueryRow("SELECT id FROM crm_opportunities WHERE organization_id=? LIMIT 1", org).Scan(&opp); e != nil {
 		t.Fatal(e)
 	}
+	var identity struct {
+		Data Identity `json:"data"`
+	}
+	if e := json.Unmarshal(request(a, "GET", "/api/auth/me", nil, office...).Body.Bytes(), &identity); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := a.db.Exec("UPDATE crm_opportunities SET owner_id=? WHERE organization_id=? AND id=?", identity.Data.UserID, org, opp); e != nil {
+		t.Fatal(e)
+	}
 	input := func(i int) map[string]any {
 		return map[string]any{"action": "create", "opportunityId": opp, "itemName": "Example service", "quantity": 3, "unitPrice": 125, "idempotencyKey": fmt.Sprintf("quote-create-%08d", i)}
 	}

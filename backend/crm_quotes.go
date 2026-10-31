@@ -78,14 +78,18 @@ func (a *App) crmQuotes(w http.ResponseWriter, r *http.Request, id *Identity, g 
 	result := map[string]any{}
 	entity := ""
 	if in.Action == "create" {
-		var found int
-		e = tx.QueryRow("SELECT count(*) FROM crm_opportunities WHERE organization_id=? AND id=?", id.OrganizationID, in.OpportunityID).Scan(&found)
+		var owner string
+		e = tx.QueryRow("SELECT owner_id FROM crm_opportunities WHERE organization_id=? AND id=?", id.OrganizationID, in.OpportunityID).Scan(&owner)
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Opportunity not found")
+			return
+		}
 		if e != nil {
 			fail(w, 503, "Cannot read opportunity")
 			return
 		}
-		if found == 0 {
-			fail(w, 404, "Opportunity not found")
+		if g.Role != "admin" && owner != id.UserID {
+			fail(w, 403, "Opportunity belongs to another user")
 			return
 		}
 		var version int64

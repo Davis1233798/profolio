@@ -18,6 +18,9 @@ type journalLine struct {
 type financeRequest struct {
 	Action      string        `json:"action"`
 	InvoiceID   string        `json:"invoiceId"`
+	OrderID     string        `json:"orderId"`
+	InvoiceKind string        `json:"invoiceKind"`
+	DueDate     string        `json:"dueDate"`
 	Amount      int64         `json:"amount"`
 	Method      string        `json:"method"`
 	EntryDate   string        `json:"entryDate"`
@@ -37,7 +40,7 @@ func (a *App) erpFinance(w http.ResponseWriter, r *http.Request, id *Identity, g
 		return
 	}
 	var in financeRequest
-	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.InvoiceID) > 256 || (in.Action != "payment" && in.Action != "journal") {
+	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.InvoiceID) > 256 || len(in.OrderID) > 256 || (in.Action != "payment" && in.Action != "journal" && in.Action != "invoice") {
 		fail(w, 400, "Invalid finance request")
 		return
 	}
@@ -46,6 +49,19 @@ func (a *App) erpFinance(w http.ResponseWriter, r *http.Request, id *Identity, g
 	if in.Action == "payment" && (in.InvoiceID == "" || in.Amount < 1 || in.Amount > 1000000000000000 || (in.Method != "bank_transfer" && in.Method != "cash")) {
 		fail(w, 400, "Enter a valid payment amount and method")
 		return
+	}
+	if in.Action == "invoice" {
+		if in.OrderID == "" || (in.InvoiceKind != "payable" && in.InvoiceKind != "receivable") {
+			fail(w, 400, "Select an invoice type and order")
+			return
+		}
+		if in.DueDate != "" {
+			date, err := time.Parse("2006-01-02", in.DueDate)
+			if err != nil || date.Format("2006-01-02") != in.DueDate {
+				fail(w, 400, "Enter a valid due date")
+				return
+			}
+		}
 	}
 	var debit, credit int64
 	if in.Action == "journal" {
@@ -100,7 +116,56 @@ func (a *App) erpFinance(w http.ResponseWriter, r *http.Request, id *Identity, g
 	}
 	entity := ""
 	result := map[string]any{}
-	if in.Action == "payment" {
+	if in.Action == "invoice" {
+		var number, partner, status string
+		var total int64
+		var lineCount, unfinished int
+		if in.InvoiceKind == "payable" {
+			e = tx.QueryRow("SELECT po_number,supplier_id,status,total_amount FROM erp_purchase_orders WHERE organization_id=? AND id=?", id.OrganizationID, in.OrderID).Scan(&number, &partner, &status, &total)
+			if e == nil {
+				e = tx.QueryRow("SELECT count(*),COALESCE(sum(CASE WHEN quantity<=0 OR received_quantity<quantity THEN 1 ELSE 0 END),0) FROM erp_purchase_order_lines WHERE organization_id=? AND po_id=?", id.OrganizationID, in.OrderID).Scan(&lineCount, &unfinished)
+			}
+		} else {
+			e = tx.QueryRow("SELECT so_number,customer_id,status,total_amount FROM erp_sales_orders WHERE organization_id=? AND id=?", id.OrganizationID, in.OrderID).Scan(&number, &partner, &status, &total)
+			if e == nil {
+				e = tx.QueryRow("SELECT count(*),COALESCE(sum(CASE WHEN quantity<=0 OR shipped_quantity<quantity THEN 1 ELSE 0 END),0) FROM erp_sales_order_lines WHERE organization_id=? AND so_id=?", id.OrganizationID, in.OrderID).Scan(&lineCount, &unfinished)
+			}
+		}
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Source order not found")
+			return
+		}
+		if e != nil {
+			fail(w, 503, "Cannot read source order")
+			return
+		}
+		if status == "cancelled" || status == "rejected" || lineCount == 0 || unfinished != 0 || total <= 0 || total > 1000000000000000 {
+			fail(w, 409, "Order must be fully received or shipped before invoicing")
+			return
+		}
+		prefix, partnerType := "AP-", "supplier"
+		if in.InvoiceKind == "receivable" {
+			prefix, partnerType = "AR-", "customer"
+		}
+		invoiceNumber := prefix + number
+		var count int
+		e = tx.QueryRow("SELECT count(*) FROM erp_invoices WHERE organization_id=? AND invoice_type=? AND invoice_number=?", id.OrganizationID, in.InvoiceKind, invoiceNumber).Scan(&count)
+		if e != nil {
+			fail(w, 503, "Cannot check invoice")
+			return
+		}
+		if count > 0 {
+			fail(w, 409, "An invoice already exists for this order")
+			return
+		}
+		entity = "invoice_" + digest(id.OrganizationID+"\x00"+in.InvoiceKind+"\x00"+in.OrderID)
+		var due any = nil
+		if in.DueDate != "" {
+			due = in.DueDate
+		}
+		_, e = tx.Exec("INSERT INTO erp_invoices(id,organization_id,invoice_number,invoice_type,partner_type,partner_id,total_amount,due_date,status) VALUES(?,?,?,?,?,?,?,?, 'unpaid')", entity, id.OrganizationID, invoiceNumber, in.InvoiceKind, partnerType, partner, total, due)
+		result = map[string]any{"invoiceId": entity, "invoiceNumber": invoiceNumber, "totalAmount": total}
+	} else if in.Action == "payment" {
 		entity = in.InvoiceID
 		var total, paid int64
 		var status string

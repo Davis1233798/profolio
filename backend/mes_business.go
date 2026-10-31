@@ -95,6 +95,16 @@ func (a *App) mesBusiness(w http.ResponseWriter, r *http.Request, id *Identity, 
 			fail(w, 409, "Work order must be released and materials staged")
 			return
 		}
+		var totalBOM, missing int
+		err = tx.QueryRow(`SELECT COUNT(*),COALESCE(SUM(CASE WHEN b.quantity_per_unit<=0 OR b.quantity_per_unit*? > COALESCE((SELECT SUM(m.net_quantity) FROM mes_work_order_materials m WHERE m.organization_id=b.organization_id AND m.work_order_id=? AND m.material_sku=b.material_sku),0) THEN 1 ELSE 0 END),0) FROM mes_bom_items b JOIN mes_work_orders w ON w.bom_version_id=b.bom_version_id AND w.organization_id=b.organization_id WHERE w.organization_id=? AND w.id=?`, target, in.WorkOrderID, id.OrganizationID, in.WorkOrderID).Scan(&totalBOM, &missing)
+		if err != nil {
+			fail(w, 503, "Cannot verify staged materials")
+			return
+		}
+		if target < 1 || totalBOM == 0 || missing != 0 {
+			fail(w, 409, "BOM materials are not fully staged")
+			return
+		}
 		res, e := tx.Exec("UPDATE mes_work_orders SET status='in_progress' WHERE organization_id=? AND id=? AND status='released' AND materials_staged=1", id.OrganizationID, in.WorkOrderID)
 		if e != nil {
 			fail(w, 503, "Unable to start work order")

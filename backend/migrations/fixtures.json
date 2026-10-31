@@ -664,6 +664,16 @@
       "current_quantity": 300,
       "status": "available",
       "created_at": "2026-10-30 16:30:21"
+    },
+    {
+      "id": "mes_lot_02_org_go_fixture",
+      "organization_id": "org_go_fixture",
+      "lot_number": "LOT-DEMO-THERMAL",
+      "material_sku": "RAW-THERMAL-PASTE",
+      "initial_quantity": 100,
+      "current_quantity": 0,
+      "status": "available",
+      "created_at": "2026-10-30 16:30:21"
     }
   ],
   "mes_operations": [
@@ -729,8 +739,19 @@
       "material_lot_id": "mes_lot_01_org_go_fixture",
       "material_sku": "RAW-ALUM-6061",
       "issued_quantity": 200,
-      "returned_quantity": 10,
-      "net_quantity": 190,
+      "returned_quantity": 0,
+      "net_quantity": 200,
+      "created_at": "2026-10-30 16:30:21"
+    },
+    {
+      "id": "mes_wom_02_org_go_fixture",
+      "organization_id": "org_go_fixture",
+      "work_order_id": "mes_wo_01_org_go_fixture",
+      "material_lot_id": "mes_lot_02_org_go_fixture",
+      "material_sku": "RAW-THERMAL-PASTE",
+      "issued_quantity": 100,
+      "returned_quantity": 0,
+      "net_quantity": 100,
       "created_at": "2026-10-30 16:30:21"
     }
   ],

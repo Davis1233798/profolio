@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -14,8 +15,9 @@ type shopCartLine struct {
 	Quantity  int64  `json:"quantity"`
 }
 type shopCartRequest struct {
-	Lines []shopCartLine `json:"lines"`
-	Key   string         `json:"idempotencyKey"`
+	Lines      []shopCartLine `json:"lines"`
+	CouponCode string         `json:"couponCode"`
+	Key        string         `json:"idempotencyKey"`
 }
 
 func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Identity, g *Grant) {
@@ -30,6 +32,11 @@ func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Ident
 	var in shopCartRequest
 	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.Lines) == 0 || len(in.Lines) > 100 {
 		fail(w, 400, "Enter a valid cart")
+		return
+	}
+	in.CouponCode = strings.TrimSpace(in.CouponCode)
+	if len(in.CouponCode) > 100 {
+		fail(w, 400, "Invalid coupon code")
 		return
 	}
 	seen := map[string]bool{}
@@ -105,9 +112,44 @@ func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Ident
 	}
 	order := "order_" + token()
 	number := "ORD-" + strings.ToUpper(token()[:12])
-	total := subtotal + 60
+	var discount int64
+	if in.CouponCode != "" {
+		var kind string
+		var value, minSpend int64
+		var enabled, validTime int
+		e = tx.QueryRow("SELECT discount_type,discount_value,min_spend,is_active,CASE WHEN expires_at IS NULL THEN 1 WHEN julianday(expires_at)>julianday('now') THEN 1 ELSE 0 END FROM shop_promotions WHERE organization_id=? AND code=?", id.OrganizationID, in.CouponCode).Scan(&kind, &value, &minSpend, &enabled, &validTime)
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Coupon not found")
+			return
+		}
+		if e != nil {
+			fail(w, 503, "Cannot read coupon")
+			return
+		}
+		if enabled != 1 || validTime != 1 || minSpend < 0 || subtotal < minSpend || value < 0 || value > 1000000000000000 {
+			fail(w, 409, "Coupon is unavailable or minimum spend is not met")
+			return
+		}
+		if kind == "percentage" {
+			if value > 100 {
+				fail(w, 409, "Invalid coupon percentage")
+				return
+			}
+			discount = (subtotal/100)*value + ((subtotal%100)*value+50)/100
+		} else if kind == "fixed" {
+			discount = value
+		} else {
+			fail(w, 409, "Invalid coupon type")
+			return
+		}
+		if discount > subtotal {
+			discount = subtotal
+		}
+	}
+	total := subtotal - discount + 60
 	expires := time.Now().UTC().Add(15 * time.Minute).Format(time.RFC3339)
-	_, e = tx.Exec("INSERT INTO shop_orders(id,organization_id,order_number,user_id,customer_email,shipping_address_json,subtotal,shipping_fee,total_amount,idempotency_key) VALUES(?,?,?,?,?,'{}',?,60,?,?)", order, id.OrganizationID, number, id.UserID, id.Email, subtotal, total, in.Key)
+	_, e = tx.Exec("INSERT INTO shop_orders(id,organization_id,order_number,user_id,customer_email,shipping_address_json,subtotal,discount_amount,shipping_fee,total_amount,idempotency_key) VALUES(?,?,?,?,?,'{}',?,?,60,?,?)", order, id.OrganizationID, number, id.UserID, id.Email, subtotal, discount, total, in.Key)
+	var cumulative, allocated int64
 	for _, l := range lines {
 		if e != nil {
 			break
@@ -123,13 +165,23 @@ func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Ident
 			}
 		}
 		if e == nil {
-			_, e = tx.Exec("INSERT INTO shop_order_items(id,organization_id,order_id,variant_id,product_name,variant_title,sku,unit_price,quantity,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)", "item_"+token(), id.OrganizationID, order, l.VariantID, l.name, l.title, l.sku, l.price, l.Quantity, l.price*l.Quantity)
+			gross := l.price * l.Quantity
+			cumulative += gross
+			share := int64(0)
+			if subtotal > 0 && discount > 0 {
+				n := new(big.Int).Mul(big.NewInt(discount), big.NewInt(cumulative))
+				n.Div(n, big.NewInt(subtotal))
+				current := n.Int64()
+				share = current - allocated
+				allocated = current
+			}
+			_, e = tx.Exec("INSERT INTO shop_order_items(id,organization_id,order_id,variant_id,product_name,variant_title,sku,unit_price,quantity,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)", "item_"+token(), id.OrganizationID, order, l.VariantID, l.name, l.title, l.sku, l.price, l.Quantity, gross-share)
 		}
 		if e == nil {
 			_, e = tx.Exec("INSERT INTO shop_inventory_reservations(id,organization_id,variant_id,session_id,cart_id,quantity,expires_at,status) VALUES(?,?,?,?,?,?,?,'active')", "reservation_"+token(), id.OrganizationID, l.VariantID, id.UserID, order, l.Quantity, expires)
 		}
 	}
-	result := map[string]any{"orderId": order, "orderNumber": number, "totalAmount": total, "paymentStatus": "pending", "expiresAt": expires}
+	result := map[string]any{"orderId": order, "orderNumber": number, "totalAmount": total, "discountAmount": discount, "paymentStatus": "pending", "expiresAt": expires}
 	encoded, _ := json.Marshal(result)
 	if e == nil {
 		_, e = tx.Exec("INSERT INTO idempotency_keys(id,organization_id,key,endpoint,request_hash,response_status,response_body) VALUES(?,?,?,?,?,200,?)", "idem_"+token(), id.OrganizationID, in.Key, endpoint, hash, string(encoded))

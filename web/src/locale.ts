@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Coupon code (optional)":"優惠券代碼（選填）",
   "CATALOG AND SALES":"品項與銷售", "Items and sales orders":"品項與銷售單", "Units per box":"每箱數量", "Create item":"建立品項", "Item created":"品項已建立", "Select a customer":"選擇客戶", "Create sales order":"建立銷售單", "Sales order created":"銷售單已建立",
   "STORE REPORTING":"門市報表", "Daily sales report":"每日銷售報表", "Sales and refunds use their transaction date in Asia/Taipei.":"銷售與退款以台北時間的交易日期計算。", "Select a store":"選擇門市", "Run report":"查詢報表", "Gross sales":"銷售總額", "Refunds":"退款", "Net sales":"銷售淨額",
   "PRODUCT STRUCTURE":"產品結構", "Create BOM version":"建立 BOM 版本", "Circular dependencies and duplicate versions are rejected.":"系統會拒絕循環相依與重複版本。", "Material SKU already added":"物料 SKU 已加入", "BOM version created":"BOM 版本已建立", "Version":"版本", "Material name":"物料名稱", "Quantity per unit":"每單位用量", "Add material":"加入物料",

@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "ERP ADMINISTRATION":"ERP 管理", "Partners and fiscal periods":"往來對象與會計期間", "Partner type":"往來對象類型", "Create partner":"建立往來對象", "Partner created":"已建立往來對象", "Fiscal period":"會計期間", "Select a fiscal period":"選擇會計期間", "Closing prevents posting into the period and cannot be undone here.":"關帳後無法在此期間過帳，且此處無法撤銷關帳。", "Close fiscal period":"會計期間關帳", "Fiscal period closed":"會計期間已關帳",
   "Internal invoice created":"已建立內部帳款", "Create an internal invoice only after full receipt or shipment; no tax invoice is issued.":"全數收貨或出貨後可建立內部帳款；不會開立稅務發票。", "Invoice type":"帳款類型", "Payable":"應付", "Receivable":"應收", "Source order":"來源訂單", "Due date (optional)":"到期日（選填）", "Create internal invoice":"建立內部帳款",
   "Ongoing downtime":"進行中的停機", "Select an event":"選擇事件", "Resolution time":"復機時間", "Resolve downtime":"記錄復機",
   "PRODUCTION PLANNING":"生產規劃", "Create work order":"建立工單", "Choose an active BOM and work center. The new order must be staged before it can start.":"選擇有效 BOM 與工作中心；新工單須備料完成才能開工。", "Work order released; stage its materials before starting.":"工單已下達，請先完成備料再開工。", "BOM version":"BOM 版本", "Select a BOM":"選擇 BOM", "Work order number":"工單號碼", "Operation name":"工序名稱", "Target quantity":"目標數量", "Standard minutes per unit":"每單位標準分鐘",

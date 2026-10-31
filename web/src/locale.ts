@@ -2,6 +2,11 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "LIVE POINT-OF-SALE OPERATIONS":"門市收銀作業", "Shifts, checkout and returns":"開班、結帳與退貨",
+  "Cash sales, inventory and shift totals are recorded in this station. This is a demo; no external payment is charged.":"本站記錄現金銷售、庫存與班次總額。這是示範，不會實際扣款。",
+  "Register":"收銀機", "Opening cash":"開班現金", "Open shift":"開班", "Closing cash":"結班現金", "Your shift":"您的班次", "Other cashier":"其他收銀員", "Product":"商品", "Cash tender":"實收現金", "Sale line to refund":"退款明細", "Return reason":"退貨原因", "Complete cash sale":"完成現金銷售", "Refund selected line":"退還所選明細", "Close shift":"結班", "Shift opened.":"已開班。", "Sale saved. Receipt":"已儲存銷售，小票", "Cash change":"找零", "Refund saved. Amount":"已儲存退款，金額", "Shift closed. Expected cash":"已結班，應有現金", "Discrepancy":"差額",
+  "Core MES reporting, POS cash sales and simulated commerce checkout are available in this station. Other transaction workflows are still being migrated.":"本站已支援 MES 核心報工、POS 現金銷售與模擬電商結帳；其他交易流程仍在移植。",
+
   "Fulfillment events": "履約事件", "Fulfillment event delivery": "履約事件傳送",
   "Pending events are retried by the station dispatcher. Published means accepted by the gateway; it does not confirm physical delivery.": "站台會重試待傳送事件。已發布表示閘道已接收，並不代表實體配送完成。",
   "Published": "已發布", "Refresh delivery status": "重新整理傳送狀態",

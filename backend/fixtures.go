@@ -35,6 +35,10 @@ func seedFixtures(tx *sql.Tx, org string) error {
 				v := row[k]
 				if s, yes := v.(string); yes {
 					v = strings.ReplaceAll(s, "org_go_fixture", org)
+					// Associate the seeded register shift with the real station front account.
+					if table == "pos_shifts" && k == "cashier_id" && s == "usr_org_go_fixture_op" {
+						v = org + "_front"
+					}
 				}
 				args = append(args, v)
 				marks = append(marks, "?")

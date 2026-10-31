@@ -24,6 +24,7 @@ type mesOperationRequest struct {
 	Disposition string `json:"disposition"`
 	Notes       string `json:"notes"`
 	CenterID    string `json:"centerId"`
+	DowntimeID  string `json:"downtimeId"`
 	Start       string `json:"start"`
 	End         string `json:"end"`
 	Reason      string `json:"reason"`
@@ -40,7 +41,7 @@ func (a *App) mesOperations(w http.ResponseWriter, r *http.Request, id *Identity
 		return
 	}
 	var in mesOperationRequest
-	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WorkOrderID) > 256 || len(in.LotID) > 256 || len(in.ReportID) > 256 || len(in.CenterID) > 256 || len(in.Notes) > 500 || len(in.Reason) > 500 || (in.Action != "material" && in.Action != "quality" && in.Action != "downtime" && in.Action != "createLot") {
+	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WorkOrderID) > 256 || len(in.LotID) > 256 || len(in.ReportID) > 256 || len(in.CenterID) > 256 || len(in.DowntimeID) > 256 || len(in.Notes) > 500 || len(in.Reason) > 500 || (in.Action != "material" && in.Action != "quality" && in.Action != "downtime" && in.Action != "resolveDowntime" && in.Action != "createLot") {
 		fail(w, 400, "Invalid MES request")
 		return
 	}
@@ -67,6 +68,14 @@ func (a *App) mesOperations(w http.ResponseWriter, r *http.Request, id *Identity
 	}
 	var start, end time.Time
 	var e error
+	if in.Action == "resolveDowntime" {
+		end, e = time.Parse(time.RFC3339, in.End)
+		if in.DowntimeID == "" || e != nil {
+			fail(w, 400, "Select an ongoing event and valid end time")
+			return
+		}
+		in.End = end.UTC().Format(time.RFC3339Nano)
+	}
 	if in.Action == "downtime" {
 		start, e = time.Parse(time.RFC3339, in.Start)
 		if e != nil || in.CenterID == "" || in.Reason == "" {
@@ -114,6 +123,49 @@ func (a *App) mesOperations(w http.ResponseWriter, r *http.Request, id *Identity
 	entity := ""
 	result := map[string]any{}
 	switch in.Action {
+	case "resolveDowntime":
+		entity = in.DowntimeID
+		var startText, status, center string
+		e = tx.QueryRow("SELECT start_time,status,work_center_id FROM mes_downtime_events WHERE organization_id=? AND id=?", id.OrganizationID, entity).Scan(&startText, &status, &center)
+		if errors.Is(e, sql.ErrNoRows) {
+			fail(w, 404, "Downtime event not found")
+			return
+		}
+		if e != nil {
+			fail(w, 503, "Cannot read downtime event")
+			return
+		}
+		if status != "ongoing" {
+			fail(w, 409, "Downtime is already resolved")
+			return
+		}
+		start, e = time.Parse(time.RFC3339, startText)
+		if e != nil || !end.After(start) || end.Sub(start) > 365*24*time.Hour {
+			fail(w, 400, "End time must follow start within one year")
+			return
+		}
+		var overlaps int
+		e = tx.QueryRow("SELECT count(*) FROM mes_downtime_events WHERE organization_id=? AND work_center_id=? AND id!=? AND (end_time IS NULL OR julianday(end_time)>julianday(?)) AND julianday(start_time)<julianday(?)", id.OrganizationID, center, entity, startText, in.End).Scan(&overlaps)
+		if e != nil {
+			fail(w, 503, "Cannot check downtime")
+			return
+		}
+		if overlaps > 0 {
+			fail(w, 409, "Resolved interval overlaps another event")
+			return
+		}
+		minutes := int64((end.Sub(start) + 30*time.Second) / time.Minute)
+		var update sql.Result
+		update, e = tx.Exec("UPDATE mes_downtime_events SET end_time=?,duration_minutes=?,status='resolved' WHERE organization_id=? AND id=? AND status='ongoing' AND end_time IS NULL", in.End, minutes, id.OrganizationID, entity)
+		if e == nil {
+			var n int64
+			n, e = update.RowsAffected()
+			if e == nil && n != 1 {
+				fail(w, 409, "Downtime changed; refresh and retry")
+				return
+			}
+		}
+		result = map[string]any{"downtimeId": entity, "status": "resolved", "durationMinutes": minutes}
 	case "createLot":
 		var count int
 		e = tx.QueryRow("SELECT count(*) FROM mes_bom_items WHERE organization_id=? AND material_sku=?", id.OrganizationID, in.MaterialSKU).Scan(&count)

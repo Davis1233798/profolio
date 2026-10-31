@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "SALES FOLLOW-UP":"業務追蹤", "Activities and opportunities":"活動與商機", "CRM update saved":"CRM 更新已儲存", "Opportunity":"商機", "Select an opportunity":"選擇商機", "Sales stage":"商機階段", "Select a stage":"選擇階段", "Won or lost reason":"成交或失單原因", "Update stage":"更新階段", "Subject":"主旨", "Due date":"到期時間", "Activity type":"活動類型", "Task":"任務", "Call":"電話", "Meeting":"會議", "Create activity":"建立活動", "Open activities":"未完成活動", "Mark complete":"標記完成",
   "MANAGER OPERATIONS":"主管作業", "Takeout refund":"外帶退款", "Records a demo refund and cancels the order and kitchen tickets; no external payment is reversed.":"記錄示範退款並取消訂單與出餐單，不會退回外部付款。", "Takeout order":"外帶訂單", "Select an order":"選擇訂單", "Record demo refund":"記錄示範退款", "Demo refund recorded":"已記錄示範退款",
   "Urgent":"催單",
   "GUEST SERVICE":"顧客服務", "Reservations and order changes":"訂位與餐點異動", "Reservation recorded":"訂位已記錄", "Item voided":"已退菜", "Kitchen notified":"已通知廚房", "Table":"桌位", "Phone":"電話", "Reservation time":"訂位時間", "Reserve table":"預約桌位", "Item to void":"要退的餐點", "Reason":"原因", "A manager must void items after preparation starts. Takeout refunds are handled separately.":"餐點開始製作後須由主管退菜；外帶退款需另行處理。", "Void item":"退菜", "Urgent kitchen tickets":"催單", "Urge":"催單",

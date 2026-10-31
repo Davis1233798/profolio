@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "QUOTE MANAGEMENT":"報價管理", "Versioned quotes":"報價版本", "A submitted quote is a snapshot. Managers approve and lock it; create a new version for changes.":"提交的報價為快照，由主管核准並鎖定；變更時請建立新版本。", "Quote submitted":"報價已提交", "Quote approved and locked":"報價已核准並鎖定", "Item name":"品名", "Submit quote":"提交報價", "Submitted quote":"已提交的報價", "Select a quote":"選擇報價", "Approve quote":"核准報價",
   "SALES FOLLOW-UP":"業務追蹤", "Activities and opportunities":"活動與商機", "CRM update saved":"CRM 更新已儲存", "Opportunity":"商機", "Select an opportunity":"選擇商機", "Sales stage":"商機階段", "Select a stage":"選擇階段", "Won or lost reason":"成交或失單原因", "Update stage":"更新階段", "Subject":"主旨", "Due date":"到期時間", "Activity type":"活動類型", "Task":"任務", "Call":"電話", "Meeting":"會議", "Create activity":"建立活動", "Open activities":"未完成活動", "Mark complete":"標記完成",
   "MANAGER OPERATIONS":"主管作業", "Takeout refund":"外帶退款", "Records a demo refund and cancels the order and kitchen tickets; no external payment is reversed.":"記錄示範退款並取消訂單與出餐單，不會退回外部付款。", "Takeout order":"外帶訂單", "Select an order":"選擇訂單", "Record demo refund":"記錄示範退款", "Demo refund recorded":"已記錄示範退款",
   "Urgent":"催單",

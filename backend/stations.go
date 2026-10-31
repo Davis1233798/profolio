@@ -99,6 +99,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.erpBusiness(w, r, id, g)
 		return
 	}
+	if action == "quotes" && site == "crm" {
+		a.crmQuotes(w, r, id, g)
+		return
+	}
 	if action == "work" && site == "crm" {
 		a.crmWork(w, r, id, g)
 		return

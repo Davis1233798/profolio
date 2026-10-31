@@ -14,10 +14,17 @@ type shopCartLine struct {
 	VariantID string `json:"variantId"`
 	Quantity  int64  `json:"quantity"`
 }
+type shopAddress struct {
+	Name    string `json:"name"`
+	City    string `json:"city"`
+	Address string `json:"address"`
+	Phone   string `json:"phone"`
+}
 type shopCartRequest struct {
-	Lines      []shopCartLine `json:"lines"`
-	CouponCode string         `json:"couponCode"`
-	Key        string         `json:"idempotencyKey"`
+	Lines           []shopCartLine `json:"lines"`
+	CouponCode      string         `json:"couponCode"`
+	ShippingAddress *shopAddress   `json:"shippingAddress"`
+	Key             string         `json:"idempotencyKey"`
 }
 
 func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Identity, g *Grant) {
@@ -35,6 +42,17 @@ func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Ident
 		return
 	}
 	in.CouponCode = strings.TrimSpace(in.CouponCode)
+	if in.ShippingAddress != nil {
+		address := in.ShippingAddress
+		address.Name = strings.TrimSpace(address.Name)
+		address.City = strings.TrimSpace(address.City)
+		address.Address = strings.TrimSpace(address.Address)
+		address.Phone = strings.TrimSpace(address.Phone)
+		if address.Name == "" || address.City == "" || address.Address == "" || address.Phone == "" || len(address.Name) > 150 || len(address.City) > 100 || len(address.Address) > 300 || len(address.Phone) > 40 {
+			fail(w, 400, "Enter complete shipping details")
+			return
+		}
+	}
 	if len(in.CouponCode) > 100 {
 		fail(w, 400, "Invalid coupon code")
 		return
@@ -148,7 +166,11 @@ func (a *App) shopCartCheckout(w http.ResponseWriter, r *http.Request, id *Ident
 	}
 	total := subtotal - discount + 60
 	expires := time.Now().UTC().Add(15 * time.Minute).Format(time.RFC3339)
-	_, e = tx.Exec("INSERT INTO shop_orders(id,organization_id,order_number,user_id,customer_email,shipping_address_json,subtotal,discount_amount,shipping_fee,total_amount,idempotency_key) VALUES(?,?,?,?,?,'{}',?,?,60,?,?)", order, id.OrganizationID, number, id.UserID, id.Email, subtotal, discount, total, in.Key)
+	addressJSON := []byte("{}")
+	if in.ShippingAddress != nil {
+		addressJSON, _ = json.Marshal(in.ShippingAddress)
+	}
+	_, e = tx.Exec("INSERT INTO shop_orders(id,organization_id,order_number,user_id,customer_email,shipping_address_json,subtotal,discount_amount,shipping_fee,total_amount,idempotency_key) VALUES(?,?,?,?,?,?,?,?,60,?,?)", order, id.OrganizationID, number, id.UserID, id.Email, string(addressJSON), subtotal, discount, total, in.Key)
 	var cumulative, allocated int64
 	for _, l := range lines {
 		if e != nil {

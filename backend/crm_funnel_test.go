@@ -77,6 +77,12 @@ func TestCRMFunnelRoleAndTenantScope(t *testing.T) {
 			t.Fatal("foreign owner quote item visible")
 		}
 	}
+	if w := request(a, "GET", "/api/stations/crm/print?kind=crm-quote&id=team-quote", nil, office...); w.Code != 404 {
+		t.Fatalf("foreign quote print %d", w.Code)
+	}
+	if w := request(a, "GET", "/api/stations/crm/print?kind=crm-quote&id=team-quote", nil, admin...); w.Code != 200 {
+		t.Fatalf("admin quote print %d", w.Code)
+	}
 	quote := map[string]any{"action": "create", "opportunityId": "team", "itemName": "Service", "quantity": 1, "unitPrice": 1, "idempotencyKey": "foreign-quote-01"}
 	if w := request(a, "POST", "/api/stations/crm/quotes", quote, office...); w.Code != 403 {
 		t.Fatalf("foreign quote write %d", w.Code)

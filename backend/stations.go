@@ -438,7 +438,13 @@ func (a *App) printData(w http.ResponseWriter, r *http.Request, id *Identity, si
 			table = d.Table
 		}
 	}
-	rows, e := queryMaps(a.db, "SELECT * FROM "+table+" WHERE organization_id=? AND id=?", id.OrganizationID, recordID)
+	query := "SELECT * FROM " + table + " WHERE organization_id=? AND id=?"
+	args := []any{id.OrganizationID, recordID}
+	if site == "crm" && kind.Dataset == "quotes" && id.grant(site).Role != "admin" {
+		query += " AND opportunity_id IN (SELECT id FROM crm_opportunities WHERE organization_id=? AND owner_id=?)"
+		args = append(args, id.OrganizationID, id.UserID)
+	}
+	rows, e := queryMaps(a.db, query, args...)
 	if e != nil || len(rows) != 1 {
 		fail(w, 404, "Document not found in this organization")
 		return

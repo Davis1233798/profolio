@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Model status":"模型狀態", "Model ID":"模型識別碼",
   "EQUIPMENT MONITORING":"設備監測", "Equipment measurements and anomalies":"設備量測與異常", "Readings belong to this station workspace. Anomaly scores require human review and are not validated factory-failure predictions.":"量測資料屬於此分站工作區；異常分數需人工判讀，尚未經真實工廠故障驗證。", "Refresh measurements":"重新整理量測", "Anomaly signal":"異常訊號", "No anomaly flag":"無異常標記", "No equipment measurements available":"目前沒有設備量測資料",
   "No work orders":"尚無工單",
   "Refresh work orders":"重新整理工單",

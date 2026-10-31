@@ -110,12 +110,31 @@ func TestShopAfterSalesOwnershipAndConcurrentReturns(t *testing.T) {
 	if w := request(a, "POST", path, review(winner), buyer...); w.Code != 200 {
 		t.Fatalf("review replay %d", w.Code)
 	}
+	snapshot := func() map[string]int64 {
+		w := request(a, "GET", "/api/stations/shop/operations-snapshot", nil, admin...)
+		var value struct {
+			Data map[string]int64 `json:"data"`
+		}
+		if e := json.Unmarshal(w.Body.Bytes(), &value); e != nil || w.Code != 200 {
+			t.Fatalf("snapshot %d %v", w.Code, e)
+		}
+		return value.Data
+	}
+	before := snapshot()
 	good, conflict, winner = run(refund, admin)
 	if good != 1 || conflict != 11 {
 		t.Fatalf("refund %d %d", good, conflict)
 	}
 	if w := request(a, "POST", path, refund(winner), admin...); w.Code != 200 {
 		t.Fatalf("refund replay %d", w.Code)
+	}
+	var refundAmount int64
+	if e := a.db.QueryRow("SELECT refund_amount FROM shop_returns WHERE organization_id=? AND order_item_id=?", org, item).Scan(&refundAmount); e != nil {
+		t.Fatal(e)
+	}
+	after := snapshot()
+	if after["refundedAmount"] != before["refundedAmount"]+refundAmount || after["netRevenue"] != before["netRevenue"]-refundAmount || after["paidRevenue"] != before["paidRevenue"] {
+		t.Fatalf("revenue before=%v after=%v refund=%d", before, after, refundAmount)
 	}
 	var stock, returns, reviews int64
 	a.db.QueryRow("SELECT stock_quantity FROM shop_variants WHERE organization_id=? AND id=?", org, variant).Scan(&stock)

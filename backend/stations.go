@@ -96,6 +96,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.diningBusiness(w, r, id, g)
 		return
 	}
+	if action == "stock-out" && site == "erp" {
+		a.erpStockOut(w, r, id, g)
+		return
+	}
 	if action == "purchase-create" && site == "erp" {
 		a.erpCreatePurchase(w, r, id, g)
 		return

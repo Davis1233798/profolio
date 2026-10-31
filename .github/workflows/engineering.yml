@@ -3,6 +3,9 @@ on: [push, pull_request]
 jobs:
   web:
     runs-on: ubuntu-latest
+    concurrency:
+      group: web-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     env:
       COMPOSE_PROJECT_NAME: suite-web-ci
       SERVICE_USER: ci
@@ -28,6 +31,9 @@ jobs:
         run: docker compose -f infra/compose.yaml -f infra/linux/compose.web.yaml stop
   infrastructure:
     runs-on: ubuntu-latest
+    concurrency:
+      group: infrastructure-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     env:
       COMPOSE_PROJECT_NAME: suite-ci
       SERVICE_USER: ci
@@ -54,6 +60,9 @@ jobs:
   station-delivery:
     needs: [web, infrastructure]
     runs-on: ubuntu-latest
+    concurrency:
+      group: station-delivery-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,6 +97,9 @@ jobs:
   k6-isolated:
     name: k6 isolated transaction tests
     runs-on: ubuntu-latest
+    concurrency:
+      group: k6-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

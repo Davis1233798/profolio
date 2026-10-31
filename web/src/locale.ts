@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "KITCHEN WORKSPACE":"廚房工作區", "Kitchen tickets":"廚房出餐單", "Tickets move from received to cooking, ready and served. Refresh if another cook has updated a ticket.":"出餐單依序為已接收、製作中、完成及已送餐。若其他人已更新，請重新整理。", "Mark":"標記為", "received":"已接收", "cooking":"製作中", "done":"已完成", "served":"已送餐", "No active kitchen tickets":"目前沒有待處理出餐單",
   "Core MES reporting, ERP transfers, POS sales, CRM lead conversion and simulated commerce checkout are available. Other workflows are still being migrated.":"本站已支援 MES 報工、ERP 調撥、POS 銷售、CRM 潛客轉換與模擬電商結帳；其他流程仍在移植。",
   "CUSTOMER WORKSPACE":"客戶工作區", "Lead management":"潛客管理", "Create a lead, then convert it into a customer, contact and opportunity in one transaction.":"建立潛客後，可一次轉換為客戶、聯絡人及商機。",
   "Lead created":"已建立潛客", "Lead was already converted":"潛客已轉換", "Customer, contact and opportunity created":"已建立客戶、聯絡人與商機", "Company":"公司", "Create lead":"建立潛客", "Lead":"潛客", "Select a lead":"選擇潛客", "Opportunity amount":"商機金額", "Convert lead":"轉換潛客",

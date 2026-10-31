@@ -140,6 +140,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.posBusiness(w, r, id, g)
 		return
 	}
+	if action == "cart-checkout" && site == "shop" {
+		a.shopCartCheckout(w, r, id, g)
+		return
+	}
 	if action == "after-sales" && site == "shop" {
 		a.shopAfterSales(w, r, id, g)
 		return

@@ -283,6 +283,12 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			out[d.Key] = rows
 		}
 		if site == "erp" && !front {
+			summary, err := queryMaps(a.db, `SELECT (SELECT COUNT(*) FROM erp_purchase_orders WHERE organization_id=? AND status IN ('submitted','approved','partially_received')) AS open_purchases,(SELECT COUNT(*) FROM erp_sales_orders WHERE organization_id=? AND status IN ('submitted','confirmed','partially_shipped')) AS open_sales,(SELECT COALESCE(SUM(total_amount-paid_amount),0) FROM erp_invoices WHERE organization_id=? AND invoice_type='receivable' AND status IN ('unpaid','partially_paid')) AS receivable,(SELECT COALESCE(SUM(total_amount-paid_amount),0) FROM erp_invoices WHERE organization_id=? AND invoice_type='payable' AND status IN ('unpaid','partially_paid')) AS payable`, id.OrganizationID, id.OrganizationID, id.OrganizationID, id.OrganizationID)
+			if err != nil {
+				fail(w, 500, "Unable to calculate ERP summary")
+				return
+			}
+			out["erpSummary"] = summary
 			balances, err := queryMaps(a.db, `SELECT l.item_id,l.warehouse_id,l.id AS version,l.balance_after FROM erp_stock_ledger l WHERE l.organization_id=? AND l.rowid=(SELECT MAX(x.rowid) FROM erp_stock_ledger x WHERE x.organization_id=l.organization_id AND x.item_id=l.item_id AND x.warehouse_id=l.warehouse_id) ORDER BY l.rowid DESC`, id.OrganizationID)
 			if err != nil {
 				fail(w, 500, "Unable to read inventory balances")

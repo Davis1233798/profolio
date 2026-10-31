@@ -80,6 +80,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		fail(w, 403, "No access to this workspace")
 		return
 	}
+	if action == "operations-snapshot" && (site == "mes" || site == "shop") {
+		a.operationsSnapshot(w, r, id, g, site)
+		return
+	}
 	if action == "service" && site == "dining" {
 		a.diningService(w, r, id, g)
 		return

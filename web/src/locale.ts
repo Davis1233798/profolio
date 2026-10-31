@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "LIVE OPERATIONS":"即時營運", "Current workspace activity":"目前工作區狀態", "Counts come from this workspace’s business records and refresh every 10 seconds. They are separate from the isolated load test.":"數據來自此工作區的業務資料，每 10 秒更新；與隔離壓力測試分開計算。", "Pending payment":"待付款", "Paid, awaiting shipment":"已付款待出貨", "Pending dispatch events":"待派送事件", "Dispatch events retrying":"重試中的派送事件", "Running work orders":"進行中工單", "Waiting work orders":"待執行工單", "Open downtime events":"未結束停機", "Updated":"更新時間",
   "Sales funnel":"銷售漏斗", "Inventory balances":"庫存餘額", "Trial balance":"試算表", "Marketing recipients":"行銷同意名單",
   "Select a receipt line":"選擇收貨明細",
   "Capture displayed balance":"採用畫面上的帳面庫存",

@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Refresh work orders":"重新整理工單",
   "Remaining target":"剩餘目標", "Includes good and scrap quantities; the server checks current totals again.":"計算包含良品與報廢數量；伺服器會再次檢查目前總數。", "Report quantity exceeds the displayed remaining target.":"報工數量超過畫面顯示的剩餘目標。",
   "Receipt preview":"小票預覽",
   "Barcode not found or ambiguous":"找不到條碼或有重複條碼", "Product selected":"已選取商品", "Scan barcode":"掃描條碼", "Find product":"查找商品",

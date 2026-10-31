@@ -132,6 +132,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.crmBusiness(w, r, id, g)
 		return
 	}
+	if action == "daily-report" && site == "pos" {
+		a.posDailyReport(w, r, id, g)
+		return
+	}
 	if action == "cart" && site == "pos" {
 		a.posCart(w, r, id, g)
 		return

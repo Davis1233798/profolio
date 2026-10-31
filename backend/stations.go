@@ -160,6 +160,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.shopBusiness(w, r, id, g)
 		return
 	}
+	if action == "work-orders" && site == "mes" {
+		a.mesWorkOrder(w, r, id, g)
+		return
+	}
 	if action == "bom" && site == "mes" {
 		a.mesBOM(w, r, id, g)
 		return

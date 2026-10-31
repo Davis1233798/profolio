@@ -2,6 +2,7 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "PRODUCTION PLANNING":"生產規劃", "Create work order":"建立工單", "Choose an active BOM and work center. The new order must be staged before it can start.":"選擇有效 BOM 與工作中心；新工單須備料完成才能開工。", "Work order released; stage its materials before starting.":"工單已下達，請先完成備料再開工。", "BOM version":"BOM 版本", "Select a BOM":"選擇 BOM", "Work order number":"工單號碼", "Operation name":"工序名稱", "Target quantity":"目標數量", "Standard minutes per unit":"每單位標準分鐘",
   "Recipient":"收件人", "City":"城市", "Shipping address":"收件地址",
   "Coupon code (optional)":"優惠券代碼（選填）",
   "CATALOG AND SALES":"品項與銷售", "Items and sales orders":"品項與銷售單", "Units per box":"每箱數量", "Create item":"建立品項", "Item created":"品項已建立", "Select a customer":"選擇客戶", "Create sales order":"建立銷售單", "Sales order created":"銷售單已建立",

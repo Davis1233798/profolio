@@ -59,6 +59,21 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	if err := a.db.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&audit); err != nil || audit != 1 {
 		t.Fatalf("audit %d %v", audit, err)
 	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='mes'", id.UserID); err != nil {
+		t.Fatal(err)
+	}
+	revoked, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = recordLegacyCandidate(revoked, id, backup, nil, "legacy-retry-key"); err == nil {
+		revoked.Rollback()
+		t.Fatal("revoked administrator accepted on retry")
+	}
+	revoked.Rollback()
+	if _, err = a.db.Exec("UPDATE station_grants SET enabled=1 WHERE user_id=? AND site='mes'", id.UserID); err != nil {
+		t.Fatal(err)
+	}
 	backup.Tables["erp_items"][0]["name"] = "Changed"
 	tx, err := a.db.Begin()
 	if err != nil {

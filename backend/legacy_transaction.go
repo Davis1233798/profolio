@@ -8,10 +8,18 @@ import (
 )
 
 // recordLegacyCandidate makes the data write, retry record, and audit entry part
-// of one caller-owned transaction. It does not authorize or create a backup.
+// of one caller-owned transaction. The caller must verify the active session
+// and create a backup; grants are rechecked here within the transaction.
 func recordLegacyCandidate(tx *sql.Tx, id *Identity, backup legacyBackupPreview, entries []legacyMappingEntry, key string) (int, error) {
 	if len(key) < 8 || len(key) > 128 {
 		return 0, fmt.Errorf("invalid import retry key")
+	}
+	for _, site := range sites {
+		var count int
+		err := tx.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND a.user_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1 AND g.role='admin' AND g.scope='back'`, id.OrganizationID, id.UserID, site).Scan(&count)
+		if err != nil || count != 1 {
+			return 0, fmt.Errorf("administrator access to every workspace is required")
+		}
 	}
 	raw, err := json.Marshal(struct {
 		Backup  legacyBackupPreview

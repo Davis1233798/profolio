@@ -29,6 +29,11 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	if w := request(a, "POST", path, malformed, admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("malformed identity %d", w.Code)
 	}
+	missingOwner := payload("org_test_" + space + "_front")
+	missingOwner["backup"].(map[string]any)["tables"].(map[string]any)["crm_accounts"] = []any{map[string]any{"organizationId": "org_old"}}
+	if w := request(a, "POST", path, missingOwner, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("missing required owner %d", w.Code)
+	}
 	foreignRow := payload("org_test_" + space + "_front")
 	foreignRow["backup"].(map[string]any)["tables"].(map[string]any)["shop_orders"] = []any{map[string]any{"organizationId": "org_other", "userId": "legacy-op"}}
 	if w := request(a, "POST", path, foreignRow, admin...); w.Code != http.StatusBadRequest {

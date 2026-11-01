@@ -202,6 +202,17 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 		t.Fatalf("batch response: %v %s", err, created.Body.String())
 	}
 	batchID := batchData.Data.BatchID
+	quarantine := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target - 1, "failedQuantity": 1, "disposition": "quarantine", "idempotencyKey": "fg-rework-quarantine-01"}
+	if w := request(a, "POST", path, quarantine, admin...); w.Code != http.StatusOK {
+		t.Fatalf("quarantine before rework: %d %s", w.Code, w.Body.String())
+	}
+	rework := map[string]any{"action": "resolveQuarantine", "batchId": batchID, "disposition": "rework", "reason": "Correct defects", "idempotencyKey": "fg-rework-resolve-01"}
+	if w := request(a, "POST", path, rework, admin...); w.Code != http.StatusOK {
+		t.Fatalf("rework: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(a, "POST", path, map[string]any{"action": "receive", "batchId": batchID, "quantity": target, "idempotencyKey": "fg-rework-pending-01"}, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("uninspected rework received: %d %s", w.Code, w.Body.String())
+	}
 	if w := request(a, "POST", path, create, admin...); w.Code != http.StatusOK {
 		t.Fatalf("create replay: %d %s", w.Code, w.Body.String())
 	}
@@ -267,7 +278,7 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	}
 	a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_receipts WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&receipts)
 	a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&checks)
-	if onHand != target || receipts != 1 || checks != 1 {
+	if onHand != target || receipts != 1 || checks != 3 {
 		t.Fatalf("inventory=%d receipts=%d dispositions=%d", onHand, receipts, checks)
 	}
 

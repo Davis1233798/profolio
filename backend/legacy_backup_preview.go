@@ -165,5 +165,33 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	idsByTable := map[string]map[string]bool{}
+	for table, rows := range backup.Tables {
+		idsByTable[table] = map[string]bool{}
+		for _, row := range rows {
+			if key, ok := row["id"].(string); ok && key != "" {
+				idsByTable[table][key] = true
+			}
+		}
+	}
+	missingReferences := map[string]int{}
+	for table, rows := range backup.Tables {
+		prefix := strings.SplitN(table, "_", 2)[0]
+		for _, row := range rows {
+			for field, value := range row {
+				target := legacyReferenceTargets[prefix+"_"+field]
+				if table == "shop_inventory_reservations" && field == "cartId" {
+					target = "shop_orders"
+				}
+				if target == "" || value == nil {
+					continue
+				}
+				key, ok := value.(string)
+				if !ok || key == "" || !idsByTable[target][key] {
+					missingReferences[table+"."+field]++
+				}
+			}
+		}
+	}
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

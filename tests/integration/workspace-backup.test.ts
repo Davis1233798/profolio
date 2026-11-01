@@ -12,6 +12,8 @@ test("Full workspace backup restores every business table atomically; rejects fo
   const context = { organizationId, userId: "tester", userEmail: "tester@example.test", userDisplayName: "Tester", role: "admin" as const, requestId: crypto.randomUUID() };
   const backup = await exportWorkspace(context);
   assert.ok(Object.keys(backup.tables).length > 60);
+  assert.ok(!Object.keys(backup.tables).some(name => name.startsWith("station_")), "Identity and authentication tables must not be exported");
+  await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
   const db = getDb();
   const [item] = backup.tables.pos_catalog_items;
   await db.update(posCatalogItems).set({ stockQuantity: 1 }).where(eq(posCatalogItems.id, item.id));

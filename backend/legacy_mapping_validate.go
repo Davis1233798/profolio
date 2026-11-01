@@ -108,5 +108,14 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 			}
 		}
 	}
-	ok(w, map[string]any{"valid": true, "validatedMappings": len(input.Entries), "notice": "Referenced account grants validated. Full backup validation and import are not complete."})
+	prepared, err := prepareLegacyRows(input.Backup, id.OrganizationID, input.Entries)
+	if err != nil {
+		fail(w, 400, "Unable to prepare backup identities")
+		return
+	}
+	preparedRows := 0
+	for _, rows := range prepared {
+		preparedRows += len(rows)
+	}
+	ok(w, map[string]any{"valid": true, "validatedMappings": len(input.Entries), "preparedRows": preparedRows, "notice": "Referenced account grants validated and candidate rows prepared in memory. Full backup validation and import are not complete."})
 }

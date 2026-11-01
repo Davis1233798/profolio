@@ -120,6 +120,10 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 	}
 	result := map[string]any{"valid": true, "validatedMappings": len(input.Entries), "preparedRows": preparedRows, "staged": false, "notice": "Referenced account grants validated and candidate rows prepared in memory. Full backup validation and import are not complete."}
 	if input.Stage {
+		if conflictErr := checkLegacyDestinationConflicts(a.db, id.OrganizationID, prepared); conflictErr != nil {
+			fail(w, 409, conflictErr.Error())
+			return
+		}
 		count, stageErr := stageLegacyRows(prepared)
 		if stageErr != nil {
 			fail(w, 400, "Staging rejected: "+stageErr.Error())

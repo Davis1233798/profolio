@@ -227,7 +227,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			if name == "pos_sale_lines" {
 				refunded, r := number("refundedQuantity")
 				quantity, q := number("quantity")
-				if r && q && (refunded < 0 || refunded > quantity) {
+				if r && q && (quantity <= 0 || refunded < 0 || refunded > quantity) {
 					businessWarnings[name+".refund"]++
 				}
 			}

@@ -59,9 +59,14 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 				return
 			}
 			for _, field := range fields {
-				value, ok := row[field].(string)
-				if !ok || value == "" {
+				rawValue, present := row[field]
+				if !present || rawValue == nil {
 					continue
+				}
+				value, ok := rawValue.(string)
+				if !ok || value == "" {
+					fail(w, 400, "Invalid legacy identity reference")
+					return
 				}
 				if required[value] == nil {
 					required[value] = map[string]bool{}

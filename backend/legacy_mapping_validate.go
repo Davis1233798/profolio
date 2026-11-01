@@ -76,7 +76,8 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 				if required[value] == nil {
 					required[value] = map[string]bool{}
 				}
-				required[value][site] = true
+				// Accounts and opportunities are only exposed in the CRM back office.
+				required[value][site] = required[value][site] || table == "crm_accounts" || table == "crm_opportunities"
 			}
 		}
 	}
@@ -91,15 +92,15 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 			return
 		}
 		seen[entry.Source] = true
-		for site := range required[entry.Source] {
+		for site, needsBackOffice := range required[entry.Source] {
 			var count int
-			err := a.db.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.user_id=? AND a.organization_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1`, entry.Target, id.OrganizationID, site).Scan(&count)
+			err := a.db.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.user_id=? AND a.organization_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1 AND (?=0 OR g.scope='back')`, entry.Target, id.OrganizationID, site, needsBackOffice).Scan(&count)
 			if err != nil {
 				fail(w, 500, "Unable to validate account grants")
 				return
 			}
 			if count != 1 {
-				fail(w, 400, "Destination account lacks an enabled workspace grant")
+				fail(w, 400, "Destination account lacks a required enabled workspace grant or scope")
 				return
 			}
 		}

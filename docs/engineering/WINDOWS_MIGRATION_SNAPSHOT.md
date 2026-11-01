@@ -6,6 +6,8 @@
 
 Windows CI 的 [執行紀錄](https://github.com/Davis1233798/profolio/actions/runs/41307408560/job/124850520442) 顯示快照完整性檢查失敗；另有測試尋找錯誤的 session cookie 名稱。快照唯讀 URI 的 Windows 磁碟機路徑是待驗證原因，不能在修復及遠端檢查完成前宣稱根因已確認。
 
+[SQLite URI 規格](https://www.sqlite.org/uri.html)將 Windows 磁碟機絕對路徑表示為 `/X:/...`，並要求跳脫路徑中的特殊字元；`mode=ro` 指定唯讀開啟。此輪僅處理本機磁碟機路徑；網路 UNC 快照路徑不在驗收範圍，應明確拒絕而非轉成錯誤目的地。
+
 ## 程式邊界
 
 - 輸入：可信任的本機快照目的地；不得覆寫既有檔案。Windows 磁碟機路徑與含空白、`#`、`&` 的路徑須正確轉為唯讀 SQLite URI。

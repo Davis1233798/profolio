@@ -232,9 +232,16 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	if w := request(a, "POST", path, quarantine, admin...); w.Code != http.StatusOK {
 		t.Fatalf("quarantine before rework: %d %s", w.Code, w.Body.String())
 	}
+	oldPassed := "fg-old-pass-" + space
+	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,1,0,'passed','release')", oldPassed, org, wo, reportID, org+"_admin"); err != nil {
+		t.Fatal(err)
+	}
 	rework := map[string]any{"action": "resolveQuarantine", "batchId": batchID, "disposition": "rework", "reason": "Correct defects", "idempotencyKey": "fg-rework-resolve-01"}
 	if w := request(a, "POST", path, rework, admin...); w.Code != http.StatusOK {
 		t.Fatalf("rework: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(a, "POST", path, map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": oldPassed, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-old-inspection-01"}, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("pre-rework inspection accepted: %d %s", w.Code, w.Body.String())
 	}
 	passedCheck := "fg-passed-check-" + space
 	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,1,0,'passed','release')", passedCheck, org, wo, reportID, org+"_admin"); err != nil {

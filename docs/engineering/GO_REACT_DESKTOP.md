@@ -34,6 +34,7 @@
 - `npm run go:test`、`node scripts/verify-go-migrations.mjs`
 - `npm run desktop:prepare`：建置 React 與目前 OS 的 Go binary。
 - `npm run desktop:dev`：使用本機 Go 與獨立 userData 開啟桌面版。
+- GitHub Actions `desktop-windows` 在 push 與 pull request 建置 Windows 未簽章目錄，並上傳為 workflow artifact；成功建置不代表已通過視覺或執行期驗收。
 - Windows：`npm run desktop:package` 產生 `outputs/desktop/win-unpacked/Business Suite.exe`（未簽章，需攜帶整個目錄）。
 - 本機 Go Web 預覽：`http://127.0.0.1:8095/mes/login`，目前與既有 SSH 8791 預覽分開。
 

@@ -8,6 +8,9 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 	type returnTotal struct{ quantity, amount float64 }
 	returns := map[string]returnTotal{}
 	for _, row := range data["shop_returns"] {
+		if row["status"] != "refunded" {
+			return fmt.Errorf("unfinished commerce returns require resolution before migration")
+		}
 		item, itemOK := row["orderItemId"].(string)
 		quantity, quantityOK := row["quantity"].(float64)
 		amount, amountOK := row["refundAmount"].(float64)

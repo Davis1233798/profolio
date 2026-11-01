@@ -54,7 +54,7 @@ func TestStagingRejectsUnbalancedPostedJournal(t *testing.T) {
 func TestStagingRejectsExcessCommerceReturns(t *testing.T) {
 	data := map[string][]map[string]any{
 		"shop_order_items": {{"id": "item", "orderId": "order", "unitPrice": float64(50), "quantity": float64(2), "lineTotal": float64(100)}},
-		"shop_returns":     {{"orderItemId": "item", "quantity": float64(1), "refundAmount": float64(50)}, {"orderItemId": "item", "quantity": float64(2), "refundAmount": float64(50)}},
+		"shop_returns":     {{"orderItemId": "item", "quantity": float64(1), "refundAmount": float64(50), "status": "refunded"}, {"orderItemId": "item", "quantity": float64(2), "refundAmount": float64(50), "status": "refunded"}},
 	}
 	if err := validateStagedBusiness(data); err == nil {
 		t.Fatal("excess return accepted")
@@ -62,6 +62,13 @@ func TestStagingRejectsExcessCommerceReturns(t *testing.T) {
 	data["shop_returns"][1]["quantity"] = float64(1)
 	if err := validateStagedBusiness(data); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestStagingRejectsUnfinishedReturn(t *testing.T) {
+	data := map[string][]map[string]any{"shop_returns": {{"status": "requested"}}}
+	if err := validateStagedBusiness(data); err == nil {
+		t.Fatal("unfinished return accepted")
 	}
 }
 

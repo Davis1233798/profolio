@@ -10,7 +10,7 @@ Fields requiring identity review include MES production report `operator_id`; CR
 
 Acceptance requires a real exported multi-table workspace with linked transactions, non-default accounts, live and historical records; verify counts, amounts, stock balances and referential integrity after migration, tenant isolation, front/back and owner visibility, duplicate import behavior, rollback on invalid data or interruption, and unchanged destination data on rejection. Compare the result against the actual source, not fixtures alone. Until these checks pass there is no supported import or public cutover based on it.
 
-Isolated staging rejects open POS shifts, claimed held carts, active commerce reservations and orders with pending or failed payment; resolve them in the source workspace and export again. This is an explicit stop-work policy, not automatic cancellation or data modification.
+Isolated staging rejects open POS shifts, claimed held carts, active commerce reservations, orders with pending or failed payment, and unfinished returns; resolve them in the source workspace and export again. This is an explicit stop-work policy, not automatic cancellation or data modification.
 
 An older demo seed recorded a discounted order with the undiscounted item total. New seeds correct the value; existing workspaces are not silently changed. If staging reports an order total mismatch, reconcile the actual source order and its return history before exporting again; do not assume that a matching ID makes an existing record safe to rewrite.
 

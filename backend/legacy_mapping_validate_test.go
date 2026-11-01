@@ -19,6 +19,16 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	if w := request(a, "POST", path, payload("org_test_"+space+"_front"), admin...); w.Code != http.StatusOK {
 		t.Fatalf("valid mapping %d %s", w.Code, w.Body.String())
 	}
+	missing := payload("org_test_" + space + "_front")
+	missing["entries"] = []any{}
+	if w := request(a, "POST", path, missing, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("omitted identity %d", w.Code)
+	}
+	malformed := payload("org_test_" + space + "_front")
+	malformed["backup"].(map[string]any)["tables"].(map[string]any)["crm_accounts"] = []any{map[string]any{"organizationId": "org_old", "ownerId": 123}}
+	if w := request(a, "POST", path, malformed, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("malformed identity %d", w.Code)
+	}
 	if w := request(a, "POST", path, payload("org_test_"+otherSpace+"_admin"), admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("foreign mapping %d", w.Code)
 	}

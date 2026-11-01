@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
 )
 
 // withLegacySnapshotTransaction reserves the application's only database
@@ -31,6 +33,21 @@ func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination 
 	}
 	if _, err = conn.ExecContext(ctx, "VACUUM INTO ?", destination); err != nil {
 		return fmt.Errorf("cannot create pre-import snapshot")
+	}
+	absolute, err := filepath.Abs(destination)
+	if err != nil {
+		return fmt.Errorf("cannot inspect pre-import snapshot")
+	}
+	uri := &url.URL{Scheme: "file", Path: filepath.ToSlash(absolute), RawQuery: "mode=ro"}
+	snapshot, err := sql.Open("sqlite", uri.String())
+	if err != nil {
+		return fmt.Errorf("cannot inspect pre-import snapshot")
+	}
+	var integrity string
+	err = snapshot.QueryRowContext(ctx, "PRAGMA quick_check").Scan(&integrity)
+	closeErr := snapshot.Close()
+	if err != nil || closeErr != nil || integrity != "ok" {
+		return fmt.Errorf("pre-import snapshot integrity check failed")
 	}
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {

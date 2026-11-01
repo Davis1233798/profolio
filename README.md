@@ -1,5 +1,7 @@
 # Business Suite Portfolio
 
+目前開發系統、功能、階段與遠端驗證狀態請見 [開發狀態](docs/DEVELOPMENT_STATUS.md)；每次變更遵循 [開發順序](docs/engineering/LOOP.md)。
+
 新增主站 `/platform` 基礎設施中心與 `/mes/industrial` 設備量測頁；開發前端依 [站台模板](docs/design/README.md) 的區域樣式。
 集中式 Docker Compose、Redis、RabbitMQ、MQTT、TimescaleDB 及 PostgreSQL 分片見 [IaC 操作](infra/README.md)，[Linux 部署](infra/linux/README.md)；[TDD 開發循環](docs/engineering/LOOP.md)。這些服務與現有 D1 並存，正式環境需另設定 HTTPS gateway 與 Outbox cron。
 

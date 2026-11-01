@@ -13,7 +13,7 @@ import (
 var legacyIdentityFields = map[string][]string{
 	"crm_accounts": {"ownerId"}, "crm_opportunities": {"ownerId"}, "crm_activities": {"ownerId"},
 	"pos_shifts": {"cashierId"}, "pos_sales": {"cashierId"}, "pos_held_carts": {"lockedBy"},
-	"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"},
+	"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"}, "shop_inventory_reservations": {"sessionId"},
 }
 
 type legacyBackupPreview struct {

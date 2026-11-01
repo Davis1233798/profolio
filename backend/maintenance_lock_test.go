@@ -160,6 +160,9 @@ func TestMaintenanceLockStationDatabaseLifecycle(t *testing.T) {
 	if _, _, err = openStationDatabase(invalid); err == nil {
 		t.Fatal("invalid database opened")
 	}
+	if err = os.Rename(invalid, invalid+".moved"); err != nil {
+		t.Fatalf("failed startup retained a file handle: %v", err)
+	}
 	if release, err := acquireMaintenanceLock(invalid); err != nil {
 		t.Fatalf("failed startup retained lock: %v", err)
 	} else if err = release(); err != nil {

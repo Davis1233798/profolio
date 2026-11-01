@@ -369,24 +369,27 @@ func TestMESFinishedGoodsConcurrentReceiptAndHistoricalCompletedOrder(t *testing
 	if err := a.db.QueryRow("SELECT id FROM mes_operations WHERE organization_id=? AND work_order_id=? LIMIT 1", org, wo).Scan(&op); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.db.Exec("UPDATE mes_work_orders SET status='completed',completed_quantity=target_quantity WHERE organization_id=? AND id=?", org, wo); err != nil {
-		t.Fatal(err)
+	if w := request(a, "POST", "/api/stations/mes/business", map[string]any{"action": "start", "workOrderId": wo}, admin...); w.Code != http.StatusOK {
+		t.Fatalf("start: %d %s", w.Code, w.Body.String())
+	}
+	report := request(a, "POST", "/api/stations/mes/business", map[string]any{"action": "report", "workOrderId": wo, "operationId": op, "goodQuantity": target, "scrapQuantity": 0, "idempotencyKey": "fg-race-report-0001"}, operator...)
+	if report.Code != http.StatusOK {
+		t.Fatalf("report: %d %s", report.Code, report.Body.String())
+	}
+	var reportResult struct {
+		Data struct {
+			ReportID string `json:"reportId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(report.Body.Bytes(), &reportResult); err != nil || reportResult.Data.ReportID == "" {
+		t.Fatalf("report response: %v %s", err, report.Body.String())
 	}
 	closeInput := map[string]any{"action": "close", "workOrderId": wo, "idempotencyKey": "fg-historical-close-0001"}
 	if w := request(a, "POST", "/api/stations/mes/finished-goods", closeInput, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("legacy completed order auto-closed: %d %s", w.Code, w.Body.String())
 	}
 
-	// Reinitialize another fresh order via a unique organization fixture is not
-	// available here; make the current completed order's traceable report and
-	// batch setup explicit, then race the one-time receipt command.
-	_, err := a.db.Exec("INSERT INTO mes_production_reports(id,organization_id,work_order_id,operation_id,operator_id,good_quantity,scrap_quantity,idempotency_key) VALUES(?,?,?,?,?, ?,0,?)", "fg_report_"+space, org, wo, op, "test-operator", target, "fg-race-report-0001")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The API intentionally rejects batches inferred from historical work; the
-	// report created after completion is still subject to explicit batch checks.
-	reportID := "fg_report_" + space
+	reportID := reportResult.Data.ReportID
 	path := "/api/stations/mes/finished-goods"
 	create := map[string]any{"action": "createBatch", "workOrderId": wo, "reportId": reportID, "batchNumber": "FG-RACE-" + space, "quantity": target, "idempotencyKey": "fg-race-create-0001"}
 	created := request(a, "POST", path, create, admin...)

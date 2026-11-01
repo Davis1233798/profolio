@@ -102,6 +102,29 @@ func TestLegacyCandidateRejectsLoggedOutSession(t *testing.T) {
 	}
 }
 
+func TestLegacyCandidateRejectsInvalidExportTime(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "not-a-date", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err = recordLegacyCandidate(tx, id, session, backup, nil, "invalid-date-key"); err == nil {
+		t.Fatal("invalid export time accepted")
+	}
+}
+
 func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	a := appForTest(t)
 	space := token()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -26,8 +27,11 @@ func verifyLegacyImportSession(tx *sql.Tx, id *Identity, sessionToken string) er
 // of one caller-owned transaction. The caller must create a backup; the session
 // and grants are rechecked here within the transaction.
 func recordLegacyCandidate(tx *sql.Tx, id *Identity, sessionToken string, backup legacyBackupPreview, entries []legacyMappingEntry, key string) (int, error) {
-	if backup.Format != "business-suite/v1" || backup.ExportedAt == "" {
+	if backup.Format != "business-suite/v1" || strings.TrimSpace(backup.ExportedAt) == "" {
 		return 0, fmt.Errorf("invalid legacy backup envelope")
+	}
+	if _, err := time.Parse(time.RFC3339Nano, backup.ExportedAt); err != nil {
+		return 0, fmt.Errorf("invalid legacy backup export time")
 	}
 	if len(key) < 8 || len(key) > 128 {
 		return 0, fmt.Errorf("invalid import retry key")

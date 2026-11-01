@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+var legacyIdentityFields = map[string][]string{
+	"crm_accounts": {"ownerId"}, "crm_opportunities": {"ownerId"}, "crm_activities": {"ownerId"},
+	"pos_shifts": {"cashierId"}, "pos_sales": {"cashierId"}, "pos_held_carts": {"lockedBy"},
+	"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"},
+}
+
 type legacyBackupPreview struct {
 	Format         string                      `json:"format"`
 	OrganizationID string                      `json:"organizationId"`
@@ -209,12 +215,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					businessWarnings[name+".refund"]++
 				}
 			}
-			identityFields := map[string][]string{
-				"crm_accounts": {"ownerId"}, "crm_opportunities": {"ownerId"}, "crm_activities": {"ownerId"},
-				"pos_shifts": {"cashierId"}, "pos_sales": {"cashierId"}, "pos_held_carts": {"lockedBy"},
-				"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"},
-			}
-			for _, field := range identityFields[name] {
+			for _, field := range legacyIdentityFields[name] {
 				if value, ok := row[field].(string); ok && value != "" {
 					identityReferences[name+"."+field]++
 					legacyIdentities[value]++

@@ -101,8 +101,8 @@ func (a *App) crmBusiness(w http.ResponseWriter, r *http.Request, id *Identity, 
 		result["leadId"] = entity
 	} else {
 		var name, company, email, status string
-		var account, contact, opportunity sql.NullString
-		e = tx.QueryRow("SELECT name,COALESCE(company,''),email,status,converted_account_id,converted_contact_id,converted_opportunity_id FROM crm_leads WHERE organization_id=? AND id=?", id.OrganizationID, in.LeadID).Scan(&name, &company, &email, &status, &account, &contact, &opportunity)
+		var account, contact, opportunity, assigned sql.NullString
+		e = tx.QueryRow("SELECT name,COALESCE(company,''),email,status,converted_account_id,converted_contact_id,converted_opportunity_id,assigned_to FROM crm_leads WHERE organization_id=? AND id=?", id.OrganizationID, in.LeadID).Scan(&name, &company, &email, &status, &account, &contact, &opportunity, &assigned)
 		if errors.Is(e, sql.ErrNoRows) {
 			fail(w, 404, "Lead not found")
 			return
@@ -115,6 +115,20 @@ func (a *App) crmBusiness(w http.ResponseWriter, r *http.Request, id *Identity, 
 		if status == "converted" {
 			result = map[string]any{"alreadyConverted": true, "accountId": account.String, "contactId": contact.String, "opportunityId": opportunity.String}
 		} else {
+			owner := id.UserID
+			if assigned.Valid && assigned.String != "" {
+				var active int
+				e = tx.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND a.user_id=? AND a.disabled=0 AND g.site='crm' AND g.enabled=1`, id.OrganizationID, assigned.String).Scan(&active)
+				if e != nil {
+					fail(w, 503, "Cannot validate lead assignee")
+					return
+				}
+				if active != 1 {
+					fail(w, 409, "Lead assignee is unavailable or no longer has CRM access")
+					return
+				}
+				owner = assigned.String
+			}
 			if company == "" {
 				company = name
 			}
@@ -126,12 +140,12 @@ func (a *App) crmBusiness(w http.ResponseWriter, r *http.Request, id *Identity, 
 				return
 			}
 			acc, con, opp := "crm_acc_"+token(), "crm_cont_"+token(), "crm_opp_"+token()
-			_, e = tx.Exec("INSERT INTO crm_accounts(id,organization_id,name,email,owner_id) VALUES(?,?,?,?,?)", acc, id.OrganizationID, company, email, id.UserID)
+			_, e = tx.Exec("INSERT INTO crm_accounts(id,organization_id,name,email,owner_id) VALUES(?,?,?,?,?)", acc, id.OrganizationID, company, email, owner)
 			if e == nil {
 				_, e = tx.Exec("INSERT INTO crm_contacts(id,organization_id,account_id,name,email) VALUES(?,?,?,?,?)", con, id.OrganizationID, acc, name, email)
 			}
 			if e == nil {
-				_, e = tx.Exec("INSERT INTO crm_opportunities(id,organization_id,name,account_id,primary_contact_id,owner_id,stage_id,amount,weighted_amount,probability,status) VALUES(?,?,?,?,?,?,?,?,?,?,'open')", opp, id.OrganizationID, company+" opportunity", acc, con, id.UserID, stage, in.Amount, (in.Amount*probability+50)/100, probability)
+				_, e = tx.Exec("INSERT INTO crm_opportunities(id,organization_id,name,account_id,primary_contact_id,owner_id,stage_id,amount,weighted_amount,probability,status) VALUES(?,?,?,?,?,?,?,?,?,?,'open')", opp, id.OrganizationID, company+" opportunity", acc, con, owner, stage, in.Amount, (in.Amount*probability+50)/100, probability)
 			}
 			if e == nil {
 				_, e = tx.Exec("UPDATE crm_leads SET status='converted',converted_account_id=?,converted_contact_id=?,converted_opportunity_id=? WHERE organization_id=? AND id=? AND status!='converted'", acc, con, opp, id.OrganizationID, in.LeadID)

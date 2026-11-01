@@ -63,3 +63,41 @@ func TestCRMLeadConversionIsAtomicAndTenantScoped(t *testing.T) {
 		t.Fatalf("conversion duplicates: %d %d %d", accounts, contacts, opps)
 	}
 }
+
+func TestCRMLeadConversionPreservesAssignedOwner(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	admin := loginSite(t, a, "admin@suite.test", space, "crm")
+	loginSite(t, a, "office@suite.test", space, "crm")
+	owner := org + "_office"
+	for _, lead := range []string{"assigned-lead", "disabled-lead"} {
+		if _, err := a.db.Exec("INSERT INTO crm_leads(id,organization_id,name,email,status,assigned_to) VALUES(?,?,?,?,'new',?)", lead, org, lead, lead+"@example.test", owner); err != nil {
+			t.Fatal(err)
+		}
+	}
+	path := "/api/stations/crm/business"
+	convert := func(lead string) map[string]any {
+		return map[string]any{"action": "convert", "leadId": lead, "idempotencyKey": "convert-" + lead}
+	}
+	if w := request(a, "POST", path, convert("assigned-lead"), admin...); w.Code != 200 {
+		t.Fatalf("conversion %d %s", w.Code, w.Body.String())
+	}
+	var accountOwner, opportunityOwner string
+	if err := a.db.QueryRow("SELECT a.owner_id,o.owner_id FROM crm_leads l JOIN crm_accounts a ON a.id=l.converted_account_id AND a.organization_id=l.organization_id JOIN crm_opportunities o ON o.id=l.converted_opportunity_id AND o.organization_id=l.organization_id WHERE l.id=? AND l.organization_id=?", "assigned-lead", org).Scan(&accountOwner, &opportunityOwner); err != nil {
+		t.Fatal(err)
+	}
+	if accountOwner != owner || opportunityOwner != owner {
+		t.Fatalf("owners %q %q", accountOwner, opportunityOwner)
+	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='crm'", owner); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", path, convert("disabled-lead"), admin...); w.Code != 409 {
+		t.Fatalf("disabled assignee %d %s", w.Code, w.Body.String())
+	}
+	var status string
+	if err := a.db.QueryRow("SELECT status FROM crm_leads WHERE id=? AND organization_id=?", "disabled-lead", org).Scan(&status); err != nil || status != "new" {
+		t.Fatalf("lead changed: %q %v", status, err)
+	}
+}

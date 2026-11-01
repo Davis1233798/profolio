@@ -121,6 +121,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			columns := map[string]bool{}
 			types := map[string]string{}
 			required := map[string]bool{}
+			notNullable := map[string]bool{}
 			for info.Next() {
 				var cid, notnull, pk int
 				var column, typ string
@@ -130,9 +131,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 				}
 				columns[camel(column)] = true
 				types[camel(column)] = strings.ToUpper(typ)
-				if notnull != 0 && def == nil {
-					required[camel(column)] = true
-				}
+				// A v1 export includes every column, even nullable/defaulted ones.
+				required[camel(column)] = true
+				notNullable[camel(column)] = notnull != 0 || pk != 0
 			}
 			if err == nil {
 				err = info.Err()
@@ -145,10 +146,11 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			canCheckConflicts = columns["id"] && columns["organizationId"]
 			unknown := map[string]bool{}
 			missing := map[string]int{}
+			nullFields := map[string]int{}
 			invalidTypes := map[string]int{}
 			for _, row := range rows {
 				for key := range required {
-					if value, found := row[key]; !found || value == nil {
+					if _, found := row[key]; !found {
 						missing[key]++
 					}
 				}
@@ -158,6 +160,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 						continue
 					}
 					if value == nil {
+						if notNullable[key] {
+							nullFields[key]++
+						}
 						continue
 					}
 					typ := types[key]
@@ -187,6 +192,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 			for key, count := range missing {
 				warnings = append(warnings, fmt.Sprintf("Table %s has %d rows missing required field %s", name, count, key))
+			}
+			for key, count := range nullFields {
+				warnings = append(warnings, fmt.Sprintf("Table %s has %d rows with null in required field %s", name, count, key))
 			}
 		}
 		counts[name] = len(rows)

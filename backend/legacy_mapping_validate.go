@@ -127,7 +127,7 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 		}
 		result["staged"] = true
 		result["stagedRows"] = count
-		result["notice"] = "Rows passed isolated schema and trigger staging. Cross-record, destination and business validation and import are not complete."
+		result["notice"] = "Rows passed isolated schema, known-link and trigger staging. Destination and business validation and import are not complete."
 	}
 	ok(w, result)
 }

@@ -94,6 +94,12 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,0,1,'quarantined','quarantine')", failedInspection, org, wo, reportResult.Data.ReportID, org+"_admin"); err != nil {
 		t.Fatal(err)
 	}
+	for _, quantities := range [][2]int64{{-1, 1}, {1000001, 0}, {0, 1000001}, {9223372036854775807, 1}} {
+		invalid := map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": failedInspection, "passedQuantity": quantities[0], "failedQuantity": quantities[1], "disposition": "quarantine", "idempotencyKey": fmt.Sprintf("fg-bounds-%d-%d", quantities[0], quantities[1])}
+		if w := post(invalid, admin...); w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid quantity accepted: %d %s", w.Code, w.Body.String())
+		}
+	}
 	incorrectRelease := map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": failedInspection, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-failed-evidence-01"}
 	if w := post(incorrectRelease, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("failed inspection used to release: %d %s", w.Code, w.Body.String())

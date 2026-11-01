@@ -7,7 +7,25 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 )
+
+func legacySnapshotReadOnlyURI(path string) (string, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	if runtime.GOOS == "windows" {
+		volume := filepath.VolumeName(absolute)
+		if len(volume) != 2 || volume[1] != ':' {
+			return "", fmt.Errorf("snapshot requires a local drive path")
+		}
+		absolute = "/" + filepath.ToSlash(absolute)
+	} else {
+		absolute = filepath.ToSlash(absolute)
+	}
+	return (&url.URL{Scheme: "file", Path: absolute, RawQuery: "mode=ro"}).String(), nil
+}
 
 // withLegacySnapshotTransaction reserves the application's only database
 // connection across snapshot and transaction. External writers must be stopped
@@ -18,6 +36,10 @@ func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination 
 	}
 	if destination == "" {
 		return fmt.Errorf("snapshot destination required")
+	}
+	uri, err := legacySnapshotReadOnlyURI(destination)
+	if err != nil {
+		return fmt.Errorf("invalid snapshot destination")
 	}
 	if _, err := os.Lstat(destination); !os.IsNotExist(err) {
 		return fmt.Errorf("snapshot destination already exists or cannot be checked")
@@ -34,12 +56,7 @@ func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination 
 	if _, err = conn.ExecContext(ctx, "VACUUM INTO ?", destination); err != nil {
 		return fmt.Errorf("cannot create pre-import snapshot")
 	}
-	absolute, err := filepath.Abs(destination)
-	if err != nil {
-		return fmt.Errorf("cannot inspect pre-import snapshot")
-	}
-	uri := &url.URL{Scheme: "file", Path: filepath.ToSlash(absolute), RawQuery: "mode=ro"}
-	snapshot, err := sql.Open("sqlite", uri.String())
+	snapshot, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return fmt.Errorf("cannot inspect pre-import snapshot")
 	}

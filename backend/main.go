@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha256"
@@ -437,6 +438,13 @@ func backupDatabase(file, destination string) error {
 	return err
 }
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--restore-copy" {
+		if err := restoreCopyCommand(context.Background(), os.Args[2:]); err != nil {
+			log.Fatalf("Restore candidate failed: %v", err)
+		}
+		log.Print("Restore candidate created and checked; running database was not replaced")
+		return
+	}
 	if len(os.Args) == 3 && os.Args[1] == "--backup" {
 		if err := backupDatabase(os.Getenv("SUITE_DB"), os.Args[2]); err != nil {
 			log.Fatalf("Database backup failed: %v", err)

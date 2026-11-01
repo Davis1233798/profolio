@@ -76,3 +76,10 @@ func TestStagingValidatesCommerceOrderTotal(t *testing.T) {
 		t.Fatal("incorrect order total accepted")
 	}
 }
+
+func TestStagingRejectsUnsafeCommerceArithmetic(t *testing.T) {
+	data := map[string][]map[string]any{"shop_order_items": {{"id": "item", "orderId": "order", "quantity": float64(1000001), "unitPrice": float64(1000000000), "lineTotal": float64(0)}}}
+	if err := validateStagedBusiness(data); err == nil {
+		t.Fatal("out-of-range arithmetic accepted")
+	}
+}

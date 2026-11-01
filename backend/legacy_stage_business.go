@@ -11,12 +11,15 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 		item, itemOK := row["orderItemId"].(string)
 		quantity, quantityOK := row["quantity"].(float64)
 		amount, amountOK := row["refundAmount"].(float64)
-		if !itemOK || item == "" || !quantityOK || !amountOK || quantity <= 0 || amount < 0 {
+		if !itemOK || item == "" || !quantityOK || !amountOK || quantity <= 0 || quantity > 1000000 || amount < 0 || amount > 1000000000000000 {
 			return fmt.Errorf("invalid commerce return")
 		}
 		total := returns[item]
 		total.quantity += quantity
 		total.amount += amount
+		if total.quantity > 1000000 || total.amount > 1000000000000000 {
+			return fmt.Errorf("commerce returns exceed supported bounds")
+		}
 		returns[item] = total
 	}
 	type commerceLines struct {
@@ -30,13 +33,16 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 		quantity, q := row["quantity"].(float64)
 		amount, a := row["lineTotal"].(float64)
 		price, p := row["unitPrice"].(float64)
-		if !orderOK || order == "" || !q || !a || !p || quantity <= 0 || price < 0 || amount < 0 || amount > quantity*price {
+		if !orderOK || order == "" || !q || !a || !p || quantity <= 0 || quantity > 1000000 || price < 0 || price > 1000000000 || amount < 0 || amount > quantity*price {
 			return fmt.Errorf("invalid commerce order line")
 		}
 		lines := linesByOrder[order]
 		lines.gross += quantity * price
 		lines.net += amount
 		lines.count++
+		if lines.gross > 1000000000000000 || lines.net > 1000000000000000 {
+			return fmt.Errorf("commerce order exceeds supported bounds")
+		}
 		linesByOrder[order] = lines
 		if total, exists := returns[id]; exists && (!q || !a || quantity <= 0 || amount < 0 || total.quantity > quantity || total.amount > amount) {
 			return fmt.Errorf("commerce returns exceed order item")

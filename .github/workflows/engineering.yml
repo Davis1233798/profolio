@@ -117,7 +117,7 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
       - name: Verify Windows migration snapshot transactions
-        run: go -C backend test -count=1 -run "Test(Legacy(CandidateSnapshot|SnapshotTransaction|SnapshotReadOnlyURI)|RestoreCopy)" ./...
+        run: go -C backend test -count=1 -run "Test(Legacy(CandidateSnapshot|SnapshotTransaction|SnapshotReadOnlyURI)|RestoreCopy|MaintenanceLock)" ./...
       - run: npm run install:ci
       - name: Build desktop frontend and Go backend
         run: npm run desktop:prepare

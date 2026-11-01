@@ -199,9 +199,17 @@ func TestShopFailedPaymentExpiryRestoresStockOnce(t *testing.T) {
 	if _, e := a.db.Exec("UPDATE shop_orders SET payment_status='failed' WHERE organization_id=? AND id=?", org, body.Data.OrderID); e != nil {
 		t.Fatal(e)
 	}
-	for i := 0; i < 2; i++ {
-		if e := a.expireShopReservations(); e != nil {
-			t.Fatal(e)
+	var wg sync.WaitGroup
+	errs := make(chan error, 8)
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() { defer wg.Done(); errs <- a.expireShopReservations() }()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
 	var stock int

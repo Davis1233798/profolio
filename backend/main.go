@@ -443,6 +443,15 @@ func backupDatabase(file, destination string) error {
 	return err
 }
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--legacy-import" {
+		if len(os.Args) != 2 {
+			log.Fatal("Invalid legacy import command")
+		}
+		if err := runLegacyImportCommand(context.Background(), os.Getenv("SUITE_DB"), os.Getenv("SUITE_MIGRATION_BACKUP_DIR"), os.Stdin, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "--restore-copy" {
 		if err := restoreCopyCommand(context.Background(), os.Args[2:]); err != nil {
 			log.Fatalf("Restore candidate failed: %v", err)

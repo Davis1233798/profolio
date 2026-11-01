@@ -44,6 +44,15 @@ app.whenReady().then(async()=>{try{const origin=await startBackend();session.def
     if(current!=='/'+site+(role==='admin'?'/back':'/front'))throw new Error('Unexpected '+site+' '+role+' workspace: '+current);
     const hasBack=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.station-sidebar a')).some(a=>new URL(a.href).pathname === '/"+site+"/back')");
     if(hasBack!==(role==='admin'))throw new Error('Unexpected '+site+' '+role+' back-office access');
+    if(role==='admin'){
+     await waitFor("document.querySelectorAll('.station-toolbar button').length === 3");
+     await window.webContents.executeJavaScript("document.querySelectorAll('.station-toolbar button')[0].click()");
+     await waitFor("document.querySelector('.phone-frame iframe')?.contentDocument?.querySelector('.station-main') !== null && !!document.querySelector('.phone-frame iframe')?.contentDocument?.querySelector('.station-main')");
+     await window.webContents.executeJavaScript("document.querySelectorAll('.station-toolbar button')[1].click()");
+     await waitFor("!!document.querySelector('.workspace-preview')?.contentDocument?.querySelector('.station-main')");
+     await window.webContents.executeJavaScript("document.querySelectorAll('.station-toolbar button')[2].click()");
+     await waitFor("!!document.querySelector('section.preview-panel.print-preview')");
+    }
    }
   }
   await window.loadURL(origin+'/shop/login');await waitFor("document.querySelector('main')?.textContent.includes('available on the web') === true");

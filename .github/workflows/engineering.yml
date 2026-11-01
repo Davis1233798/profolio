@@ -132,7 +132,7 @@ jobs:
           $stdoutPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stdout.log'
           $stderrPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stderr.log'
           $process = Start-Process -FilePath 'outputs/desktop/win-unpacked/Business Suite.exe' -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-          $finished = $process.WaitForExit(120000)
+          $finished = $process.WaitForExit(180000)
           if (-not $finished) { Stop-Process -Id $process.Id -Force }
           if (Test-Path -LiteralPath $stdoutPath) { Get-Content -LiteralPath $stdoutPath }
           if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath }

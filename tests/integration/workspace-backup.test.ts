@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv, validateWorkspaceBackup } from "../../lib/tenant-backup";
 import { seedOrganization } from "../../lib/seed";
 import { getDb } from "../../db";
@@ -12,6 +13,9 @@ test("Full workspace backup restores every business table atomically; rejects fo
   const context = { organizationId, userId: "tester", userEmail: "tester@example.test", userDisplayName: "Tester", role: "admin" as const, requestId: crypto.randomUUID() };
   const backup = await exportWorkspace(context);
   assert.ok(Object.keys(backup.tables).length > 60);
+  const goManifest = readFileSync("backend/legacy_backup_manifest.go", "utf8");
+  const manifestTables = [...goManifest.matchAll(/"([a-z][a-z0-9_]+)"/g)].map(match => match[1]).sort();
+  assert.deepEqual(manifestTables, Object.keys(backup.tables).sort(), "Go backup inspection manifest must match exported business tables");
   assert.ok(!Object.keys(backup.tables).some(name => name.startsWith("station_")), "Identity and authentication tables must not be exported");
   await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
   const oldEmptyBackup = structuredClone(backup);

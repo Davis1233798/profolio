@@ -48,7 +48,13 @@ func TestLegacySnapshotTransactionBlocksApplicationWrites(t *testing.T) {
 	go func() {
 		finished <- withLegacySnapshotTransaction(context.Background(), a.db, snapshot, func(*sql.Tx) error { close(entered); <-release; return nil })
 	}()
-	<-entered
+	select {
+	case <-entered:
+	case err := <-finished:
+		t.Fatalf("snapshot transaction did not start: %v", err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("snapshot transaction did not start in time")
+	}
 	writerDone := make(chan error, 1)
 	go func() {
 		_, err := a.db.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('queued','org','queued','Queued')")

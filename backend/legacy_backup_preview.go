@@ -44,6 +44,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	warnings := []string{}
 	identityReferences := map[string]int{}
 	duplicateIDs := map[string]int{}
+	businessWarnings := map[string]int{}
 	destinationConflicts := map[string]int{}
 	total := 0
 	for name, rows := range backup.Tables {
@@ -130,6 +131,34 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			} else {
 				seen[key] = true
 			}
+			number := func(key string) (float64, bool) { v, ok := row[key].(float64); return v, ok }
+			stock, hasStock := number("stockQuantity")
+			reserved, hasReserved := number("reservedQuantity")
+			if hasStock && (stock < 0 || (hasReserved && (reserved < 0 || reserved > stock))) {
+				businessWarnings[name+".stock"]++
+			}
+			if name == "mes_work_orders" {
+				good, g := number("completedQuantity")
+				scrap, s := number("scrappedQuantity")
+				target, t := number("targetQuantity")
+				if g && s && t && (good < 0 || scrap < 0 || good+scrap > target) {
+					businessWarnings[name+".production"]++
+				}
+			}
+			if name == "erp_invoices" {
+				paid, p := number("paidAmount")
+				total, t := number("totalAmount")
+				if p && t && (paid < 0 || paid > total) {
+					businessWarnings[name+".payment"]++
+				}
+			}
+			if name == "pos_sale_lines" {
+				refunded, r := number("refundedQuantity")
+				quantity, q := number("quantity")
+				if r && q && (refunded < 0 || refunded > quantity) {
+					businessWarnings[name+".refund"]++
+				}
+			}
 			for _, field := range []string{"ownerId", "cashierId", "lockedBy", "userId", "createdBy", "updatedBy"} {
 				if value, ok := row[field].(string); ok && value != "" {
 					identityReferences[name+"."+field]++
@@ -193,5 +222,5 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "businessWarnings": businessWarnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

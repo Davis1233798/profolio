@@ -35,6 +35,37 @@ func TestLegacyCandidateTransactionIsAtomic(t *testing.T) {
 	}
 }
 
+func TestLegacyImportSessionRecheckedInTransaction(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("missing session cookie")
+	}
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if err = verifyLegacyImportSession(tx, id, session); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec("DELETE FROM station_sessions WHERE token_hash=?", digest(session)); err != nil {
+		t.Fatal(err)
+	}
+	if err = verifyLegacyImportSession(tx, id, session); err == nil {
+		t.Fatal("logged-out session accepted")
+	}
+}
+
 func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	a := appForTest(t)
 	space := token()

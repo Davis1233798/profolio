@@ -5,7 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
+
+// verifyLegacyImportSession must run inside the write transaction, after the
+// snapshot, so logout or account deactivation cannot race the import.
+func verifyLegacyImportSession(tx *sql.Tx, id *Identity, sessionToken string) error {
+	if len(sessionToken) != 64 {
+		return fmt.Errorf("session expired")
+	}
+	var count int
+	err := tx.QueryRow(`SELECT count(*) FROM station_sessions s JOIN station_accounts a ON a.user_id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND a.disabled=0 AND a.user_id=? AND a.organization_id=?`, digest(sessionToken), time.Now().UnixMilli(), id.UserID, id.OrganizationID).Scan(&count)
+	if err != nil || count != 1 {
+		return fmt.Errorf("session expired")
+	}
+	return nil
+}
 
 // recordLegacyCandidate makes the data write, retry record, and audit entry part
 // of one caller-owned transaction. The caller must verify the active session

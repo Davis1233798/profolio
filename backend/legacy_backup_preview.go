@@ -213,6 +213,17 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					businessWarnings[name+".payment"]++
 				}
 			}
+			if name == "erp_purchase_order_lines" || name == "erp_sales_order_lines" {
+				field := "receivedQuantity"
+				if name == "erp_sales_order_lines" {
+					field = "shippedQuantity"
+				}
+				fulfilled, f := number(field)
+				quantity, q := number("quantity")
+				if f && q && (quantity < 0 || fulfilled < 0 || fulfilled > quantity) {
+					businessWarnings[name+".fulfillment"]++
+				}
+			}
 			if name == "pos_sale_lines" {
 				refunded, r := number("refundedQuantity")
 				quantity, q := number("quantity")

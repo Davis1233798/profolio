@@ -16,6 +16,12 @@ test("Full workspace backup restores every business table atomically; rejects fo
   const goManifest = readFileSync("backend/legacy_backup_manifest.go", "utf8");
   const manifestTables = [...goManifest.matchAll(/"([a-z][a-z0-9_]+)"/g)].map(match => match[1]).sort();
   assert.deepEqual(manifestTables, Object.keys(backup.tables).sort(), "Go backup inspection manifest must match exported business tables");
+  const sourceReferences = readFileSync("lib/tenant-backup.ts", "utf8").split("const referenceTargets: Record<string, string> = {")[1].split("};")[0];
+  const goReferences = readFileSync("backend/legacy_backup_references.go", "utf8");
+  const sourcePairs = [...sourceReferences.matchAll(/([a-z]+_[A-Za-z]+): "([a-z_]+)"/g)].map(match => `${match[1]}=${match[2]}`).sort();
+  const goPairs = [...goReferences.matchAll(/"([a-z]+_[A-Za-z]+)":\s+"([a-z_]+)"/g)].map(match => `${match[1]}=${match[2]}`).sort();
+  assert.ok(sourcePairs.length > 30, "Legacy reference map was not discovered");
+  assert.deepEqual(goPairs, sourcePairs, "Go backup inspection relationships must match legacy validation");
   assert.ok(!Object.keys(backup.tables).some(name => name.startsWith("station_")), "Identity and authentication tables must not be exported");
   await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
   const oldEmptyBackup = structuredClone(backup);

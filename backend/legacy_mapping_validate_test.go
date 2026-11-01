@@ -17,10 +17,15 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target}}, "backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{"crm_accounts": []any{map[string]any{"organizationId": "org_old", "ownerId": "legacy-op"}}, "shop_orders": []any{map[string]any{"organizationId": "org_old", "userId": "legacy-op"}}}}}
 	}
 	reservation := payload("org_test_" + space + "_office")
-	reservation["backup"].(map[string]any)["tables"].(map[string]any)["shop_inventory_reservations"] = []any{map[string]any{"organizationId": "org_old", "sessionId": "another-legacy-user"}}
+	reservation["backup"].(map[string]any)["tables"].(map[string]any)["shop_inventory_reservations"] = []any{map[string]any{"organizationId": "org_old", "sessionId": "usr_org_old_admin"}}
 	if w := request(a, "POST", path, reservation, admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("omitted reservation identity %d", w.Code)
 	}
+	reservation["backup"].(map[string]any)["tables"].(map[string]any)["shop_inventory_reservations"] = []any{map[string]any{"organizationId": "org_old", "sessionId": "client_session"}}
+	if w := request(a, "POST", path, reservation, admin...); w.Code != http.StatusOK {
+		t.Fatalf("opaque client session %d %s", w.Code, w.Body.String())
+	}
+
 	if w := request(a, "POST", path, payload("org_test_"+space+"_office"), admin...); w.Code != http.StatusOK {
 		t.Fatalf("valid mapping %d %s", w.Code, w.Body.String())
 	}

@@ -73,6 +73,9 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 					fail(w, 400, "Invalid legacy identity reference")
 					return
 				}
+				if table == "shop_inventory_reservations" && field == "sessionId" && !isLegacyDemoIdentity(value, input.Backup.OrganizationID) {
+					continue
+				}
 				if required[value] == nil {
 					required[value] = map[string]bool{}
 				}

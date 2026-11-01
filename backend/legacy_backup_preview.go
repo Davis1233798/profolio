@@ -16,6 +16,16 @@ var legacyIdentityFields = map[string][]string{
 	"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"}, "shop_inventory_reservations": {"sessionId"},
 }
 
+// Legacy checkout accepts either a demo account ID or an opaque client session.
+func isLegacyDemoIdentity(value, organization string) bool {
+	for _, suffix := range []string{"admin", "op", "ro"} {
+		if value == "usr_"+organization+"_"+suffix {
+			return true
+		}
+	}
+	return false
+}
+
 type legacyBackupPreview struct {
 	Format         string                      `json:"format"`
 	OrganizationID string                      `json:"organizationId"`
@@ -244,6 +254,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 			for _, field := range legacyIdentityFields[name] {
 				if value, ok := row[field].(string); ok && value != "" {
+					if name == "shop_inventory_reservations" && field == "sessionId" && !isLegacyDemoIdentity(value, backup.OrganizationID) {
+						businessWarnings["shop_inventory_reservations.opaqueSession"]++
+						continue
+					}
 					identityReferences[name+"."+field]++
 					legacyIdentities[value]++
 				}

@@ -4,7 +4,10 @@ export function finishedGoodsView(data: Record<string, Row[]>) {
   const dispositions = data.finishedGoodsQualityDispositions || [];
   const inventory = data.finishedGoodsInventory || [];
   return (data.finishedGoodsBatches || []).map(batch => {
-    const quality = dispositions.filter(row => row.batchId === batch.id).sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+    const candidates = dispositions.filter(row => row.batchId === batch.id);
+    const quality = batch.status === 'released' || batch.status === 'received'
+      ? candidates.find(row => row.disposition === 'release')
+      : candidates.filter(row => row.disposition === 'quarantine').sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
     const stock = inventory.find(row => row.batchId === batch.id);
     return {
       batchId: String(batch.id), batchNumber: String(batch.batchNumber),

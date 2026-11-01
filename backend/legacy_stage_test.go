@@ -30,6 +30,31 @@ func TestLegacyStagingValidatesSchemaAndDoesNotPersist(t *testing.T) {
 	}
 }
 
+func TestLegacyInsertRollsBackOnConstraintFailure(t *testing.T) {
+	a := appForTest(t)
+	data := map[string][]map[string]any{}
+	for _, table := range legacyBackupTables {
+		data[table] = []map[string]any{}
+	}
+	item := map[string]any{"id": "rollback-item", "organizationId": "org_test_target", "sku": "I", "name": "Item", "unit": "PCS", "boxConversionRatio": float64(1), "category": "general", "isActive": true, "createdAt": "2026-01-01"}
+	data["erp_items"] = []map[string]any{item, item}
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = insertLegacyRows(tx, data); err == nil {
+		tx.Rollback()
+		t.Fatal("duplicate insert accepted")
+	}
+	if err = tx.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err = a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='rollback-item'").Scan(&count); err != nil || count != 0 {
+		t.Fatalf("partial data survived: %d %v", count, err)
+	}
+}
+
 func TestLegacyStagingWithBusinessFixtures(t *testing.T) {
 	raw, err := migrations.ReadFile("migrations/fixtures.json")
 	if err != nil {

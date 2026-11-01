@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
 	"strings"
@@ -28,6 +29,12 @@ func stageLegacyRows(data map[string][]map[string]any) (int, error) {
 		return 0, fmt.Errorf("cannot start staging transaction")
 	}
 	defer tx.Rollback()
+	return insertLegacyRows(tx, data)
+}
+
+// insertLegacyRows performs all row writes on the caller-owned transaction.
+// The caller is responsible for authorization, validation and commit or rollback.
+func insertLegacyRows(tx *sql.Tx, data map[string][]map[string]any) (int, error) {
 	total := 0
 	for _, table := range legacyBackupTables {
 		rows, exists := data[table]

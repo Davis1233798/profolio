@@ -169,6 +169,44 @@ func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	}
 }
 
+func TestLegacyCandidateSnapshotRetainedWhenImportFails(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	for _, table := range legacyBackupTables {
+		backup.Tables[table] = []map[string]any{}
+	}
+	backup.Tables["erp_items"] = []map[string]any{{"id": "invalid-candidate", "organizationId": "org_old"}}
+	path := filepath.Join(t.TempDir(), "before.sqlite")
+	if _, err := importLegacyWithSnapshot(context.Background(), a.db, path, id, session, backup, nil, "invalid-import-key"); err == nil {
+		t.Fatal("invalid candidate accepted")
+	}
+	var count int
+	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='invalid-candidate'").Scan(&count); err != nil || count != 0 {
+		t.Fatalf("partial import %d %v", count, err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("unexpected audit %d %v", count, err)
+	}
+	snapshot, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer snapshot.Close()
+	if err = snapshot.QueryRow("SELECT count(*) FROM organizations WHERE id=?", org).Scan(&count); err != nil || count != 1 {
+		t.Fatalf("snapshot unavailable %d %v", count, err)
+	}
+}
+
 func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	a := appForTest(t)
 	space := token()

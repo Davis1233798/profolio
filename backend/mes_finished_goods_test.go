@@ -90,6 +90,14 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	if w := post(withoutInspection, admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("batch released without inspection evidence: %d %s", w.Code, w.Body.String())
 	}
+	failedInspection := "failed-inspection-" + space
+	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,0,1,'quarantined','quarantine')", failedInspection, org, wo, reportResult.Data.ReportID, org+"_admin"); err != nil {
+		t.Fatal(err)
+	}
+	incorrectRelease := map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": failedInspection, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-failed-evidence-01"}
+	if w := post(incorrectRelease, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("failed inspection used to release: %d %s", w.Code, w.Body.String())
+	}
 
 	receive := command("receive", "fg-receive-pending-0001")
 	receive["batchId"], receive["quantity"] = batchID, target
@@ -111,6 +119,7 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	}
 	quarantine := command("qualityDisposition", "fg-qc-quarantine-0001")
 	quarantine["batchId"], quarantine["passedQuantity"], quarantine["failedQuantity"], quarantine["disposition"] = batchID, target-1, 1, "quarantine"
+	quarantine["qualityCheckId"] = failedInspection
 	if w := post(quarantine, admin...); w.Code != http.StatusOK {
 		t.Fatalf("quarantine disposition: %d %s", w.Code, w.Body.String())
 	}

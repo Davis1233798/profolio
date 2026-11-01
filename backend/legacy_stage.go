@@ -29,7 +29,17 @@ func stageLegacyRows(data map[string][]map[string]any) (int, error) {
 		return 0, fmt.Errorf("cannot start staging transaction")
 	}
 	defer tx.Rollback()
-	return insertLegacyRows(tx, data)
+	count, err := insertLegacyRows(tx, data)
+	if err != nil {
+		return 0, err
+	}
+	for _, table := range legacyBackupTables {
+		var actual int
+		if err = tx.QueryRow("SELECT count(*) FROM \"" + table + "\"").Scan(&actual); err != nil || actual != len(data[table]) {
+			return 0, fmt.Errorf("staging row count mismatch in %s", table)
+		}
+	}
+	return count, nil
 }
 
 // insertLegacyRows performs all row writes on the caller-owned transaction.

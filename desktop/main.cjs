@@ -3,6 +3,8 @@ const {spawn}=require('node:child_process');
 const path=require('node:path');
 const fs=require('node:fs');
 let backend,window;
+const desktopSmoke=process.env.SUITE_DESKTOP_SMOKE==='1';
+if(desktopSmoke&&process.env.SUITE_DESKTOP_SMOKE_DATA)app.setPath('userData',process.env.SUITE_DESKTOP_SMOKE_DATA);
 app.enableSandbox();
 if(!app.requestSingleInstanceLock())app.quit();
 app.on('second-instance',()=>{if(window){if(window.isMinimized())window.restore();window.focus()}});
@@ -22,5 +24,15 @@ app.whenReady().then(async()=>{try{const origin=await startBackend();session.def
  window.webContents.setUserAgent(window.webContents.getUserAgent()+' BusinessSuiteDesktop/1.0');
  window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',(event,url)=>{try{if(new URL(url).origin!==origin)event.preventDefault()}catch{event.preventDefault()}});
  window.webContents.on('will-attach-webview',event=>event.preventDefault());await window.loadURL(origin);window.on('closed',()=>{window=null});
- }catch(e){dialog.showErrorBox('啟動失敗',e.message);app.quit()}});
+ if(desktopSmoke){
+  const waitFor=async(expression)=>{for(let i=0;i<100;i++){if(await window.webContents.executeJavaScript(expression))return;await new Promise(resolve=>setTimeout(resolve,100))}throw new Error('Desktop smoke timed out: '+expression)};
+  await waitFor("document.querySelectorAll('.station-grid a').length===3");
+  const links=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.station-grid a')).map(a=>new URL(a.href).pathname).sort()");
+  if(JSON.stringify(links)!==JSON.stringify(['/crm/login','/erp/login','/mes/login']))throw new Error('Unexpected desktop workspace links');
+  for(const site of ['mes','erp','crm']){await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null");const options=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.system-switch option')).map(o=>o.value).filter(Boolean).sort()");if(JSON.stringify(options)!==JSON.stringify(['crm','erp','mes']))throw new Error('Unexpected desktop system switch for '+site)}
+  await window.loadURL(origin+'/shop/login');await waitFor("document.querySelector('main')?.textContent.includes('available on the web') === true");
+  console.log('PASS: Windows desktop workspace scope and login routes');app.exit(0);
+ }
+
+ }catch(e){if(desktopSmoke){console.error(e);app.exit(1)}else{dialog.showErrorBox('啟動失敗',e.message);app.quit()}}});
 app.on('before-quit',()=>{app.isQuitting=true;if(backend)backend.kill()});app.on('window-all-closed',()=>app.quit());

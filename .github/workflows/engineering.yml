@@ -122,6 +122,15 @@ jobs:
         run: npm run desktop:prepare
       - name: Package Windows application
         run: npm run desktop:package
+      - name: Smoke test packaged desktop routes
+        shell: pwsh
+        run: |
+          $env:SUITE_DESKTOP_SMOKE = '1'
+          $env:SUITE_DESKTOP_SMOKE_DATA = Join-Path $env:RUNNER_TEMP ('desktop-smoke-' + $env:GITHUB_RUN_ID)
+          New-Item -ItemType Directory -Path $env:SUITE_DESKTOP_SMOKE_DATA -Force | Out-Null
+          $process = Start-Process -FilePath 'outputs/desktop/win-unpacked/Business Suite.exe' -WindowStyle Hidden -PassThru
+          if (-not $process.WaitForExit(120000)) { Stop-Process -Id $process.Id -Force; throw 'Desktop smoke timed out' }
+          if ($process.ExitCode -ne 0) { throw "Desktop smoke failed with exit code $($process.ExitCode)" }
       - name: Upload Windows desktop package
         uses: actions/upload-artifact@v4
         with:

@@ -86,6 +86,10 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 		t.Fatalf("unexpected batch result: err=%v body=%s", err, created.Body.String())
 	}
 	batchID := batchResult.Data.BatchID
+	withoutInspection := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-no-inspection-0001"}
+	if w := post(withoutInspection, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("batch released without inspection evidence: %d %s", w.Code, w.Body.String())
+	}
 
 	receive := command("receive", "fg-receive-pending-0001")
 	receive["batchId"], receive["quantity"] = batchID, target

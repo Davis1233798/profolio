@@ -111,8 +111,12 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 		t.Fatalf("zero sale quantity: %d %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"erp_journal_entries": []any{map[string]any{"id": "j", "organizationId": "org_source", "status": "posted"}}, "erp_journal_lines": []any{map[string]any{"id": "line", "organizationId": "org_source", "journalId": "j", "debitAmount": 100, "creditAmount": 50}}}
-	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_journal_entries.unbalanced":1`) {
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_journal_entries.invalidJournal":1`) {
 		t.Fatalf("unbalanced journal: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_journal_entries": []any{map[string]any{"id": "j2", "organizationId": "org_source", "status": "posted"}}, "erp_journal_lines": []any{map[string]any{"id": "line2", "organizationId": "org_source", "journalId": "j2", "debitAmount": 100, "creditAmount": 100}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_journal_entries.invalidJournal":1`) {
+		t.Fatalf("invalid mixed journal line: %d %s", w.Code, w.Body.String())
 	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {

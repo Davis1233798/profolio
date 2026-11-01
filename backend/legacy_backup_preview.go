@@ -366,7 +366,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			continue
 		}
 		totals := journals[id]
-		if !dOK || !cOK || debit < 0 || credit < 0 {
+		if !dOK || !cOK || debit < 0 || credit < 0 || (debit > 0 && credit > 0) {
 			totals.invalid = true
 		} else {
 			totals.debit += debit
@@ -382,7 +382,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		}
 		amounts := journals[id]
 		if amounts.invalid || amounts.debit <= 0 || amounts.debit != amounts.credit {
-			businessWarnings["erp_journal_entries.unbalanced"]++
+			businessWarnings["erp_journal_entries.invalidJournal"]++
 		}
 	}
 	ledgerBalances := map[string]map[string]float64{}

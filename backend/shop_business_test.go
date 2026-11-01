@@ -219,6 +219,12 @@ func TestShopFailedPaymentExpiryRestoresStockOnce(t *testing.T) {
 	if err := a.db.QueryRow("SELECT stock_quantity FROM shop_variants WHERE id=? AND organization_id=?", variant, org).Scan(&stock); err != nil || stock != 1 {
 		t.Fatalf("stock after retry %d %v", stock, err)
 	}
+	if err := a.db.QueryRow("SELECT payment_status FROM shop_orders WHERE id=? AND organization_id=?", body.Data.OrderID, org).Scan(&payment); err != nil || payment != "expired" {
+		t.Fatalf("payment after retry %s %v", payment, err)
+	}
+	if err := a.db.QueryRow("SELECT status FROM shop_inventory_reservations WHERE cart_id=? AND organization_id=?", body.Data.OrderID, org).Scan(&reservation); err != nil || reservation != "expired" {
+		t.Fatalf("reservation after retry %s %v", reservation, err)
+	}
 }
 
 func TestShopFailedPaymentCanRetryBeforeExpiry(t *testing.T) {

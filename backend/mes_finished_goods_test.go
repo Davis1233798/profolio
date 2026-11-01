@@ -30,7 +30,7 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := "/api/stations/mes/finished-goods"
-	post := func(input map[string]any, cookies ...*http.Cookie) *http.ResponseRecorder {
+	post := func(input map[string]any, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 		return request(a, http.MethodPost, path, input, cookies...)
 	}
 	command := func(action, key string) map[string]any {

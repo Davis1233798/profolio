@@ -16,3 +16,30 @@ func TestLegacyStoredValuesCompareSQLiteTypes(t *testing.T) {
 		}
 	}
 }
+
+func TestLegacyStoredRowsDetectsChangedValue(t *testing.T) {
+	a := appForTest(t)
+	data := map[string][]map[string]any{}
+	for _, table := range legacyBackupTables {
+		data[table] = []map[string]any{}
+	}
+	row := map[string]any{"id": "verify-item", "organizationId": "org_test_target", "sku": "SKU", "name": "Item", "unit": "PCS", "boxConversionRatio": float64(1), "category": "general", "isActive": true, "createdAt": "2026-01-01"}
+	data["erp_items"] = []map[string]any{row}
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err = insertLegacyRows(tx, data); err != nil {
+		t.Fatal(err)
+	}
+	if err = verifyLegacyStoredRows(tx, data); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec("UPDATE erp_items SET name='Changed' WHERE id='verify-item'"); err != nil {
+		t.Fatal(err)
+	}
+	if err = verifyLegacyStoredRows(tx, data); err == nil {
+		t.Fatal("changed value was not detected")
+	}
+}

@@ -208,7 +208,12 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					businessWarnings[name+".refund"]++
 				}
 			}
-			for _, field := range []string{"ownerId", "cashierId", "lockedBy", "userId", "createdBy", "updatedBy"} {
+			identityFields := map[string][]string{
+				"crm_accounts": {"ownerId"}, "crm_opportunities": {"ownerId"}, "crm_activities": {"ownerId"},
+				"pos_shifts": {"cashierId"}, "pos_sales": {"cashierId"}, "pos_held_carts": {"lockedBy"},
+				"shop_carts": {"userId"}, "shop_orders": {"userId"}, "shop_reviews": {"userId"},
+			}
+			for _, field := range identityFields[name] {
 				if value, ok := row[field].(string); ok && value != "" {
 					identityReferences[name+"."+field]++
 					legacyIdentities[value]++

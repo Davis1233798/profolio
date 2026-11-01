@@ -5,6 +5,7 @@
 | 系統 | 功能 | 階段 | 證據與限制 |
 |---|---|---|---|
 | 共用資料移轉／MES、ERP、POS、CRM、餐飲、電商 | 舊版備份檢查、身分對應、隔離暫存與匯入前快照 | 開發中；Windows 快照相容性修復 | [本輪架構、邊界與測試](engineering/WINDOWS_MIGRATION_SNAPSHOT.md)。匯入尚未對外開放；舊版 Node 與 Go 資料庫分開，正式切換未完成。 |
+| 共用資料移轉／六站 | 正式匯入、維護窗口與備份還原 | 架構與程式邊界設計；測試及實作待完成 | [交付架構與測試計畫](engineering/LEGACY_IMPORT_DELIVERY.md)。跨程序維護保障及還原演練完成前不得開放匯入。 |
 | 桌面版／MES、ERP、CRM | Electron 工作區與 Windows 打包 | 遠端回歸中 | 其他系統維持網頁版；Windows 測試有失敗，見本輪文件。 |
 | 共用／部署 | GitHub Actions 與公開站台 | 驗證中 | PR 與分支結果須依各次 Actions 執行記錄確認；不以程式碼推送推論部署成功。 |
 

@@ -81,6 +81,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		fail(w, 403, "No access to this workspace")
 		return
 	}
+	if action == "legacy-mapping-accounts" {
+		a.legacyMappingAccounts(w, r, id)
+		return
+	}
 	if action == "legacy-backup-preview" {
 		a.legacyBackupPreviewAPI(w, r, id, g)
 		return

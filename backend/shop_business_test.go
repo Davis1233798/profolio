@@ -212,6 +212,13 @@ func TestShopFailedPaymentExpiryRestoresStockOnce(t *testing.T) {
 	if stock != 1 || payment != "expired" || reservation != "expired" {
 		t.Fatalf("expiry stock=%d payment=%s reservation=%s", stock, payment, reservation)
 	}
+	pay := request(a, "POST", "/api/stations/shop/business", map[string]any{"action": "pay", "orderId": body.Data.OrderID, "idempotencyKey": "expired-retry-01"}, admin...)
+	if pay.Code != http.StatusConflict {
+		t.Fatalf("expired payment retry: %d %s", pay.Code, pay.Body.String())
+	}
+	if err := a.db.QueryRow("SELECT stock_quantity FROM shop_variants WHERE id=? AND organization_id=?", variant, org).Scan(&stock); err != nil || stock != 1 {
+		t.Fatalf("stock after retry %d %v", stock, err)
+	}
 }
 
 func TestShopFailedPaymentCanRetryBeforeExpiry(t *testing.T) {

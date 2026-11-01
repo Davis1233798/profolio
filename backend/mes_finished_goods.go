@@ -18,6 +18,7 @@ type mesFinishedGoodsRequest struct {
 	Passed      int64  `json:"passedQuantity"`
 	Failed      int64  `json:"failedQuantity"`
 	Disposition string `json:"disposition"`
+	Reason      string `json:"reason"`
 	Key         string `json:"idempotencyKey"`
 }
 
@@ -98,7 +99,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			return
 		}
 		result["batchId"], result["status"] = entity, "pending_inspection"
-	case "qualityDisposition", "receive":
+	case "qualityDisposition", "receive", "resolveQuarantine":
 		if in.BatchID == "" {
 			fail(w, 400, "Select a batch")
 			return
@@ -115,7 +116,26 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			return
 		}
 		entity = in.BatchID
-		if in.Action == "qualityDisposition" {
+		if in.Action == "resolveQuarantine" {
+			in.Reason = strings.TrimSpace(in.Reason)
+			if in.Reason == "" || len(in.Reason) > 500 || (in.Disposition != "rework" && in.Disposition != "scrap") {
+				fail(w, 400, "A resolution and reason are required")
+				return
+			}
+			if state != "quarantined" || orderStatus != "completed" {
+				fail(w, 409, "Batch is not awaiting quarantine resolution")
+				return
+			}
+			next := "pending_inspection"
+			if in.Disposition == "scrap" {
+				next = "scrapped"
+			}
+			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition,reason) VALUES(?,?,?,?,?,?,?)", "fgqc_"+token(), id.OrganizationID, entity, 0, quantity, in.Disposition, in.Reason)
+			if err == nil {
+				_, err = tx.Exec("UPDATE mes_finished_goods_batches SET status=? WHERE organization_id=? AND id=?", next, id.OrganizationID, entity)
+			}
+			result["status"] = next
+		} else if in.Action == "qualityDisposition" {
 			if in.Passed < 0 || in.Failed < 0 || in.Passed+in.Failed != quantity || (in.Disposition != "release" && in.Disposition != "quarantine") || (in.Disposition == "release" && in.Failed != 0) {
 				fail(w, 400, "Invalid quality disposition")
 				return
@@ -169,7 +189,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			return
 		}
 		var received, pending int64
-		err = tx.QueryRow("SELECT COALESCE(SUM(CASE WHEN status='received' THEN quantity ELSE 0 END),0),COALESCE(SUM(CASE WHEN status!='received' THEN 1 ELSE 0 END),0) FROM mes_finished_goods_batches WHERE organization_id=? AND work_order_id=?", id.OrganizationID, in.WorkOrderID).Scan(&received, &pending)
+		err = tx.QueryRow("SELECT COALESCE(SUM(CASE WHEN status IN ('received','scrapped') THEN quantity ELSE 0 END),0),COALESCE(SUM(CASE WHEN status NOT IN ('received','scrapped') THEN 1 ELSE 0 END),0) FROM mes_finished_goods_batches WHERE organization_id=? AND work_order_id=?", id.OrganizationID, in.WorkOrderID).Scan(&received, &pending)
 		if err != nil {
 			fail(w, 503, "Cannot inspect batches")
 			return

@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"context"
+	"database/sql"
+	"path/filepath"
+	"testing"
+)
 
 func TestLegacyCandidateTransactionIsAtomic(t *testing.T) {
 	a := appForTest(t)
@@ -27,6 +32,40 @@ func TestLegacyCandidateTransactionIsAtomic(t *testing.T) {
 	var countStored int
 	if err = a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='candidate-item'").Scan(&countStored); err != nil || countStored != 0 {
 		t.Fatalf("rollback %d %v", countStored, err)
+	}
+}
+
+func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	loginSite(t, a, "admin@suite.test", space, "erp")
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	for _, table := range legacyBackupTables {
+		backup.Tables[table] = []map[string]any{}
+	}
+	backup.Tables["erp_items"] = []map[string]any{{"id": "snapshot-candidate", "organizationId": "org_old", "sku": "snapshot-candidate", "name": "Item", "unit": "PCS", "boxConversionRatio": float64(1), "category": "general", "isActive": true, "createdAt": "2026-01-01"}}
+	path := filepath.Join(t.TempDir(), "before.sqlite")
+	err := withLegacySnapshotTransaction(context.Background(), a.db, path, func(tx *sql.Tx) error {
+		_, e := recordLegacyCandidate(tx, id, backup, nil, "legacy-snapshot-key")
+		return e
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var current int
+	if err = a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='snapshot-candidate'").Scan(&current); err != nil || current != 1 {
+		t.Fatalf("current %d %v", current, err)
+	}
+	snapshot, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer snapshot.Close()
+	var previous int
+	if err = snapshot.QueryRow("SELECT count(*) FROM erp_items WHERE id='snapshot-candidate'").Scan(&previous); err != nil || previous != 0 {
+		t.Fatalf("snapshot %d %v", previous, err)
 	}
 }
 

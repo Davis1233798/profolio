@@ -5,6 +5,28 @@ import "fmt"
 // validateStagedBusiness enforces basic invariants which SQLite update-only
 // triggers cannot protect during bulk inserts. It is not a full domain audit.
 func validateStagedBusiness(data map[string][]map[string]any) error {
+	type returnTotal struct{ quantity, amount float64 }
+	returns := map[string]returnTotal{}
+	for _, row := range data["shop_returns"] {
+		item, itemOK := row["orderItemId"].(string)
+		quantity, quantityOK := row["quantity"].(float64)
+		amount, amountOK := row["refundAmount"].(float64)
+		if !itemOK || item == "" || !quantityOK || !amountOK || quantity <= 0 || amount < 0 {
+			return fmt.Errorf("invalid commerce return")
+		}
+		total := returns[item]
+		total.quantity += quantity
+		total.amount += amount
+		returns[item] = total
+	}
+	for _, row := range data["shop_order_items"] {
+		id, _ := row["id"].(string)
+		quantity, q := row["quantity"].(float64)
+		amount, a := row["lineTotal"].(float64)
+		if total, exists := returns[id]; exists && (!q || !a || quantity <= 0 || amount < 0 || total.quantity > quantity || total.amount > amount) {
+			return fmt.Errorf("commerce returns exceed order item")
+		}
+	}
 	type journalTotal struct {
 		debit, credit float64
 		lines         int

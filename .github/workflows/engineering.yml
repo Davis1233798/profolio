@@ -126,10 +126,17 @@ jobs:
         shell: pwsh
         run: |
           $env:SUITE_DESKTOP_SMOKE = '1'
+          $env:ELECTRON_ENABLE_LOGGING = '1'
           $env:SUITE_DESKTOP_SMOKE_DATA = Join-Path $env:RUNNER_TEMP ('desktop-smoke-' + $env:GITHUB_RUN_ID)
           New-Item -ItemType Directory -Path $env:SUITE_DESKTOP_SMOKE_DATA -Force | Out-Null
-          $process = Start-Process -FilePath 'outputs/desktop/win-unpacked/Business Suite.exe' -WindowStyle Hidden -PassThru
-          if (-not $process.WaitForExit(120000)) { Stop-Process -Id $process.Id -Force; throw 'Desktop smoke timed out' }
+          $stdoutPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stdout.log'
+          $stderrPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stderr.log'
+          $process = Start-Process -FilePath 'outputs/desktop/win-unpacked/Business Suite.exe' -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+          $finished = $process.WaitForExit(120000)
+          if (-not $finished) { Stop-Process -Id $process.Id -Force }
+          if (Test-Path -LiteralPath $stdoutPath) { Get-Content -LiteralPath $stdoutPath }
+          if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath }
+          if (-not $finished) { throw 'Desktop smoke timed out' }
           if ($process.ExitCode -ne 0) { throw "Desktop smoke failed with exit code $($process.ExitCode)" }
       - name: Upload Windows desktop package
         uses: actions/upload-artifact@v4

@@ -98,6 +98,14 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	if w := post(incorrectRelease, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("failed inspection used to release: %d %s", w.Code, w.Body.String())
 	}
+	contradictory := "contradictory-inspection-" + space
+	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,1,0,'quarantined','quarantine')", contradictory, org, wo, reportResult.Data.ReportID, org+"_admin"); err != nil {
+		t.Fatal(err)
+	}
+	wrongStatus := map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": contradictory, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-inconsistent-qc-01"}
+	if w := post(wrongStatus, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("contradictory inspection accepted: %d %s", w.Code, w.Body.String())
+	}
 	otherReportInspection := "other-inspection-" + space
 	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,NULL,?,1,1,0,'passed','release')", otherReportInspection, org, wo, org+"_admin"); err != nil {
 		t.Fatal(err)

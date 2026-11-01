@@ -237,8 +237,14 @@ func (a *App) shopBusiness(w http.ResponseWriter, r *http.Request, id *Identity,
 			fail(w, 409, "Reservation expired or unavailable")
 			return
 		}
-		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='paid' WHERE id=? AND organization_id=? AND payment_status IN ('pending','failed')", orderID, id.OrganizationID); e != nil {
+		paymentUpdate, updateErr := tx.Exec("UPDATE shop_orders SET payment_status='paid' WHERE id=? AND organization_id=? AND payment_status IN ('pending','failed')", orderID, id.OrganizationID)
+		if updateErr != nil {
 			fail(w, 503, "Payment update failed")
+			return
+		}
+		updated, countErr := paymentUpdate.RowsAffected()
+		if countErr != nil || updated != 1 {
+			fail(w, 409, "Payment state changed; refresh and retry")
 			return
 		}
 		if _, e = tx.Exec("INSERT INTO shop_payment_attempts(id,organization_id,order_id,attempt_reference,amount,provider,status) VALUES(?,?,?,?,?,'mock_gateway','success')", "payment_"+token(), id.OrganizationID, orderID, in.IdempotencyKey, amount); e != nil {

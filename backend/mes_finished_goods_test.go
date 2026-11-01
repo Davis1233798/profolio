@@ -193,6 +193,9 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	}
 
 	qc := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-happy-qc-0001"}
+	if w := request(a, "POST", path, qc, other...); w.Code != http.StatusNotFound {
+		t.Fatalf("foreign quality disposition: %d %s", w.Code, w.Body.String())
+	}
 	if w := request(a, "POST", path, qc, operator...); w.Code != http.StatusForbidden {
 		t.Fatalf("operator quality release: %d %s", w.Code, w.Body.String())
 	}
@@ -212,6 +215,9 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	}
 
 	receive := map[string]any{"action": "receive", "batchId": batchID, "quantity": target, "idempotencyKey": "fg-happy-receive-0001"}
+	if w := request(a, "POST", path, receive, other...); w.Code != http.StatusNotFound {
+		t.Fatalf("foreign receipt: %d %s", w.Code, w.Body.String())
+	}
 	if w := request(a, "POST", path, receive, admin...); w.Code != http.StatusOK {
 		t.Fatalf("receive: %d %s", w.Code, w.Body.String())
 	}
@@ -240,6 +246,9 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	}
 
 	closeInput := map[string]any{"action": "close", "workOrderId": wo, "idempotencyKey": "fg-happy-close-0001"}
+	if w := request(a, "POST", path, closeInput, other...); w.Code != http.StatusNotFound {
+		t.Fatalf("foreign close: %d %s", w.Code, w.Body.String())
+	}
 	if w := request(a, "POST", path, closeInput, readonly...); w.Code != http.StatusForbidden {
 		t.Fatalf("readonly close: %d %s", w.Code, w.Body.String())
 	}

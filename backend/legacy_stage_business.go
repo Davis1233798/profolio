@@ -27,6 +27,15 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 			return fmt.Errorf("commerce returns exceed order item")
 		}
 	}
+	for _, row := range data["shop_orders"] {
+		subtotal, s := row["subtotal"].(float64)
+		discount, d := row["discountAmount"].(float64)
+		shipping, h := row["shippingFee"].(float64)
+		total, t := row["totalAmount"].(float64)
+		if !s || !d || !h || !t || subtotal < 0 || discount < 0 || discount > subtotal || shipping < 0 || total != subtotal-discount+shipping {
+			return fmt.Errorf("invalid commerce order total")
+		}
+	}
 	type journalTotal struct {
 		debit, credit float64
 		lines         int

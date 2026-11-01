@@ -64,3 +64,15 @@ func TestStagingRejectsExcessCommerceReturns(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestStagingValidatesCommerceOrderTotal(t *testing.T) {
+	order := map[string]any{"subtotal": float64(100), "discountAmount": float64(10), "shippingFee": float64(20), "totalAmount": float64(110)}
+	data := map[string][]map[string]any{"shop_orders": {order}}
+	if err := validateStagedBusiness(data); err != nil {
+		t.Fatal(err)
+	}
+	order["totalAmount"] = float64(120)
+	if err := validateStagedBusiness(data); err == nil {
+		t.Fatal("incorrect order total accepted")
+	}
+}

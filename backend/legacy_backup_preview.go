@@ -285,6 +285,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		if status != "active" {
 			continue
 		}
+		if quantity, ok := row["quantity"].(float64); !ok || quantity <= 0 || math.Trunc(quantity) != quantity {
+			businessWarnings["shop_inventory_reservations.invalidQuantity"]++
+		}
 		if expires, ok := row["expiresAt"].(string); !ok {
 			businessWarnings["shop_inventory_reservations.invalidExpiry"]++
 		} else if expiry, err := time.Parse(time.RFC3339Nano, expires); err != nil {

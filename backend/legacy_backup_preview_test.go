@@ -83,7 +83,7 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 		t.Fatalf("active shift: %d %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "o1", "organizationId": "org_source", "paymentStatus": "paid"}}, "shop_inventory_reservations": []any{map[string]any{"id": "r1", "organizationId": "org_source", "cartId": "o1", "status": "active"}}}
-	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.orderState":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.invalidExpiry":1`) {
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.orderState":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.invalidExpiry":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.invalidQuantity":1`) {
 		t.Fatalf("reservation state: %d %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"pos_shifts": []any{map[string]any{"id": "s1", "organizationId": "org_source", "status": "open", "registerId": "register"}, map[string]any{"id": "s2", "organizationId": "org_source", "status": "open", "registerId": "register"}}}

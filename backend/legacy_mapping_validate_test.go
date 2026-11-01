@@ -14,7 +14,7 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	loginSite(t, a, "admin@suite.test", otherSpace, "erp")
 	path := "/api/stations/erp/legacy-mapping-validate"
 	payload := func(target string) map[string]any {
-		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target, "sites": []string{"mes", "shop"}}}}
+		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target}}, "backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{"crm_accounts": []any{map[string]any{"organizationId": "org_old", "ownerId": "legacy-op"}}, "shop_orders": []any{map[string]any{"organizationId": "org_old", "userId": "legacy-op"}}}}}
 	}
 	if w := request(a, "POST", path, payload("org_test_"+space+"_front"), admin...); w.Code != http.StatusOK {
 		t.Fatalf("valid mapping %d %s", w.Code, w.Body.String())

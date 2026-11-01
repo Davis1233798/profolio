@@ -78,3 +78,5 @@
 [data-site="shop"] .shop-variant-list button{min-height:44px;border-color:#777;border-radius:999px;color:#111;background:#fff;font-size:12px}
 [data-site="shop"] .shop-variant-list button[aria-pressed="true"]{background:#111;border-color:#111;color:#fff}
 @media(max-width:640px){[data-site="shop"] .shop-catalog-heading{align-items:stretch;flex-direction:column}}
+
+.dataset-pagination{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 14px}.dataset-pagination small{flex-basis:100%}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -202,8 +203,21 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			fail(w, 403, "Front-office accounts cannot read back-office data")
 			return
 		}
+		requestedDataset := r.URL.Query().Get("dataset")
+		offset := 0
+		if raw := r.URL.Query().Get("offset"); raw != "" {
+			var err error
+			offset, err = strconv.Atoi(raw)
+			if err != nil || offset < 0 || offset > 1000000 || requestedDataset == "" {
+				fail(w, 400, "Invalid dataset offset")
+				return
+			}
+		}
 		out := map[string]any{}
 		for _, d := range datasets[site] {
+			if requestedDataset != "" && d.Key != requestedDataset {
+				continue
+			}
 			if front && len(d.Front) == 0 {
 				continue
 			}
@@ -260,7 +274,8 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 				query += " AND user_id=?"
 				args = append(args, id.UserID)
 			}
-			rows, err := queryMaps(a.db, query+" ORDER BY rowid DESC LIMIT 500", args...)
+			args = append(args, offset)
+			rows, err := queryMaps(a.db, query+" ORDER BY rowid DESC LIMIT 500 OFFSET ?", args...)
 			if err != nil {
 				fail(w, 500, "Unable to read workspace data: "+d.Key)
 				return
@@ -281,6 +296,14 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			out[d.Key] = rows
+		}
+		if requestedDataset != "" {
+			if _, exists := out[requestedDataset]; !exists {
+				fail(w, 404, "Dataset unavailable")
+				return
+			}
+			ok(w, out)
+			return
 		}
 		if site == "erp" && !front {
 			summary, err := queryMaps(a.db, `SELECT (SELECT COUNT(*) FROM erp_purchase_orders p WHERE p.organization_id=? AND (p.status IN ('draft','submitted') OR (p.status='approved' AND EXISTS (SELECT 1 FROM erp_purchase_order_lines l WHERE l.organization_id=p.organization_id AND l.po_id=p.id AND l.received_quantity<l.quantity)))) AS open_purchases,(SELECT COUNT(*) FROM erp_sales_orders WHERE organization_id=? AND status IN ('submitted','confirmed','partially_shipped')) AS open_sales,(SELECT COALESCE(SUM(total_amount-paid_amount),0) FROM erp_invoices WHERE organization_id=? AND invoice_type='receivable' AND status IN ('unpaid','partially_paid')) AS receivable,(SELECT COALESCE(SUM(total_amount-paid_amount),0) FROM erp_invoices WHERE organization_id=? AND invoice_type='payable' AND status IN ('unpaid','partially_paid')) AS payable`, id.OrganizationID, id.OrganizationID, id.OrganizationID, id.OrganizationID)

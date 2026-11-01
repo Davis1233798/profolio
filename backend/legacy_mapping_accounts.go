@@ -16,7 +16,7 @@ func (a *App) legacyMappingAccounts(w http.ResponseWriter, r *http.Request, id *
 			return
 		}
 	}
-	rows, err := queryMaps(a.db, `SELECT a.user_id,a.email,u.display_name,a.disabled,g.site,g.role,g.scope,g.enabled FROM station_accounts a JOIN users u ON u.id=a.user_id JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? ORDER BY a.user_id,g.site`, id.OrganizationID)
+	rows, err := queryMaps(a.db, `SELECT a.user_id,a.email,u.display_name,a.disabled,g.site,g.role,g.scope,g.enabled FROM station_accounts a JOIN users u ON u.id=a.user_id LEFT JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? ORDER BY a.user_id,g.site`, id.OrganizationID)
 	if err != nil {
 		fail(w, 500, "Unable to read migration accounts")
 		return

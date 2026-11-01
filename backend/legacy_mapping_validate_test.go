@@ -110,6 +110,10 @@ func TestLegacyGrantSeesTransactionLocalRevocation(t *testing.T) {
 	if _, err = tx.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='crm'", user); err != nil {
 		t.Fatal(err)
 	}
+	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{"crm_leads": {{"organizationId": "org_old", "assignedTo": "old-user"}}}}
+	if err = validateLegacyMappings(tx, org, backup, []legacyMappingEntry{{Source: "old-user", Target: user}}); err == nil {
+		t.Fatal("mapping accepted after transaction-local grant revocation")
+	}
 	valid, err = validateLegacyGrant(tx, org, user, "crm", true)
 	if err != nil || valid {
 		t.Fatalf("revoked grant %v %v", valid, err)

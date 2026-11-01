@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
+
+var errLegacyGrantLookup = errors.New("unable to validate account grants")
 
 type legacyMappingEntry struct {
 	Source string `json:"source"`
@@ -23,6 +27,69 @@ func validateLegacyGrant(q legacyConflictQuery, organization, user, site string,
 	var count int
 	err := q.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.user_id=? AND a.organization_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1 AND (?=0 OR g.scope='back')`, user, organization, site, needsBackOffice).Scan(&count)
 	return count == 1, err
+}
+
+func validateLegacyMappings(q legacyConflictQuery, organization string, backup legacyBackupPreview, entries []legacyMappingEntry) error {
+	required := map[string]map[string]bool{}
+	total := 0
+	for table, rows := range backup.Tables {
+		if rows == nil {
+			return fmt.Errorf("Invalid backup table")
+		}
+		total += len(rows)
+		if total > 10000 {
+			return fmt.Errorf("Backup exceeds row limit")
+		}
+		fields := legacyIdentityFields[table]
+		site := strings.SplitN(table, "_", 2)[0]
+		for _, row := range rows {
+			if row["organizationId"] != backup.OrganizationID {
+				return fmt.Errorf("Backup contains another organization")
+			}
+			for _, field := range fields {
+				rawValue, present := row[field]
+				if !present || rawValue == nil {
+					requiredIdentity := table == "mes_production_reports" || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_activities" || table == "pos_shifts" || table == "pos_sales" || table == "shop_reviews" || table == "shop_inventory_reservations"
+					if requiredIdentity {
+						return fmt.Errorf("Required legacy identity is missing")
+					}
+					continue
+				}
+				value, ok := rawValue.(string)
+				if !ok || value == "" {
+					return fmt.Errorf("Invalid legacy identity reference")
+				}
+				if table == "shop_inventory_reservations" && field == "sessionId" && !isLegacyDemoIdentity(value, backup.OrganizationID) {
+					continue
+				}
+				if required[value] == nil {
+					required[value] = map[string]bool{}
+				}
+				// Accounts and opportunities are only exposed in the CRM back office.
+				required[value][site] = required[value][site] || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_leads"
+			}
+		}
+	}
+	if len(required) != len(entries) {
+		return fmt.Errorf("Mappings must cover every referenced identity")
+	}
+	seen := map[string]bool{}
+	for _, entry := range entries {
+		if strings.TrimSpace(entry.Source) == "" || len(entry.Source) > 256 || strings.TrimSpace(entry.Target) == "" || len(entry.Target) > 256 || required[entry.Source] == nil || seen[entry.Source] {
+			return fmt.Errorf("Invalid or duplicate mapping")
+		}
+		seen[entry.Source] = true
+		for site, needsBackOffice := range required[entry.Source] {
+			valid, err := validateLegacyGrant(q, organization, entry.Target, site, needsBackOffice)
+			if err != nil {
+				return errLegacyGrantLookup
+			}
+			if !valid {
+				return fmt.Errorf("Destination account lacks a required enabled workspace grant or scope")
+			}
+		}
+	}
+	return nil
 }
 
 // Validate mappings against current account and station grants without writing data.
@@ -48,73 +115,13 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 		fail(w, 400, "Invalid mapping request")
 		return
 	}
-	required := map[string]map[string]bool{}
-	total := 0
-	for table, rows := range input.Backup.Tables {
-		if rows == nil {
-			fail(w, 400, "Invalid backup table")
+	if err := validateLegacyMappings(a.db, id.OrganizationID, input.Backup, input.Entries); err != nil {
+		if errors.Is(err, errLegacyGrantLookup) {
+			fail(w, 500, "Unable to validate account grants")
 			return
 		}
-		total += len(rows)
-		if total > 10000 {
-			fail(w, 400, "Backup exceeds row limit")
-			return
-		}
-		fields := legacyIdentityFields[table]
-		site := strings.SplitN(table, "_", 2)[0]
-		for _, row := range rows {
-			if row["organizationId"] != input.Backup.OrganizationID {
-				fail(w, 400, "Backup contains another organization")
-				return
-			}
-			for _, field := range fields {
-				rawValue, present := row[field]
-				if !present || rawValue == nil {
-					requiredIdentity := table == "mes_production_reports" || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_activities" || table == "pos_shifts" || table == "pos_sales" || table == "shop_reviews" || table == "shop_inventory_reservations"
-					if requiredIdentity {
-						fail(w, 400, "Required legacy identity is missing")
-						return
-					}
-					continue
-				}
-				value, ok := rawValue.(string)
-				if !ok || value == "" {
-					fail(w, 400, "Invalid legacy identity reference")
-					return
-				}
-				if table == "shop_inventory_reservations" && field == "sessionId" && !isLegacyDemoIdentity(value, input.Backup.OrganizationID) {
-					continue
-				}
-				if required[value] == nil {
-					required[value] = map[string]bool{}
-				}
-				// Accounts and opportunities are only exposed in the CRM back office.
-				required[value][site] = required[value][site] || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_leads"
-			}
-		}
-	}
-	if len(required) != len(input.Entries) {
-		fail(w, 400, "Mappings must cover every referenced identity")
+		fail(w, 400, err.Error())
 		return
-	}
-	seen := map[string]bool{}
-	for _, entry := range input.Entries {
-		if strings.TrimSpace(entry.Source) == "" || len(entry.Source) > 256 || strings.TrimSpace(entry.Target) == "" || len(entry.Target) > 256 || required[entry.Source] == nil || seen[entry.Source] {
-			fail(w, 400, "Invalid or duplicate mapping")
-			return
-		}
-		seen[entry.Source] = true
-		for site, needsBackOffice := range required[entry.Source] {
-			valid, err := validateLegacyGrant(a.db, id.OrganizationID, entry.Target, site, needsBackOffice)
-			if err != nil {
-				fail(w, 500, "Unable to validate account grants")
-				return
-			}
-			if !valid {
-				fail(w, 400, "Destination account lacks a required enabled workspace grant or scope")
-				return
-			}
-		}
 	}
 	prepared, err := prepareLegacyRows(input.Backup, id.OrganizationID, input.Entries)
 	if err != nil {

@@ -1,5 +1,9 @@
 type Row = Record<string, any>;
 
+export function inspectionChoices(checks: Row[], batch: {workOrderId:string; reportId:string}) {
+  return checks.filter(row => row.workOrderId === batch.workOrderId && row.reportId === batch.reportId);
+}
+
 export function finishedGoodsView(data: Record<string, Row[]>) {
   const dispositions = data.finishedGoodsQualityDispositions || [];
   const inventory = data.finishedGoodsInventory || [];

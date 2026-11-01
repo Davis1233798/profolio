@@ -219,6 +219,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					businessWarnings[name+".refund"]++
 				}
 			}
+			status, _ := row["status"].(string)
+			if (name == "pos_shifts" && status == "open") || (name == "pos_held_carts" && status == "retrieved") || (name == "shop_inventory_reservations" && status == "active") {
+				businessWarnings[name+".activeState"]++
+			}
 			for _, field := range legacyIdentityFields[name] {
 				if value, ok := row[field].(string); ok && value != "" {
 					identityReferences[name+"."+field]++

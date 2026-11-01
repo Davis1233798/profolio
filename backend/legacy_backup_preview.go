@@ -255,6 +255,24 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
+	ledgerBalances := map[string]map[string]float64{}
+	for _, row := range backup.Tables["erp_stock_ledger"] {
+		item, itemOK := row["itemId"].(string)
+		warehouse, warehouseOK := row["warehouseId"].(string)
+		change, changeOK := row["quantityChange"].(float64)
+		balance, balanceOK := row["balanceAfter"].(float64)
+		if !itemOK || !warehouseOK || !changeOK || !balanceOK {
+			businessWarnings["erp_stock_ledger.invalid"]++
+			continue
+		}
+		if ledgerBalances[item] == nil {
+			ledgerBalances[item] = map[string]float64{}
+		}
+		if balance < 0 || ledgerBalances[item][warehouse]+change != balance {
+			businessWarnings["erp_stock_ledger.balance"]++
+		}
+		ledgerBalances[item][warehouse] = balance
+	}
 	missingTables := []string{}
 	for _, name := range legacyBackupTables {
 		if _, ok := backup.Tables[name]; !ok {

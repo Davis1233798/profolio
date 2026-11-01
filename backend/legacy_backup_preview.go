@@ -34,6 +34,13 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		fail(w, 403, "Administrator access required")
 		return
 	}
+	for _, site := range sites {
+		grant := id.grant(site)
+		if grant == nil || grant.Role != "admin" || grant.Scope != "back" {
+			fail(w, 403, "Administrator access to every workspace is required")
+			return
+		}
+	}
 	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		fail(w, 415, "A JSON backup is required")
 		return

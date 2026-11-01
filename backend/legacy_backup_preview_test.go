@@ -16,6 +16,15 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, front...); w.Code != 403 {
 		t.Fatalf("front access %d", w.Code)
 	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='mes'", "org_test_"+space+"_admin"); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 403 {
+		t.Fatalf("missing cross-station grant %d", w.Code)
+	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=1 WHERE user_id=? AND site='mes'", "org_test_"+space+"_admin"); err != nil {
+		t.Fatal(err)
+	}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"missingTables"`) || !strings.Contains(w.Body.String(), `"mes_products"`) {
 		t.Fatalf("preview missing table detection %d: %s", w.Code, w.Body.String())
 	}

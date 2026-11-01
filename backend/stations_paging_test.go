@@ -53,6 +53,22 @@ isolated:
 			t.Fatal("tenant leak")
 		}
 	}
+	if _, err := a.db.Exec("UPDATE erp_items SET category='hidden-category-secret' WHERE id='paging-0'"); err != nil {
+		t.Fatal(err)
+	}
+	found := page("/api/stations/erp/data?view=front&dataset=items&search=paging-0", front)
+	if len(found) != 1 || found[0]["id"] != "paging-0" {
+		t.Fatalf("search missed older item: %v", found)
+	}
+	if rows := page("/api/stations/erp/data?view=front&dataset=items&search=hidden-category-secret", front); len(rows) != 0 {
+		t.Fatal("front search exposed hidden column")
+	}
+	if rows := page("/api/stations/erp/data?view=back&dataset=items&search=paging-0", other); len(rows) != 0 {
+		t.Fatal("search leaked another tenant")
+	}
+	if rows := page("/api/stations/erp/data?view=back&dataset=items&search=hidden-category-secret", admin); len(rows) != 1 {
+		t.Fatal("back search missed permitted field")
+	}
 	if w := request(a, "GET", "/api/stations/erp/data?view=front&dataset=invoices&offset=0", nil, front...); w.Code != 404 {
 		t.Fatalf("front restricted data: %d", w.Code)
 	}

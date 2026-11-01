@@ -204,6 +204,11 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		requestedDataset := r.URL.Query().Get("dataset")
+		search := strings.TrimSpace(r.URL.Query().Get("search"))
+		if len(search) > 200 || (search != "" && requestedDataset == "") {
+			fail(w, 400, "Invalid dataset search")
+			return
+		}
 		offset := 0
 		if raw := r.URL.Query().Get("offset"); raw != "" {
 			var err error
@@ -273,6 +278,46 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			if front && site == "shop" && d.Key == "orders" {
 				query += " AND user_id=?"
 				args = append(args, id.UserID)
+			}
+			if search != "" {
+				searchColumns := d.Front
+				if !front {
+					searchColumns = nil
+					info, err := a.db.Query("PRAGMA table_info(" + d.Table + ")")
+					if err != nil {
+						fail(w, 500, "Unable to search workspace data")
+						return
+					}
+					for info.Next() {
+						var cid, notnull, pk int
+						var name, typ string
+						var defaultValue any
+						if err = info.Scan(&cid, &name, &typ, &notnull, &defaultValue, &pk); err != nil {
+							break
+						}
+						if name != "organization_id" {
+							searchColumns = append(searchColumns, name)
+						}
+					}
+					if err == nil {
+						err = info.Err()
+					}
+					info.Close()
+					if err != nil {
+						fail(w, 500, "Unable to search workspace data")
+						return
+					}
+				}
+				terms := make([]string, 0, len(searchColumns))
+				for _, column := range searchColumns {
+					terms = append(terms, "instr(lower(CAST(\""+strings.ReplaceAll(column, "\"", "\"\"")+"\" AS TEXT)), lower(?)) > 0")
+					args = append(args, search)
+				}
+				if len(terms) == 0 {
+					fail(w, 400, "Dataset cannot be searched")
+					return
+				}
+				query += " AND (" + strings.Join(terms, " OR ") + ")"
 			}
 			args = append(args, offset)
 			rows, err := queryMaps(a.db, query+" ORDER BY rowid DESC LIMIT 500 OFFSET ?", args...)

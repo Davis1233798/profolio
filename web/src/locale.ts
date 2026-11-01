@@ -113,6 +113,7 @@ const traditionalChinese:Record<string,string> = {
   "Open full workspace ↗": "開啟完整工作區 ↗",
   "Search data": "搜尋資料",
   "Enter keywords": "輸入關鍵字",
+  "Search all available records": "搜尋可存取的全部資料",
   "Newer records": "較新資料",
   "Older records": "較舊資料",
   "Loaded range": "載入範圍",

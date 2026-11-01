@@ -18,3 +18,5 @@ Windows CI 的 [執行紀錄](https://github.com/Davis1233798/profolio/actions/r
 ## 程式測試與驗收
 
 先寫會區分 Windows 磁碟機 URI、特殊字元及唯讀模式的測試，再修改 URI 建構。遠端 Windows CI 執行快照特殊路徑、既有快照拒絕、交易回滾、寫入競爭與成功匯入候選；Linux CI 執行 Go race。測試 session cookie 應以登入站台的名稱取得。記錄失敗與通過的 Actions run；尚未取得 Green 前本輪為進行中。使用者要求不在本地執行測試。
+
+Red：[遠端執行紀錄](https://github.com/Davis1233798/profolio/actions/runs/41307705336/job/124851404604) 因 `legacySnapshotReadOnlyURI` 尚未定義而編譯失敗。已於 Red 後加入 URI 建構與站台 cookie 測試修正；Green 尚待遠端 CI 驗證。

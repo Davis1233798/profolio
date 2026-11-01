@@ -43,6 +43,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) || !strings.Contains(w.Body.String(), `"legacy-user":2`) {
 		t.Fatalf("identity and duplicate counts: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "unrelated", "organizationId": "org_source", "ownerId": "not-an-account"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || strings.Contains(w.Body.String(), `"not-an-account"`) {
+		t.Fatalf("unrecognized identity field included: %d %s", w.Code, w.Body.String())
+	}
 	if _, err := a.db.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('conflict-item',?,'conflict-sku','Conflict')", "org_test_"+space); err != nil {
 		t.Fatal(err)
 	}

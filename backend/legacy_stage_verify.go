@@ -6,57 +6,48 @@ import (
 )
 
 // verifyLegacyStoredRows compares every supplied field after database insertion.
-// It is used in isolated staging; actual import must independently verify its transaction.
+// It can also verify inserted rows within a destination transaction.
 func verifyLegacyStoredRows(tx *sql.Tx, data map[string][]map[string]any) error {
 	for _, table := range legacyBackupTables {
-		rows, err := tx.Query("SELECT * FROM \"" + table + "\"")
-		if err != nil {
-			return fmt.Errorf("cannot verify %s", table)
-		}
-		columns, err := rows.Columns()
-		if err != nil {
-			rows.Close()
-			return fmt.Errorf("cannot verify %s", table)
-		}
-		expected := map[string]map[string]any{}
-		for _, row := range data[table] {
-			id, _ := row["id"].(string)
-			expected[id] = row
-		}
-		for rows.Next() {
+		for _, source := range data[table] {
+			id, idOK := source["id"].(string)
+			org, orgOK := source["organizationId"].(string)
+			if !idOK || id == "" || !orgOK || org == "" {
+				return fmt.Errorf("invalid verification identity in %s", table)
+			}
+			rows, err := tx.Query("SELECT * FROM \""+table+"\" WHERE organization_id=? AND id=?", org, id)
+			if err != nil {
+				return fmt.Errorf("cannot verify %s", table)
+			}
+			columns, err := rows.Columns()
+			if err != nil {
+				rows.Close()
+				return fmt.Errorf("cannot verify %s", table)
+			}
+			if !rows.Next() {
+				rows.Close()
+				return fmt.Errorf("missing verified row in %s", table)
+			}
 			values := make([]any, len(columns))
 			dest := make([]any, len(columns))
 			for i := range values {
 				dest[i] = &values[i]
 			}
-			if err = rows.Scan(dest...); err != nil {
-				break
+			err = rows.Scan(dest...)
+			if err == nil {
+				err = rows.Err()
 			}
-			actual := map[string]any{}
+			rows.Close()
+			if err != nil || len(source) != len(columns) {
+				return fmt.Errorf("content mismatch in %s", table)
+			}
 			for i, column := range columns {
-				actual[camel(column)] = values[i]
-			}
-			id, _ := actual["id"].(string)
-			source, ok := expected[id]
-			if !ok || len(source) != len(actual) {
-				rows.Close()
-				return fmt.Errorf("staging content mismatch in %s", table)
-			}
-			for key, value := range source {
-				stored, found := actual[key]
-				if !found || !legacyValueEqual(value, stored) {
-					rows.Close()
-					return fmt.Errorf("staging content mismatch in %s.%s", table, key)
+				key := camel(column)
+				expected, found := source[key]
+				if !found || !legacyValueEqual(expected, values[i]) {
+					return fmt.Errorf("content mismatch in %s.%s", table, key)
 				}
 			}
-			delete(expected, id)
-		}
-		if err == nil {
-			err = rows.Err()
-		}
-		rows.Close()
-		if err != nil || len(expected) != 0 {
-			return fmt.Errorf("cannot verify staged rows in %s", table)
 		}
 	}
 	return nil

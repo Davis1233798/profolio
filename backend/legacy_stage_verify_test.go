@@ -30,6 +30,9 @@ func TestLegacyStoredRowsDetectsChangedValue(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
+	if _, err = tx.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('existing','another_org','OTHER','Existing')"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = insertLegacyRows(tx, data); err != nil {
 		t.Fatal(err)
 	}
@@ -41,5 +44,9 @@ func TestLegacyStoredRowsDetectsChangedValue(t *testing.T) {
 	}
 	if err = verifyLegacyStoredRows(tx, data); err == nil {
 		t.Fatal("changed value was not detected")
+	}
+	row["organizationId"] = "another_org"
+	if err = verifyLegacyStoredRows(tx, data); err == nil {
+		t.Fatal("wrong organization accepted")
 	}
 }

@@ -31,8 +31,8 @@ app.whenReady().then(async()=>{try{const origin=await startBackend();session.def
   if(JSON.stringify(links)!==JSON.stringify(['/crm/login','/erp/login','/mes/login']))throw new Error('Unexpected desktop workspace links');
   for(const site of ['mes','erp','crm']){await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null");const options=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.system-switch option')).map(o=>o.value).filter(Boolean).sort()");if(JSON.stringify(options)!==JSON.stringify(['crm','erp','mes']))throw new Error('Unexpected desktop system switch for '+site)}
   await window.loadURL(origin+'/shop/login');await waitFor("document.querySelector('main')?.textContent.includes('available on the web') === true");
-  console.log('PASS: Windows desktop workspace scope and login routes');app.exit(0);
+  console.log('PASS: Windows desktop workspace scope and login routes');app.quit();
  }
 
- }catch(e){if(desktopSmoke){console.error(e);app.exit(1)}else{dialog.showErrorBox('啟動失敗',e.message);app.quit()}}});
+ }catch(e){if(desktopSmoke){console.error(e);if(backend)backend.kill();app.exit(1)}else{dialog.showErrorBox('啟動失敗',e.message);app.quit()}}});
 app.on('before-quit',()=>{app.isQuitting=true;if(backend)backend.kill()});app.on('window-all-closed',()=>app.quit());

@@ -61,7 +61,7 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 			for _, field := range fields {
 				rawValue, present := row[field]
 				if !present || rawValue == nil {
-					requiredIdentity := table == "crm_accounts" || table == "crm_opportunities" || table == "crm_activities" || table == "pos_shifts" || table == "pos_sales" || table == "shop_reviews" || table == "shop_inventory_reservations"
+					requiredIdentity := table == "mes_production_reports" || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_activities" || table == "pos_shifts" || table == "pos_sales" || table == "shop_reviews" || table == "shop_inventory_reservations"
 					if requiredIdentity {
 						fail(w, 400, "Required legacy identity is missing")
 						return
@@ -80,7 +80,7 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 					required[value] = map[string]bool{}
 				}
 				// Accounts and opportunities are only exposed in the CRM back office.
-				required[value][site] = required[value][site] || table == "crm_accounts" || table == "crm_opportunities"
+				required[value][site] = required[value][site] || table == "crm_accounts" || table == "crm_opportunities" || table == "crm_leads"
 			}
 		}
 	}

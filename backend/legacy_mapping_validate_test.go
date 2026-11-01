@@ -13,6 +13,28 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	otherSpace := token()
 	loginSite(t, a, "admin@suite.test", otherSpace, "erp")
 	path := "/api/stations/erp/legacy-mapping-validate"
+	leadAndReport := map[string]any{
+		"entries": []any{map[string]any{"source": "legacy-worker", "target": "org_test_" + space + "_office"}},
+		"backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{
+			"mes_production_reports": []any{map[string]any{"organizationId": "org_old", "operatorId": "legacy-worker"}},
+			"crm_leads":              []any{map[string]any{"organizationId": "org_old", "assignedTo": "legacy-worker"}},
+		}},
+	}
+	if w := request(a, "POST", path, leadAndReport, admin...); w.Code != http.StatusOK {
+		t.Fatalf("report and lead mapping %d %s", w.Code, w.Body.String())
+	}
+	leadAndReport["entries"] = []any{}
+	if w := request(a, "POST", path, leadAndReport, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("omitted report and lead mapping %d", w.Code)
+	}
+	leadAndReport["entries"] = []any{map[string]any{"source": "legacy-worker", "target": "org_test_" + space + "_front"}}
+	if w := request(a, "POST", path, leadAndReport, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("front-only lead assignee %d", w.Code)
+	}
+	leadAndReport["backup"].(map[string]any)["tables"].(map[string]any)["mes_production_reports"] = []any{map[string]any{"organizationId": "org_old"}}
+	if w := request(a, "POST", path, leadAndReport, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("missing report operator %d", w.Code)
+	}
 	payload := func(target string) map[string]any {
 		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target}}, "backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{"crm_accounts": []any{map[string]any{"organizationId": "org_old", "ownerId": "legacy-op"}}, "shop_orders": []any{map[string]any{"organizationId": "org_old", "userId": "legacy-op"}}}}}
 	}

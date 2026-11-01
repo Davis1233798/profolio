@@ -366,6 +366,7 @@ const traditionalChinese:Record<string,string> = {
   "scrapped": "已報廢",
   "Finished goods batches": "成品批次",
   "No finished goods batches.": "目前沒有成品批次。",
+  "Showing up to 500 loaded batches; more may exist.": "最多顯示已載入的 500 個批次，可能還有其他資料。",
   "Select a batch to review its disposition and receipt actions.": "請選取批次以檢視品質處置與入庫操作。",
   "Batch quality, receipt and order close": "批次品檢、入庫與工單結案",
   "Production completion does not release stock. Each batch requires an explicit quality disposition and receipt; finished-goods inventory is maintained by MES and is not synchronized to ERP.": "報工完成不代表成品放行。每批都必須明確完成品質處置與入庫；成品庫存由 MES 管理，尚未同步至 ERP。",

@@ -4,7 +4,7 @@ if (!['localhost','127.0.0.1','[::1]'].includes(new URL(base).hostname)) throw n
 function client() {
   let cookie='';
   return async(path,body)=>{
-    const response=await fetch(base+path,{method:body?'POST':'GET',headers:{cookie,...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+    const response=await fetch(base+path,{method:body?'POST':'GET',headers:{cookie,...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});
     const session=response.headers.getSetCookie().find(s=>s.startsWith('demo_session_id='));if(session)cookie=session.split(';')[0];
     const result=await response.json();assert.equal(response.ok,true,JSON.stringify(result));return result.data??result;
   };

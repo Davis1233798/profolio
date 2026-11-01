@@ -259,6 +259,18 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
+	openRegisters := map[string]bool{}
+	for _, row := range backup.Tables["pos_shifts"] {
+		status, _ := row["status"].(string)
+		register, ok := row["registerId"].(string)
+		if status != "open" || !ok || register == "" {
+			continue
+		}
+		if openRegisters[register] {
+			businessWarnings["pos_shifts.duplicateOpenRegister"]++
+		}
+		openRegisters[register] = true
+	}
 	orderPayment := map[string]string{}
 	for _, row := range backup.Tables["shop_orders"] {
 		id, idOK := row["id"].(string)

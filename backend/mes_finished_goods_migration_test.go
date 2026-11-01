@@ -42,3 +42,40 @@ func TestMESFinishedGoodsUpgradePreservesEarlyDisposition(t *testing.T) {
 		}
 	}
 }
+
+func TestMESFinishedGoodsUpgradeRejectsIncompatibleSchemaWithoutChanges(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "station.sqlite")
+	db, err := openDB(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(`DROP TABLE mes_finished_goods_quality_dispositions;
+		CREATE TABLE mes_finished_goods_quality_dispositions (
+		 id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, batch_id TEXT NOT NULL,
+		 passed_quantity INTEGER NOT NULL, failed_quantity INTEGER NOT NULL,
+		 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+		INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity)
+		VALUES('old','org_old','batch_old',1,0);`); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if reopened, err := openDB(path); err == nil {
+		reopened.Close()
+		t.Fatal("incompatible schema accepted")
+	}
+	check, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer check.Close()
+	var count int
+	if err = check.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE id='old'").Scan(&count); err != nil || count != 1 {
+		t.Fatalf("historical row lost: %d %v", count, err)
+	}
+	if err = check.QueryRow("SELECT count(*) FROM pragma_table_info('mes_finished_goods_quality_dispositions') WHERE name='quality_check_id'").Scan(&count); err != nil || count != 0 {
+		t.Fatalf("partial upgrade persisted: %d %v", count, err)
+	}
+}

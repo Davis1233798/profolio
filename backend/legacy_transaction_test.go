@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 )
@@ -205,6 +206,14 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	var audit int
 	if err := a.db.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&audit); err != nil || audit != 1 {
 		t.Fatalf("audit %d %v", audit, err)
+	}
+	var auditJSON string
+	if err := a.db.QueryRow("SELECT after_value FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&auditJSON); err != nil {
+		t.Fatal(err)
+	}
+	var auditData map[string]any
+	if err := json.Unmarshal([]byte(auditJSON), &auditData); err != nil || auditData["sourceOrganization"] != "org_old" || auditData["exportedAt"] != backup.ExportedAt || auditData["requestHash"] == "" {
+		t.Fatalf("invalid audit metadata: %s %v", auditJSON, err)
 	}
 	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='mes'", id.UserID); err != nil {
 		t.Fatal(err)

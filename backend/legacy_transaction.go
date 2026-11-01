@@ -77,9 +77,10 @@ func recordLegacyCandidate(tx *sql.Tx, id *Identity, sessionToken string, backup
 		return 0, err
 	}
 	result, _ := json.Marshal(map[string]any{"rows": count})
+	audit, _ := json.Marshal(map[string]any{"rows": count, "sourceOrganization": backup.OrganizationID, "exportedAt": backup.ExportedAt, "format": backup.Format, "requestHash": hash})
 	_, err = tx.Exec("INSERT INTO idempotency_keys(id,organization_id,key,endpoint,request_hash,response_status,response_body) VALUES(?,?,?,?,?,200,?)", "idem_"+token(), id.OrganizationID, key, endpoint, hash, string(result))
 	if err == nil {
-		_, err = tx.Exec("INSERT INTO audit_events(id,organization_id,actor_id,actor_role,action,entity_type,entity_id,after_value) VALUES(?,?,?,'admin','legacy.import','workspace',?,?)", "audit_"+token(), id.OrganizationID, id.UserID, id.OrganizationID, string(result))
+		_, err = tx.Exec("INSERT INTO audit_events(id,organization_id,actor_id,actor_role,action,entity_type,entity_id,after_value) VALUES(?,?,?,'admin','legacy.import','workspace',?,?)", "audit_"+token(), id.OrganizationID, id.UserID, id.OrganizationID, string(audit))
 	}
 	if err != nil {
 		return 0, fmt.Errorf("cannot record import transaction")

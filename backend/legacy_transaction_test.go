@@ -212,7 +212,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	var auditData map[string]any
-	if err := json.Unmarshal([]byte(auditJSON), &auditData); err != nil || auditData["sourceOrganization"] != "org_old" || auditData["exportedAt"] != backup.ExportedAt || auditData["requestHash"] == "" {
+	if err := json.Unmarshal([]byte(auditJSON), &auditData); err != nil || auditData["sourceOrganization"] != "org_old" || auditData["exportedAt"] != backup.ExportedAt || auditData["requestHash"] == "" || auditData["backupHash"] == "" {
 		t.Fatalf("invalid audit metadata: %s %v", auditJSON, err)
 	}
 	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='mes'", id.UserID); err != nil {

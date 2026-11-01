@@ -149,8 +149,9 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 409, "Batch cannot be inspected")
 				return
 			}
-			var failed, inspectionRow, reinspectionAfter int64
-			err = tx.QueryRow("SELECT q.failed_quantity,q.rowid FROM mes_quality_checks q JOIN mes_finished_goods_batches b ON b.organization_id=q.organization_id AND b.work_order_id=q.work_order_id AND b.report_id=q.report_id WHERE b.organization_id=? AND b.id=? AND q.id=?", id.OrganizationID, entity, in.QualityCheckID).Scan(&failed, &inspectionRow)
+			var failed, passed, sample, inspectionRow, reinspectionAfter int64
+			var inspectionStatus string
+			err = tx.QueryRow("SELECT q.failed_quantity,q.passed_quantity,q.sample_quantity,q.status,q.rowid FROM mes_quality_checks q JOIN mes_finished_goods_batches b ON b.organization_id=q.organization_id AND b.work_order_id=q.work_order_id AND b.report_id=q.report_id WHERE b.organization_id=? AND b.id=? AND q.id=?", id.OrganizationID, entity, in.QualityCheckID).Scan(&failed, &passed, &sample, &inspectionStatus, &inspectionRow)
 			if errors.Is(err, sql.ErrNoRows) {
 				fail(w, 404, "Matching inspection not found")
 				return
@@ -163,7 +164,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 503, "Cannot read rework history")
 				return
 			}
-			if inspectionRow <= reinspectionAfter || (in.Disposition == "release" && failed != 0) || (in.Disposition == "quarantine" && failed == 0) {
+			if inspectionRow <= reinspectionAfter || sample < 1 || passed < 0 || failed < 0 || passed+failed != sample || (in.Disposition == "release" && (failed != 0 || inspectionStatus != "passed")) || (in.Disposition == "quarantine" && (failed == 0 || inspectionStatus != "quarantined")) {
 				fail(w, 409, "Inspection does not permit this disposition")
 				return
 			}

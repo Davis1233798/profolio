@@ -15,8 +15,8 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, front...); w.Code != 403 {
 		t.Fatalf("front access %d", w.Code)
 	}
-	if w := request(a, "POST", path, payload, admin...); w.Code != 200 {
-		t.Fatalf("preview %d: %s", w.Code, w.Body.String())
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"missingTables"`) || !strings.Contains(w.Body.String(), `"mes_products"`) {
+		t.Fatalf("preview missing table detection %d: %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"station_accounts": []any{}}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "Empty legacy station_accounts") {

@@ -229,6 +229,12 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
+	missingTables := []string{}
+	for _, name := range legacyBackupTables {
+		if _, ok := backup.Tables[name]; !ok {
+			missingTables = append(missingTables, name)
+		}
+	}
 	idsByTable := map[string]map[string]bool{}
 	for table, rows := range backup.Tables {
 		idsByTable[table] = map[string]bool{}
@@ -257,5 +263,5 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "businessWarnings": businessWarnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "missingTables": missingTables, "businessWarnings": businessWarnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

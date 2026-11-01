@@ -114,6 +114,7 @@ const traditionalChinese:Record<string,string> = {
   "Search data": "搜尋資料",
   "Enter keywords": "輸入關鍵字",
   "Business values needing review": "需要檢查的業務數值",
+  "Missing business tables": "缺少的業務資料表",
   "Missing linked records in backup": "備份內缺少的關聯紀錄",
   "IDs already in this workspace": "此工作區已存在的 ID",
   "Duplicate IDs in backup": "備份中的重複 ID",

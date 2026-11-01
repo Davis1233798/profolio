@@ -25,6 +25,10 @@ func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination 
 		return fmt.Errorf("cannot reserve database connection")
 	}
 	defer conn.Close()
+	var before int
+	if err = conn.QueryRowContext(ctx, "PRAGMA data_version").Scan(&before); err != nil {
+		return fmt.Errorf("cannot inspect database version")
+	}
 	if _, err = conn.ExecContext(ctx, "VACUUM INTO ?", destination); err != nil {
 		return fmt.Errorf("cannot create pre-import snapshot")
 	}
@@ -33,6 +37,16 @@ func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination 
 		return fmt.Errorf("cannot begin import transaction")
 	}
 	defer tx.Rollback()
+	// Establish the transaction's read snapshot before checking data_version.
+	// A concurrent external commit invalidates this attempt; a later write
+	// racing the transaction must fail rather than silently overwrite it.
+	var schemaCount, after int
+	if err = tx.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master").Scan(&schemaCount); err != nil {
+		return fmt.Errorf("cannot establish import snapshot")
+	}
+	if err = tx.QueryRowContext(ctx, "PRAGMA data_version").Scan(&after); err != nil || before != after {
+		return fmt.Errorf("database changed during snapshot; retry with a new backup")
+	}
 	if err = apply(tx); err != nil {
 		return err
 	}

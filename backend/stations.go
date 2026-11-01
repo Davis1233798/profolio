@@ -432,7 +432,7 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if r.Method == "GET" {
-			rows, e := queryMaps(a.db, `SELECT a.user_id,a.email,u.display_name,g.role,g.scope,g.enabled FROM station_accounts a JOIN users u ON u.id=a.user_id JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND g.site=?`, id.OrganizationID, site)
+			rows, e := queryMaps(a.db, `SELECT a.user_id,a.email,a.disabled,u.display_name,g.role,g.scope,g.enabled FROM station_accounts a JOIN users u ON u.id=a.user_id JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND g.site=?`, id.OrganizationID, site)
 			if e != nil {
 				fail(w, 500, "Unable to read accounts")
 				return

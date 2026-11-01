@@ -280,6 +280,19 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			orderPayment[id] = payment
 		}
 	}
+	type orderItemKey struct {
+		order, variant string
+		quantity       float64
+	}
+	orderItems := map[orderItemKey]bool{}
+	for _, row := range backup.Tables["shop_order_items"] {
+		order, o := row["orderId"].(string)
+		variant, v := row["variantId"].(string)
+		quantity, q := row["quantity"].(float64)
+		if o && v && q {
+			orderItems[orderItemKey{order, variant, quantity}] = true
+		}
+	}
 	for _, row := range backup.Tables["shop_inventory_reservations"] {
 		status, _ := row["status"].(string)
 		if status != "active" {
@@ -296,6 +309,11 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			businessWarnings["shop_inventory_reservations.expiredActive"]++
 		}
 		order, ok := row["cartId"].(string)
+		variant, variantOK := row["variantId"].(string)
+		quantity, quantityOK := row["quantity"].(float64)
+		if !ok || !variantOK || !quantityOK || !orderItems[orderItemKey{order, variant, quantity}] {
+			businessWarnings["shop_inventory_reservations.unmatchedItem"]++
+		}
 		payment, found := orderPayment[order]
 		if !ok || !found || (payment != "pending" && payment != "failed") {
 			businessWarnings["shop_inventory_reservations.orderState"]++

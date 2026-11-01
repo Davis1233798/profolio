@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	a := appForTest(t)
@@ -14,6 +17,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 {
 		t.Fatalf("preview %d: %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_missing": []any{}, "erp_items": []any{map[string]any{"id": "legacy-item", "organizationId": "org_source", "unknownField": true}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "erp_missing") || !strings.Contains(w.Body.String(), "unknownField") {
+		t.Fatalf("schema warning: %d %s", w.Code, w.Body.String())
 	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {

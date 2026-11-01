@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -40,11 +41,55 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 	counts := map[string]int{}
+	warnings := []string{}
 	total := 0
 	for name, rows := range backup.Tables {
 		if !(strings.HasPrefix(name, "mes_") || strings.HasPrefix(name, "erp_") || strings.HasPrefix(name, "pos_") || strings.HasPrefix(name, "crm_") || strings.HasPrefix(name, "dining_") || strings.HasPrefix(name, "shop_")) {
 			fail(w, 400, "Unknown backup table")
 			return
+		}
+		var exists int
+		if err := a.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", name).Scan(&exists); err != nil {
+			fail(w, 500, "Unable to inspect destination schema")
+			return
+		}
+		if exists == 0 {
+			warnings = append(warnings, fmt.Sprintf("Table %s does not exist in the destination schema", name))
+		} else {
+			info, err := a.db.Query("PRAGMA table_info(\"" + strings.ReplaceAll(name, "\"", "\"\"") + "\")")
+			if err != nil {
+				fail(w, 500, "Unable to inspect destination schema")
+				return
+			}
+			columns := map[string]bool{}
+			for info.Next() {
+				var cid, notnull, pk int
+				var column, typ string
+				var def any
+				if err = info.Scan(&cid, &column, &typ, &notnull, &def, &pk); err != nil {
+					break
+				}
+				columns[camel(column)] = true
+			}
+			if err == nil {
+				err = info.Err()
+			}
+			info.Close()
+			if err != nil {
+				fail(w, 500, "Unable to inspect destination schema")
+				return
+			}
+			unknown := map[string]bool{}
+			for _, row := range rows {
+				for key := range row {
+					if !columns[key] {
+						unknown[key] = true
+					}
+				}
+			}
+			for key := range unknown {
+				warnings = append(warnings, fmt.Sprintf("Field %s.%s does not exist in the destination schema", name, key))
+			}
 		}
 		counts[name] = len(rows)
 		total += len(rows)
@@ -59,5 +104,5 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

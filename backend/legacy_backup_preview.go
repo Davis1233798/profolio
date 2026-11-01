@@ -41,6 +41,19 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		fail(w, 400, "Invalid legacy backup envelope")
 		return
 	}
+	// Bound work before database metadata queries, including empty-table attacks.
+	if len(backup.Tables) > 200 {
+		fail(w, 400, "Backup exceeds the 200 table limit")
+		return
+	}
+	rowCount := 0
+	for _, rows := range backup.Tables {
+		rowCount += len(rows)
+		if rowCount > 10000 {
+			fail(w, 400, "Backup exceeds the 10,000 row limit")
+			return
+		}
+	}
 	counts := map[string]int{}
 	warnings := []string{}
 	identityReferences := map[string]int{}

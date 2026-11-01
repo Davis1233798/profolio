@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -17,6 +18,14 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"missingTables"`) || !strings.Contains(w.Body.String(), `"mes_products"`) {
 		t.Fatalf("preview missing table detection %d: %s", w.Code, w.Body.String())
+	}
+	manyTables := map[string]any{}
+	for i := 0; i < 201; i++ {
+		manyTables[fmt.Sprintf("erp_table_%d", i)] = []any{}
+	}
+	payload["tables"] = manyTables
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || !strings.Contains(w.Body.String(), "200 table limit") {
+		t.Fatalf("table limit: %d %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"station_accounts": []any{}}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "Empty legacy station_accounts") {

@@ -285,10 +285,15 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		quantity       float64
 	}
 	orderItems := map[orderItemKey]bool{}
+	itemCount := map[string]int{}
+	reservationCount := map[string]int{}
 	for _, row := range backup.Tables["shop_order_items"] {
 		order, o := row["orderId"].(string)
 		variant, v := row["variantId"].(string)
 		quantity, q := row["quantity"].(float64)
+		if o {
+			itemCount[order]++
+		}
 		if o && v && q {
 			orderItems[orderItemKey{order, variant, quantity}] = true
 		}
@@ -309,6 +314,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			businessWarnings["shop_inventory_reservations.expiredActive"]++
 		}
 		order, ok := row["cartId"].(string)
+		if ok {
+			reservationCount[order]++
+		}
 		variant, variantOK := row["variantId"].(string)
 		quantity, quantityOK := row["quantity"].(float64)
 		if !ok || !variantOK || !quantityOK || !orderItems[orderItemKey{order, variant, quantity}] {
@@ -317,6 +325,13 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		payment, found := orderPayment[order]
 		if !ok || !found || (payment != "pending" && payment != "failed") {
 			businessWarnings["shop_inventory_reservations.orderState"]++
+		}
+	}
+	for order, payment := range orderPayment {
+		if payment == "pending" || payment == "failed" {
+			if itemCount[order] == 0 || reservationCount[order] != itemCount[order] {
+				businessWarnings["shop_orders.incompleteReservations"]++
+			}
 		}
 	}
 	ledgerBalances := map[string]map[string]float64{}

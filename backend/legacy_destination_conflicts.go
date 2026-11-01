@@ -6,9 +6,13 @@ import (
 	"strings"
 )
 
-// checkLegacyDestinationConflicts is advisory. A final import must repeat all
-// checks inside its write transaction; database state can change after staging.
-func checkLegacyDestinationConflicts(db *sql.DB, organization string, data map[string][]map[string]any) error {
+// Both sql.DB and sql.Tx satisfy this interface. Staging checks are advisory;
+// the import path must repeat them inside its write transaction.
+type legacyConflictQuery interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+func checkLegacyDestinationConflicts(db legacyConflictQuery, organization string, data map[string][]map[string]any) error {
 	for _, table := range legacyBackupTables {
 		rows := data[table]
 		for start := 0; start < len(rows); start += 400 {

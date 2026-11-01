@@ -97,3 +97,23 @@ func TestRestoreCopyRejectsUnrelatedSQLiteSchema(t *testing.T) {
 		t.Fatal("unrelated SQLite schema accepted")
 	}
 }
+
+func TestRestoreCopyCommandRequiresTwoPaths(t *testing.T) {
+	for _, args := range [][]string{nil, {"source"}, {"", "destination"}, {"source", ""}, {"a", "b", "c"}} {
+		if err := restoreCopyCommand(context.Background(), args); err == nil {
+			t.Fatalf("invalid command accepted: %q", args)
+		}
+	}
+	a := appForTest(t)
+	dir := t.TempDir()
+	source, destination := filepath.Join(dir, "source.sqlite"), filepath.Join(dir, "copy.sqlite")
+	if _, err := a.db.Exec("VACUUM INTO ?", source); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreCopyCommand(context.Background(), []string{source, destination}); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreCopyCommand(context.Background(), []string{source, destination}); err == nil {
+		t.Fatal("command overwrote existing destination")
+	}
+}

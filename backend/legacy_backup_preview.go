@@ -44,6 +44,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	warnings := []string{}
 	identityReferences := map[string]int{}
 	duplicateIDs := map[string]int{}
+	destinationConflicts := map[string]int{}
 	total := 0
 	for name, rows := range backup.Tables {
 		if !(strings.HasPrefix(name, "mes_") || strings.HasPrefix(name, "erp_") || strings.HasPrefix(name, "pos_") || strings.HasPrefix(name, "crm_") || strings.HasPrefix(name, "dining_") || strings.HasPrefix(name, "shop_")) {
@@ -55,6 +56,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			fail(w, 500, "Unable to inspect destination schema")
 			return
 		}
+		canCheckConflicts := false
 		if exists == 0 {
 			warnings = append(warnings, fmt.Sprintf("Table %s does not exist in the destination schema", name))
 		} else {
@@ -81,6 +83,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 				fail(w, 500, "Unable to inspect destination schema")
 				return
 			}
+			canCheckConflicts = columns["id"] && columns["organizationId"]
 			unknown := map[string]bool{}
 			for _, row := range rows {
 				for key := range row {
@@ -119,6 +122,31 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 				}
 			}
 		}
+		if canCheckConflicts && len(seen) > 0 {
+			ids := make([]string, 0, len(seen))
+			for key := range seen {
+				ids = append(ids, key)
+			}
+			for start := 0; start < len(ids); start += 400 {
+				end := start + 400
+				if end > len(ids) {
+					end = len(ids)
+				}
+				args := []any{id.OrganizationID}
+				marks := make([]string, 0, end-start)
+				for _, key := range ids[start:end] {
+					args = append(args, key)
+					marks = append(marks, "?")
+				}
+				var count int
+				query := "SELECT count(*) FROM \"" + strings.ReplaceAll(name, "\"", "\"\"") + "\" WHERE organization_id=? AND id IN (" + strings.Join(marks, ",") + ")"
+				if err := a.db.QueryRow(query, args...).Scan(&count); err != nil {
+					fail(w, 500, "Unable to inspect destination conflicts")
+					return
+				}
+				destinationConflicts[name] += count
+			}
+		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

@@ -26,6 +26,13 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) {
 		t.Fatalf("identity and duplicate counts: %d %s", w.Code, w.Body.String())
 	}
+	if _, err := a.db.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('conflict-item',?,'conflict-sku','Conflict')", "org_test_"+space); err != nil {
+		t.Fatal(err)
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "conflict-item", "organizationId": "org_source"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"destinationConflicts":{"erp_items":1}`) {
+		t.Fatalf("destination conflict: %d %s", w.Code, w.Body.String())
+	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("preview wrote data: %d %v", count, err)

@@ -162,7 +162,7 @@ func (a *App) diningOrder(w http.ResponseWriter, r *http.Request, id *Identity, 
 		}
 		for _, group := range groups {
 			n := counts[group.id]
-			if n > group.max || (category == "飲品" && group.required != 0 && (n == 0 || n < group.min)) {
+			if n > group.max || ((category == "飲品" || strings.EqualFold(strings.TrimSpace(category), "Drinks")) && group.required != 0 && (n == 0 || n < group.min)) {
 				fail(w, 400, "Modifier selection does not meet group requirements")
 				return
 			}

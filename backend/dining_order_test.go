@@ -20,7 +20,7 @@ func TestDiningOrdersModifiersRetriesAndSettlement(t *testing.T) {
 		q    string
 		args []any
 		dest []any
-	}{{"SELECT id FROM dining_table_sessions WHERE organization_id=? AND status='active' LIMIT 1", []any{org}, []any{&session}}, {"SELECT id,price FROM dining_menu_items WHERE organization_id=? AND category='飲品' LIMIT 1", []any{org}, []any{&drink, &price}}, {"SELECT id FROM dining_menu_items WHERE organization_id=? AND is_sold_out=1 LIMIT 1", []any{org}, []any{&sold}}, {"SELECT g.id,o.id,o.additional_price FROM dining_modifier_groups g JOIN dining_modifier_options o ON o.group_id=g.id AND o.organization_id=g.organization_id WHERE g.organization_id=? AND g.is_required=1 LIMIT 1", []any{org}, []any{&group, &option, &extra}}}
+	}{{"SELECT id FROM dining_table_sessions WHERE organization_id=? AND status='active' LIMIT 1", []any{org}, []any{&session}}, {"SELECT id,price FROM dining_menu_items WHERE organization_id=? AND category IN ('飲品','Drinks') LIMIT 1", []any{org}, []any{&drink, &price}}, {"SELECT id FROM dining_menu_items WHERE organization_id=? AND is_sold_out=1 LIMIT 1", []any{org}, []any{&sold}}, {"SELECT g.id,o.id,o.additional_price FROM dining_modifier_groups g JOIN dining_modifier_options o ON o.group_id=g.id AND o.organization_id=g.organization_id WHERE g.organization_id=? AND g.is_required=1 LIMIT 1", []any{org}, []any{&group, &option, &extra}}}
 	for _, q := range queries {
 		if e := a.db.QueryRow(q.q, q.args...).Scan(q.dest...); e != nil {
 			t.Fatal(e)
@@ -110,5 +110,25 @@ func TestDiningOrdersModifiersRetriesAndSettlement(t *testing.T) {
 	closed := map[string]any{"orderType": "dine_in", "sessionId": session, "items": []any{line}, "idempotencyKey": "dining-order-0005"}
 	if w := request(a, "POST", path, closed, staff...); w.Code != 409 {
 		t.Fatalf("closed table %d", w.Code)
+	}
+}
+
+func TestDiningDrinkRequiresModifierInEnglishAndLegacyCategories(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	staff := loginSite(t, a, "front@suite.test", space, "dining")
+	var drink string
+	if err := a.db.QueryRow("SELECT id FROM dining_menu_items WHERE organization_id=? AND category='Drinks' LIMIT 1", org).Scan(&drink); err != nil {
+		t.Fatal(err)
+	}
+	for _, category := range []string{"Drinks", "飲品"} {
+		if _, err := a.db.Exec("UPDATE dining_menu_items SET category=? WHERE organization_id=? AND id=?", category, org, drink); err != nil {
+			t.Fatal(err)
+		}
+		order := map[string]any{"orderType": "takeout", "paymentMethod": "cash", "items": []any{map[string]any{"menuItemId": drink, "quantity": 1}}, "idempotencyKey": "missing-modifier-" + category}
+		if w := request(a, "POST", "/api/stations/dining/order", order, staff...); w.Code != 400 {
+			t.Fatalf("%s: modifier requirement returned %d %s", category, w.Code, w.Body.String())
+		}
 	}
 }

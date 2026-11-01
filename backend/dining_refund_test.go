@@ -15,7 +15,7 @@ func TestDiningTakeoutRefundIsAtomic(t *testing.T) {
 	staff := loginSite(t, a, "front@suite.test", space, "dining")
 	other := loginSite(t, a, "admin@suite.test", token(), "dining")
 	var menu string
-	if e := a.db.QueryRow("SELECT id FROM dining_menu_items WHERE organization_id=? AND is_sold_out=0 AND category!='飲品' LIMIT 1", org).Scan(&menu); e != nil {
+	if e := a.db.QueryRow("SELECT id FROM dining_menu_items WHERE organization_id=? AND is_sold_out=0 AND category NOT IN ('飲品','Drinks') LIMIT 1", org).Scan(&menu); e != nil {
 		t.Fatal(e)
 	}
 	order := map[string]any{"orderType": "takeout", "paymentMethod": "mock_card", "items": []any{map[string]any{"menuItemId": menu, "quantity": 2}}, "idempotencyKey": "refund-order-0001"}

@@ -7,6 +7,10 @@ import "fmt"
 func validateStagedBusiness(data map[string][]map[string]any) error {
 	for table, rows := range data {
 		for _, row := range rows {
+			status, _ := row["status"].(string)
+			if (table == "pos_shifts" && status == "open") || (table == "pos_held_carts" && status == "retrieved") || (table == "shop_inventory_reservations" && status == "active") {
+				return fmt.Errorf("active transactions require resolution before migration in %s", table)
+			}
 			number := func(key string) (float64, bool) { value, ok := row[key].(float64); return value, ok }
 			stock, hasStock := number("stockQuantity")
 			reserved, hasReserved := number("reservedQuantity")

@@ -83,6 +83,11 @@ func TestLegacyStagingWithBusinessFixtures(t *testing.T) {
 				}
 				row[key] = value
 			}
+			// Fixtures include an open POS shift for interactive demos; the
+			// migration candidate represents a workspace after operations stop.
+			if table == "pos_shifts" && row["status"] == "open" {
+				row["status"] = "closed"
+			}
 			backup.Tables[table] = append(backup.Tables[table], row)
 		}
 	}

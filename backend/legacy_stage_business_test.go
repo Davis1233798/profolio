@@ -18,3 +18,13 @@ func TestStagedBusinessRejectsInvalidTotals(t *testing.T) {
 		}
 	}
 }
+
+func TestStagingRejectsActiveTransactions(t *testing.T) {
+	for _, example := range []struct{ table, status string }{
+		{"pos_shifts", "open"}, {"pos_held_carts", "retrieved"}, {"shop_inventory_reservations", "active"},
+	} {
+		if err := validateStagedBusiness(map[string][]map[string]any{example.table: {{"status": example.status}}}); err == nil {
+			t.Fatalf("active %s accepted", example.table)
+		}
+	}
+}

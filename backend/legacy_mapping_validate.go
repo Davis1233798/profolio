@@ -14,6 +14,7 @@ type legacyMappingEntry struct {
 type legacyMappingRequest struct {
 	Entries []legacyMappingEntry `json:"entries"`
 	Backup  legacyBackupPreview  `json:"backup"`
+	Stage   bool                 `json:"stage"`
 }
 
 // Validate mappings against current account and station grants without writing data.
@@ -117,5 +118,16 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 	for _, rows := range prepared {
 		preparedRows += len(rows)
 	}
-	ok(w, map[string]any{"valid": true, "validatedMappings": len(input.Entries), "preparedRows": preparedRows, "notice": "Referenced account grants validated and candidate rows prepared in memory. Full backup validation and import are not complete."})
+	result := map[string]any{"valid": true, "validatedMappings": len(input.Entries), "preparedRows": preparedRows, "staged": false, "notice": "Referenced account grants validated and candidate rows prepared in memory. Full backup validation and import are not complete."}
+	if input.Stage {
+		count, stageErr := stageLegacyRows(prepared)
+		if stageErr != nil {
+			fail(w, 400, "Staging rejected: "+stageErr.Error())
+			return
+		}
+		result["staged"] = true
+		result["stagedRows"] = count
+		result["notice"] = "Rows passed isolated schema and trigger staging. Cross-record, destination and business validation and import are not complete."
+	}
+	ok(w, result)
 }

@@ -2,6 +2,8 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Stage backup in isolation": "在隔離環境驗證備份",
+  "Isolated staging passed; no data has been imported.": "隔離環境驗證通過；尚未匯入任何資料。",
   "Assign lead": "指派潛在客戶",
   "Lead assigned": "已指派潛在客戶",
   "Assignee": "指派對象",

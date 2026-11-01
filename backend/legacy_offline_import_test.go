@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -65,6 +66,29 @@ func TestLegacyOfflineImportLockSnapshotAndAuthorization(t *testing.T) {
 	}
 	if _, err = os.Stat(snapshot); err != nil {
 		t.Fatalf("success snapshot missing: %v", err)
+	}
+	if count, err := offlineImportLegacy(context.Background(), database, filepath.Join(dir, "retry.sqlite"), id, session, backup, nil, "offline-success-key"); err != nil || count != 1 {
+		t.Fatalf("idempotent retry %d: %v", count, err)
+	}
+	current, err := sql.Open("sqlite", database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer current.Close()
+	var rows, audit int
+	if err = current.QueryRow("SELECT count(*) FROM erp_items WHERE organization_id=? AND id='offline-item'", org).Scan(&rows); err != nil {
+		t.Fatal(err)
+	}
+	if err = current.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&audit); err != nil || rows != 1 || audit != 1 {
+		t.Fatalf("retry duplicated records: rows=%d audit=%d err=%v", rows, audit, err)
+	}
+	before, err := sql.Open("sqlite", snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer before.Close()
+	if err = before.QueryRow("SELECT count(*) FROM erp_items WHERE id='offline-item'").Scan(&rows); err != nil || rows != 0 {
+		t.Fatalf("snapshot contains imported row: %d %v", rows, err)
 	}
 	if release, err = acquireMaintenanceLock(database); err != nil {
 		t.Fatalf("lock not released after import: %v", err)

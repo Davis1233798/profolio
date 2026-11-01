@@ -29,6 +29,16 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	if w := request(a, "POST", path, malformed, admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("malformed identity %d", w.Code)
 	}
+	foreignRow := payload("org_test_" + space + "_front")
+	foreignRow["backup"].(map[string]any)["tables"].(map[string]any)["shop_orders"] = []any{map[string]any{"organizationId": "org_other", "userId": "legacy-op"}}
+	if w := request(a, "POST", path, foreignRow, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("foreign source row %d", w.Code)
+	}
+	duplicate := payload("org_test_" + space + "_front")
+	duplicate["entries"] = []any{map[string]any{"source": "legacy-op", "target": "org_test_" + space + "_front"}, map[string]any{"source": "legacy-op", "target": "org_test_" + space + "_front"}}
+	if w := request(a, "POST", path, duplicate, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("duplicate source mapping %d", w.Code)
+	}
 	if w := request(a, "POST", path, payload("org_test_"+otherSpace+"_admin"), admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("foreign mapping %d", w.Code)
 	}

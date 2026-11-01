@@ -53,7 +53,7 @@ func TestStagingRejectsUnbalancedPostedJournal(t *testing.T) {
 
 func TestStagingRejectsExcessCommerceReturns(t *testing.T) {
 	data := map[string][]map[string]any{
-		"shop_order_items": {{"id": "item", "quantity": float64(2), "lineTotal": float64(100)}},
+		"shop_order_items": {{"id": "item", "orderId": "order", "unitPrice": float64(50), "quantity": float64(2), "lineTotal": float64(100)}},
 		"shop_returns":     {{"orderItemId": "item", "quantity": float64(1), "refundAmount": float64(50)}, {"orderItemId": "item", "quantity": float64(2), "refundAmount": float64(50)}},
 	}
 	if err := validateStagedBusiness(data); err == nil {
@@ -66,8 +66,8 @@ func TestStagingRejectsExcessCommerceReturns(t *testing.T) {
 }
 
 func TestStagingValidatesCommerceOrderTotal(t *testing.T) {
-	order := map[string]any{"subtotal": float64(100), "discountAmount": float64(10), "shippingFee": float64(20), "totalAmount": float64(110)}
-	data := map[string][]map[string]any{"shop_orders": {order}}
+	order := map[string]any{"id": "order", "subtotal": float64(100), "discountAmount": float64(10), "shippingFee": float64(20), "totalAmount": float64(110)}
+	data := map[string][]map[string]any{"shop_orders": {order}, "shop_order_items": {{"id": "item", "orderId": "order", "unitPrice": float64(100), "quantity": float64(1), "lineTotal": float64(90)}}}
 	if err := validateStagedBusiness(data); err != nil {
 		t.Fatal(err)
 	}

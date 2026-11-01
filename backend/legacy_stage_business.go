@@ -19,20 +19,37 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 		total.amount += amount
 		returns[item] = total
 	}
+	type commerceLines struct {
+		gross, net float64
+		count      int
+	}
+	linesByOrder := map[string]commerceLines{}
 	for _, row := range data["shop_order_items"] {
 		id, _ := row["id"].(string)
+		order, orderOK := row["orderId"].(string)
 		quantity, q := row["quantity"].(float64)
 		amount, a := row["lineTotal"].(float64)
+		price, p := row["unitPrice"].(float64)
+		if !orderOK || order == "" || !q || !a || !p || quantity <= 0 || price < 0 || amount < 0 || amount > quantity*price {
+			return fmt.Errorf("invalid commerce order line")
+		}
+		lines := linesByOrder[order]
+		lines.gross += quantity * price
+		lines.net += amount
+		lines.count++
+		linesByOrder[order] = lines
 		if total, exists := returns[id]; exists && (!q || !a || quantity <= 0 || amount < 0 || total.quantity > quantity || total.amount > amount) {
 			return fmt.Errorf("commerce returns exceed order item")
 		}
 	}
 	for _, row := range data["shop_orders"] {
+		id, _ := row["id"].(string)
 		subtotal, s := row["subtotal"].(float64)
 		discount, d := row["discountAmount"].(float64)
 		shipping, h := row["shippingFee"].(float64)
 		total, t := row["totalAmount"].(float64)
-		if !s || !d || !h || !t || subtotal < 0 || discount < 0 || discount > subtotal || shipping < 0 || total != subtotal-discount+shipping {
+		lines := linesByOrder[id]
+		if !s || !d || !h || !t || subtotal < 0 || discount < 0 || discount > subtotal || shipping < 0 || total != subtotal-discount+shipping || lines.count == 0 || lines.gross != subtotal || lines.net != subtotal-discount {
 			return fmt.Errorf("invalid commerce order total")
 		}
 	}

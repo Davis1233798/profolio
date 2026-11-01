@@ -201,7 +201,7 @@ func (a *App) shopBusiness(w http.ResponseWriter, r *http.Request, id *Identity,
 			fail(w, 403, "Cannot pay another user's order")
 			return
 		}
-		if payment != "pending" {
+		if payment != "pending" && payment != "failed" {
 			fail(w, 409, "Order is not awaiting payment")
 			return
 		}
@@ -237,7 +237,7 @@ func (a *App) shopBusiness(w http.ResponseWriter, r *http.Request, id *Identity,
 			fail(w, 409, "Reservation expired or unavailable")
 			return
 		}
-		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='paid' WHERE id=? AND organization_id=? AND payment_status='pending'", orderID, id.OrganizationID); e != nil {
+		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='paid' WHERE id=? AND organization_id=? AND payment_status IN ('pending','failed')", orderID, id.OrganizationID); e != nil {
 			fail(w, 503, "Payment update failed")
 			return
 		}

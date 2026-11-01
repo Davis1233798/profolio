@@ -213,3 +213,38 @@ func TestShopFailedPaymentExpiryRestoresStockOnce(t *testing.T) {
 		t.Fatalf("expiry stock=%d payment=%s reservation=%s", stock, payment, reservation)
 	}
 }
+
+func TestShopFailedPaymentCanRetryBeforeExpiry(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	admin := loginSite(t, a, "admin@suite.test", space, "shop")
+	var variant string
+	if err := a.db.QueryRow("SELECT id FROM shop_variants WHERE organization_id=? AND stock_quantity=1 LIMIT 1", org).Scan(&variant); err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/stations/shop/business"
+	checkout := request(a, "POST", path, map[string]any{"action": "checkout", "variantId": variant, "quantity": 1, "idempotencyKey": "retry-checkout-01"}, admin...)
+	if checkout.Code != 200 {
+		t.Fatal(checkout.Body.String())
+	}
+	var body struct {
+		Data struct {
+			OrderID string `json:"orderId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(checkout.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("UPDATE shop_orders SET payment_status='failed' WHERE organization_id=? AND id=?", org, body.Data.OrderID); err != nil {
+		t.Fatal(err)
+	}
+	pay := request(a, "POST", path, map[string]any{"action": "pay", "orderId": body.Data.OrderID, "idempotencyKey": "retry-payment-01"}, admin...)
+	if pay.Code != 200 {
+		t.Fatalf("retry %d %s", pay.Code, pay.Body.String())
+	}
+	var status string
+	if err := a.db.QueryRow("SELECT payment_status FROM shop_orders WHERE id=? AND organization_id=?", body.Data.OrderID, org).Scan(&status); err != nil || status != "paid" {
+		t.Fatalf("payment %s %v", status, err)
+	}
+}

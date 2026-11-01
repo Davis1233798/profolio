@@ -92,3 +92,26 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 		t.Fatalf("revoked target %d", w.Code)
 	}
 }
+
+func TestLegacyGrantSeesTransactionLocalRevocation(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	loginSite(t, a, "admin@suite.test", space, "crm")
+	org, user := "org_test_"+space, "org_test_"+space+"_office"
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	valid, err := validateLegacyGrant(tx, org, user, "crm", true)
+	if err != nil || !valid {
+		t.Fatalf("initial grant %v %v", valid, err)
+	}
+	if _, err = tx.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='crm'", user); err != nil {
+		t.Fatal(err)
+	}
+	valid, err = validateLegacyGrant(tx, org, user, "crm", true)
+	if err != nil || valid {
+		t.Fatalf("revoked grant %v %v", valid, err)
+	}
+}

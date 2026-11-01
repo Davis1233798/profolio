@@ -17,6 +17,14 @@ type legacyMappingRequest struct {
 	Stage   bool                 `json:"stage"`
 }
 
+// validateLegacyGrant checks can run on either a database or the import's
+// transaction, so the final write can recheck grants atomically.
+func validateLegacyGrant(q legacyConflictQuery, organization, user, site string, needsBackOffice bool) (bool, error) {
+	var count int
+	err := q.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.user_id=? AND a.organization_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1 AND (?=0 OR g.scope='back')`, user, organization, site, needsBackOffice).Scan(&count)
+	return count == 1, err
+}
+
 // Validate mappings against current account and station grants without writing data.
 func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *Identity) {
 	if r.Method != http.MethodPost {
@@ -97,13 +105,12 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 		}
 		seen[entry.Source] = true
 		for site, needsBackOffice := range required[entry.Source] {
-			var count int
-			err := a.db.QueryRow(`SELECT count(*) FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.user_id=? AND a.organization_id=? AND a.disabled=0 AND g.site=? AND g.enabled=1 AND (?=0 OR g.scope='back')`, entry.Target, id.OrganizationID, site, needsBackOffice).Scan(&count)
+			valid, err := validateLegacyGrant(a.db, id.OrganizationID, entry.Target, site, needsBackOffice)
 			if err != nil {
 				fail(w, 500, "Unable to validate account grants")
 				return
 			}
-			if count != 1 {
+			if !valid {
 				fail(w, 400, "Destination account lacks a required enabled workspace grant or scope")
 				return
 			}

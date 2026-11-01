@@ -29,7 +29,23 @@ app.whenReady().then(async()=>{try{const origin=await startBackend();session.def
   await waitFor("document.querySelectorAll('.station-grid a').length===3");
   const links=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.station-grid a')).map(a=>new URL(a.href).pathname).sort()");
   if(JSON.stringify(links)!==JSON.stringify(['/crm/login','/erp/login','/mes/login']))throw new Error('Unexpected desktop workspace links');
-  for(const site of ['mes','erp','crm']){await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null");const options=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.system-switch option')).map(o=>o.value).filter(Boolean).sort()");if(JSON.stringify(options)!==JSON.stringify(['crm','erp','mes']))throw new Error('Unexpected desktop system switch for '+site)}
+  for(const site of ['mes','erp','crm']){
+   await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null");
+   const options=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.system-switch option')).map(o=>o.value).filter(Boolean).sort()");
+   if(JSON.stringify(options)!==JSON.stringify(['crm','erp','mes']))throw new Error('Unexpected desktop system switch for '+site);
+   for(const role of ['front','admin']){
+    if(role==='admin'){await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null")}
+    await waitFor("Array.from(document.querySelectorAll('.account-card')).some(b=>b.textContent.includes('"+role+"@suite.test'))");
+    await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.account-card')).find(b=>b.textContent.includes('"+role+"@suite.test')).click()");
+    await waitFor("document.querySelector('input[type=email]')?.value === '"+role+"@suite.test'");
+    await window.webContents.executeJavaScript("document.querySelector('form').requestSubmit()");
+    await waitFor("document.querySelector('.station-sidebar') !== null");
+    const current=await window.webContents.executeJavaScript("location.pathname");
+    if(current!=='/'+site+(role==='admin'?'/back':'/front'))throw new Error('Unexpected '+site+' '+role+' workspace: '+current);
+    const hasBack=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.station-sidebar a')).some(a=>new URL(a.href).pathname === '/"+site+"/back')");
+    if(hasBack!==(role==='admin'))throw new Error('Unexpected '+site+' '+role+' back-office access');
+   }
+  }
   await window.loadURL(origin+'/shop/login');await waitFor("document.querySelector('main')?.textContent.includes('available on the web') === true");
   console.log('PASS: Windows desktop workspace scope and login routes');app.quit();
  }

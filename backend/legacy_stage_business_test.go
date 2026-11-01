@@ -28,3 +28,20 @@ func TestStagingRejectsActiveTransactions(t *testing.T) {
 		}
 	}
 }
+
+func TestStagingRejectsUnbalancedPostedJournal(t *testing.T) {
+	data := map[string][]map[string]any{
+		"erp_journal_entries": {{"id": "journal", "status": "posted"}},
+		"erp_journal_lines": {
+			{"journalId": "journal", "accountCode": "100", "accountName": "Cash", "debitAmount": float64(10), "creditAmount": float64(0)},
+			{"journalId": "journal", "accountCode": "200", "accountName": "Payable", "debitAmount": float64(0), "creditAmount": float64(9)},
+		},
+	}
+	if err := validateStagedBusiness(data); err == nil {
+		t.Fatal("unbalanced journal accepted")
+	}
+	data["erp_journal_lines"][1]["creditAmount"] = float64(10)
+	if err := validateStagedBusiness(data); err != nil {
+		t.Fatal(err)
+	}
+}

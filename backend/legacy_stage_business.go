@@ -5,6 +5,41 @@ import "fmt"
 // validateStagedBusiness enforces basic invariants which SQLite update-only
 // triggers cannot protect during bulk inserts. It is not a full domain audit.
 func validateStagedBusiness(data map[string][]map[string]any) error {
+	type journalTotal struct {
+		debit, credit float64
+		lines         int
+		invalid       bool
+	}
+	journalTotals := map[string]journalTotal{}
+	for _, row := range data["erp_journal_lines"] {
+		id, ok := row["journalId"].(string)
+		if !ok || id == "" {
+			return fmt.Errorf("invalid journal reference")
+		}
+		t := journalTotals[id]
+		t.lines++
+		debit, d := row["debitAmount"].(float64)
+		credit, c := row["creditAmount"].(float64)
+		code, co := row["accountCode"].(string)
+		name, na := row["accountName"].(string)
+		if !d || !c || debit < 0 || credit < 0 || debit > 1000000000000 || credit > 1000000000000 || (debit > 0 && credit > 0) || !co || code == "" || !na || name == "" {
+			t.invalid = true
+		} else {
+			t.debit += debit
+			t.credit += credit
+		}
+		journalTotals[id] = t
+	}
+	for _, row := range data["erp_journal_entries"] {
+		if row["status"] != "posted" {
+			continue
+		}
+		id, _ := row["id"].(string)
+		t := journalTotals[id]
+		if t.invalid || t.lines < 2 || t.lines > 100 || t.debit <= 0 || t.debit != t.credit {
+			return fmt.Errorf("invalid posted journal")
+		}
+	}
 	for table, rows := range data {
 		for _, row := range rows {
 			status, _ := row["status"].(string)

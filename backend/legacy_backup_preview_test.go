@@ -75,6 +75,18 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_purchase_orders.supplierId":1`) {
 		t.Fatalf("missing reference: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{
+		"erp_suppliers": []any{map[string]any{"id": "supplier", "organizationId": "org_source"}},
+		"erp_customers": []any{map[string]any{"id": "customer", "organizationId": "org_source"}},
+		"erp_invoices": []any{
+			map[string]any{"id": "valid", "organizationId": "org_source", "invoiceType": "payable", "partnerType": "supplier", "partnerId": "supplier"},
+			map[string]any{"id": "missing", "organizationId": "org_source", "invoiceType": "receivable", "partnerType": "customer", "partnerId": "missing"},
+			map[string]any{"id": "wrong-kind", "organizationId": "org_source", "invoiceType": "payable", "partnerType": "customer", "partnerId": "customer"},
+		},
+	}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_invoices.partnerId":1`) || !strings.Contains(w.Body.String(), `"erp_invoices.partnerMismatch":1`) {
+		t.Fatalf("invoice partner references: %d %s", w.Code, w.Body.String())
+	}
 	payload["tables"] = map[string]any{"erp_invoices": []any{map[string]any{"id": "invoice", "organizationId": "org_source", "paidAmount": 101, "totalAmount": 100}}}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_invoices.payment":1`) {
 		t.Fatalf("invalid payment: %d %s", w.Code, w.Body.String())

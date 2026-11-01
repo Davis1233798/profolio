@@ -441,6 +441,26 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	for table, rows := range backup.Tables {
 		prefix := strings.SplitN(table, "_", 2)[0]
 		for _, row := range rows {
+			if table == "erp_invoices" {
+				kind, _ := row["partnerType"].(string)
+				invoiceType, _ := row["invoiceType"].(string)
+				target := ""
+				switch kind {
+				case "supplier":
+					target = "erp_suppliers"
+				case "customer":
+					target = "erp_customers"
+				default:
+					businessWarnings["erp_invoices.partnerType"]++
+				}
+				if (invoiceType == "payable" && kind != "supplier") || (invoiceType == "receivable" && kind != "customer") || (invoiceType != "payable" && invoiceType != "receivable") {
+					businessWarnings["erp_invoices.partnerMismatch"]++
+				}
+				partner, valid := row["partnerId"].(string)
+				if target != "" && (!valid || partner == "" || !idsByTable[target][partner]) {
+					missingReferences["erp_invoices.partnerId"]++
+				}
+			}
 			for field, value := range row {
 				target := legacyReferenceTargets[prefix+"_"+field]
 				if table == "shop_inventory_reservations" && field == "cartId" {

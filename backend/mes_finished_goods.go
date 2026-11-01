@@ -9,17 +9,18 @@ import (
 )
 
 type mesFinishedGoodsRequest struct {
-	Action      string `json:"action"`
-	WorkOrderID string `json:"workOrderId"`
-	ReportID    string `json:"reportId"`
-	BatchID     string `json:"batchId"`
-	BatchNumber string `json:"batchNumber"`
-	Quantity    int64  `json:"quantity"`
-	Passed      int64  `json:"passedQuantity"`
-	Failed      int64  `json:"failedQuantity"`
-	Disposition string `json:"disposition"`
-	Reason      string `json:"reason"`
-	Key         string `json:"idempotencyKey"`
+	Action         string `json:"action"`
+	WorkOrderID    string `json:"workOrderId"`
+	ReportID       string `json:"reportId"`
+	BatchID        string `json:"batchId"`
+	QualityCheckID string `json:"qualityCheckId"`
+	BatchNumber    string `json:"batchNumber"`
+	Quantity       int64  `json:"quantity"`
+	Passed         int64  `json:"passedQuantity"`
+	Failed         int64  `json:"failedQuantity"`
+	Disposition    string `json:"disposition"`
+	Reason         string `json:"reason"`
+	Key            string `json:"idempotencyKey"`
 }
 
 func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Identity, g *Grant) {
@@ -32,7 +33,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 		return
 	}
 	var in mesFinishedGoodsRequest
-	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WorkOrderID) > 256 || len(in.ReportID) > 256 || len(in.BatchID) > 256 || len(in.BatchNumber) > 128 {
+	if body(r, &in) != nil || len(in.Key) < 8 || len(in.Key) > 128 || len(in.WorkOrderID) > 256 || len(in.ReportID) > 256 || len(in.BatchID) > 256 || len(in.QualityCheckID) > 256 || len(in.BatchNumber) > 128 {
 		fail(w, 400, "Invalid finished goods request")
 		return
 	}
@@ -130,12 +131,16 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			if in.Disposition == "scrap" {
 				next = "scrapped"
 			}
-			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition,reason) VALUES(?,?,?,?,?,?,?)", "fgqc_"+token(), id.OrganizationID, entity, 0, quantity, in.Disposition, in.Reason)
+			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition,reason,reinspection_after) VALUES(?,?,?,?,?,?,?,(SELECT COALESCE(MAX(rowid),0) FROM mes_quality_checks))", "fgqc_"+token(), id.OrganizationID, entity, 0, quantity, in.Disposition, in.Reason)
 			if err == nil {
 				_, err = tx.Exec("UPDATE mes_finished_goods_batches SET status=? WHERE organization_id=? AND id=?", next, id.OrganizationID, entity)
 			}
 			result["status"] = next
 		} else if in.Action == "qualityDisposition" {
+			if in.QualityCheckID == "" {
+				fail(w, 400, "Select inspection evidence")
+				return
+			}
 			if in.Passed < 0 || in.Failed < 0 || in.Passed+in.Failed != quantity || (in.Disposition != "release" && in.Disposition != "quarantine") || (in.Disposition == "release" && in.Failed != 0) {
 				fail(w, 400, "Invalid quality disposition")
 				return
@@ -144,11 +149,29 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 409, "Batch cannot be inspected")
 				return
 			}
+			var failed, inspectionRow, reinspectionAfter int64
+			err = tx.QueryRow("SELECT q.failed_quantity,q.rowid FROM mes_quality_checks q JOIN mes_finished_goods_batches b ON b.organization_id=q.organization_id AND b.work_order_id=q.work_order_id AND b.report_id=q.report_id WHERE b.organization_id=? AND b.id=? AND q.id=?", id.OrganizationID, entity, in.QualityCheckID).Scan(&failed, &inspectionRow)
+			if errors.Is(err, sql.ErrNoRows) {
+				fail(w, 404, "Matching inspection not found")
+				return
+			}
+			if err != nil {
+				fail(w, 503, "Cannot read inspection")
+				return
+			}
+			if err = tx.QueryRow("SELECT COALESCE(MAX(reinspection_after),0) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=? AND disposition='rework'", id.OrganizationID, entity).Scan(&reinspectionAfter); err != nil {
+				fail(w, 503, "Cannot read rework history")
+				return
+			}
+			if inspectionRow <= reinspectionAfter || (in.Disposition == "release" && failed != 0) || (in.Disposition == "quarantine" && failed == 0) {
+				fail(w, 409, "Inspection does not permit this disposition")
+				return
+			}
 			next := "released"
 			if in.Disposition == "quarantine" {
 				next = "quarantined"
 			}
-			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition) VALUES(?,?,?,?,?,?)", "fgqc_"+token(), id.OrganizationID, entity, in.Passed, in.Failed, in.Disposition)
+			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition,quality_check_id) VALUES(?,?,?,?,?,?,?)", "fgqc_"+token(), id.OrganizationID, entity, in.Passed, in.Failed, in.Disposition, in.QualityCheckID)
 			if err == nil {
 				_, err = tx.Exec("UPDATE mes_finished_goods_batches SET status=? WHERE organization_id=? AND id=?", next, id.OrganizationID, entity)
 			}

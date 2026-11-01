@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS mes_finished_goods_quality_dispositions (
   passed_quantity INTEGER NOT NULL CHECK (passed_quantity >= 0),
   failed_quantity INTEGER NOT NULL CHECK (failed_quantity >= 0),
   disposition TEXT NOT NULL CHECK (disposition IN ('release','quarantine','rework','scrap')),
+  quality_check_id TEXT,
+  reinspection_after INTEGER NOT NULL DEFAULT 0,
   reason TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (passed_quantity + failed_quantity > 0),

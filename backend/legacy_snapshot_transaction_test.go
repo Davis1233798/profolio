@@ -88,6 +88,14 @@ func TestLegacySnapshotTransactionRejectsMultipleConnections(t *testing.T) {
 	}
 }
 
+func TestLegacySnapshotTransactionSupportsSpecialPath(t *testing.T) {
+	a := appForTest(t)
+	snapshot := filepath.Join(t.TempDir(), "snapshot #1 &.sqlite")
+	if err := withLegacySnapshotTransaction(context.Background(), a.db, snapshot, func(*sql.Tx) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestLegacySnapshotTransactionRejectsExternalWriteAfterSnapshot(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "source.sqlite")
 	db, err := openDB(path)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +10,22 @@ import (
 
 	"github.com/gofrs/flock"
 )
+
+// openStationDatabase owns the maintenance lock and database as one resource.
+func openStationDatabase(path string) (*sql.DB, func() error, error) {
+	release, err := acquireMaintenanceLock(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	db, err := openDB(path)
+	if err != nil {
+		return nil, nil, errors.Join(err, release())
+	}
+	closeStation := func() error {
+		return errors.Join(db.Close(), release())
+	}
+	return db, closeStation, nil
+}
 
 // acquireMaintenanceLock coordinates only processes using this protocol and
 // this canonical path. It does not lock out arbitrary SQLite clients.

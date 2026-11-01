@@ -90,11 +90,16 @@ func (i *Identity) grant(site string) *Grant {
 	}
 	return nil
 }
-func openDB(file string) (*sql.DB, error) {
+func openDB(file string) (_ *sql.DB, resultErr error) {
 	db, e := sql.Open("sqlite", file)
 	if e != nil {
 		return nil, e
 	}
+	defer func() {
+		if resultErr != nil {
+			_ = db.Close()
+		}
+	}()
 	db.SetMaxOpenConns(1)
 	if _, e = db.Exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000; PRAGMA journal_mode=WAL;"); e != nil {
 		return nil, e
@@ -470,20 +475,15 @@ func main() {
 	if e := os.MkdirAll(filepath.Dir(file), 0700); e != nil {
 		log.Fatal(e)
 	}
-	release, e := acquireMaintenanceLock(file)
+	db, closeStation, e := openStationDatabase(file)
 	if e != nil {
 		log.Fatal(e)
 	}
 	defer func() {
-		if err := release(); err != nil {
-			log.Printf("Cannot release database maintenance lock: %v", err)
+		if err := closeStation(); err != nil {
+			log.Printf("Cannot close station database: %v", err)
 		}
 	}()
-	db, e := openDB(file)
-	if e != nil {
-		log.Fatal(e)
-	}
-	defer db.Close()
 	assets := os.Getenv("SUITE_WEB")
 	if assets == "" {
 		assets = "../web-dist"

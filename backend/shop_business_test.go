@@ -175,3 +175,41 @@ func TestShopExpiredReservationRestoresStockOnce(t *testing.T) {
 		t.Fatalf("expiry stock=%d payment=%s reservation=%s", stock, payment, reservation)
 	}
 }
+
+func TestShopFailedPaymentExpiryRestoresStockOnce(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	admin := loginSite(t, a, "admin@suite.test", space, "shop")
+	var variant string
+	a.db.QueryRow("SELECT id FROM shop_variants WHERE organization_id=? AND stock_quantity=1 LIMIT 1", org).Scan(&variant)
+	w := request(a, "POST", "/api/stations/shop/business", map[string]any{"action": "checkout", "variantId": variant, "quantity": 1, "idempotencyKey": "expiry-00000001"}, admin...)
+	if w.Code != 200 {
+		t.Fatal(w.Body.String())
+	}
+	var body struct {
+		Data struct {
+			OrderID string `json:"orderId"`
+		} `json:"data"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if _, e := a.db.Exec("UPDATE shop_inventory_reservations SET expires_at='2000-01-01T00:00:00Z' WHERE organization_id=? AND cart_id=?", org, body.Data.OrderID); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := a.db.Exec("UPDATE shop_orders SET payment_status='failed' WHERE organization_id=? AND id=?", org, body.Data.OrderID); e != nil {
+		t.Fatal(e)
+	}
+	for i := 0; i < 2; i++ {
+		if e := a.expireShopReservations(); e != nil {
+			t.Fatal(e)
+		}
+	}
+	var stock int
+	var payment, reservation string
+	a.db.QueryRow("SELECT stock_quantity FROM shop_variants WHERE id=?", variant).Scan(&stock)
+	a.db.QueryRow("SELECT payment_status FROM shop_orders WHERE id=?", body.Data.OrderID).Scan(&payment)
+	a.db.QueryRow("SELECT status FROM shop_inventory_reservations WHERE cart_id=?", body.Data.OrderID).Scan(&reservation)
+	if stock != 1 || payment != "expired" || reservation != "expired" {
+		t.Fatalf("expiry stock=%d payment=%s reservation=%s", stock, payment, reservation)
+	}
+}

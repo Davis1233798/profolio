@@ -27,7 +27,7 @@ func (a *App) expireShopReservations() error {
 		return e
 	}
 	defer tx.Rollback()
-	rows, e := tx.Query(`SELECT r.id,r.organization_id,r.variant_id,r.quantity,r.cart_id FROM shop_inventory_reservations r JOIN shop_orders o ON o.id=r.cart_id AND o.organization_id=r.organization_id WHERE r.status='active' AND o.payment_status='pending' AND EXISTS (SELECT 1 FROM (SELECT x.organization_id,x.cart_id FROM shop_inventory_reservations x JOIN shop_orders pending ON pending.id=x.cart_id AND pending.organization_id=x.organization_id WHERE x.status='active' AND pending.payment_status='pending' AND datetime(x.expires_at)<=CURRENT_TIMESTAMP GROUP BY x.organization_id,x.cart_id LIMIT 100) expired WHERE expired.organization_id=r.organization_id AND expired.cart_id=r.cart_id)`)
+	rows, e := tx.Query(`SELECT r.id,r.organization_id,r.variant_id,r.quantity,r.cart_id FROM shop_inventory_reservations r JOIN shop_orders o ON o.id=r.cart_id AND o.organization_id=r.organization_id WHERE r.status='active' AND o.payment_status IN ('pending','failed') AND EXISTS (SELECT 1 FROM (SELECT x.organization_id,x.cart_id FROM shop_inventory_reservations x JOIN shop_orders pending ON pending.id=x.cart_id AND pending.organization_id=x.organization_id WHERE x.status='active' AND pending.payment_status IN ('pending','failed') AND datetime(x.expires_at)<=CURRENT_TIMESTAMP GROUP BY x.organization_id,x.cart_id LIMIT 100) expired WHERE expired.organization_id=r.organization_id AND expired.cart_id=r.cart_id)`)
 	if e != nil {
 		return e
 	}
@@ -64,7 +64,7 @@ func (a *App) expireShopReservations() error {
 		if _, e = tx.Exec("UPDATE shop_inventory_reservations SET status='expired' WHERE id=? AND organization_id=? AND status='active'", x.id, x.org); e != nil {
 			return e
 		}
-		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='expired' WHERE id=? AND organization_id=? AND payment_status='pending'", x.order, x.org); e != nil {
+		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='expired' WHERE id=? AND organization_id=? AND payment_status IN ('pending','failed')", x.order, x.org); e != nil {
 			return e
 		}
 	}

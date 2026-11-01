@@ -732,7 +732,7 @@ export async function seedOrganization(orgId: string = "org_demo_default") {
     sku: varBlackM.sku,
     unitPrice: 100,
     quantity: 2,
-    lineTotal: 200,
+    lineTotal: 180,
   }).onConflictDoNothing();
 
   await db.insert(demoSeedStates).values({ organizationId: orgId }).onConflictDoNothing();

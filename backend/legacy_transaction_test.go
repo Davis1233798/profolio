@@ -244,3 +244,41 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 		t.Fatal("changed retry accepted")
 	}
 }
+
+func TestLegacyCandidateRetryIgnoresMappingOrder(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	cookies := loginSite(t, a, "admin@suite.test", space, "crm")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	for _, table := range legacyBackupTables {
+		backup.Tables[table] = []map[string]any{}
+	}
+	backup.Tables["crm_leads"] = []map[string]any{
+		{"id": "mapped-a", "organizationId": "org_old", "name": "A", "company": nil, "email": "a@example.test", "phone": nil, "status": "new", "assignedTo": "old-a", "convertedAccountId": nil, "convertedContactId": nil, "convertedOpportunityId": nil, "createdAt": "2026-01-01"},
+		{"id": "mapped-b", "organizationId": "org_old", "name": "B", "company": nil, "email": "b@example.test", "phone": nil, "status": "new", "assignedTo": "old-b", "convertedAccountId": nil, "convertedContactId": nil, "convertedOpportunityId": nil, "createdAt": "2026-01-01"},
+	}
+	entries := []legacyMappingEntry{{Source: "old-a", Target: org + "_admin"}, {Source: "old-b", Target: org + "_office"}}
+	for i := 0; i < 2; i++ {
+		tx, err := a.db.Begin()
+		if err != nil {
+			t.Fatal(err)
+		}
+		count, err := recordLegacyCandidate(tx, id, session, backup, entries, "mapping-order-key")
+		if err != nil || count != 2 {
+			tx.Rollback()
+			t.Fatalf("attempt %d: %d %v", i, count, err)
+		}
+		if err = tx.Commit(); err != nil {
+			t.Fatal(err)
+		}
+		entries[0], entries[1] = entries[1], entries[0]
+	}
+}

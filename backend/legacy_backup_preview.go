@@ -259,6 +259,25 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
+	orderPayment := map[string]string{}
+	for _, row := range backup.Tables["shop_orders"] {
+		id, idOK := row["id"].(string)
+		payment, paymentOK := row["paymentStatus"].(string)
+		if idOK && paymentOK {
+			orderPayment[id] = payment
+		}
+	}
+	for _, row := range backup.Tables["shop_inventory_reservations"] {
+		status, _ := row["status"].(string)
+		if status != "active" {
+			continue
+		}
+		order, ok := row["cartId"].(string)
+		payment, found := orderPayment[order]
+		if !ok || !found || (payment != "pending" && payment != "failed") {
+			businessWarnings["shop_inventory_reservations.orderState"]++
+		}
+	}
 	ledgerBalances := map[string]map[string]float64{}
 	for _, row := range backup.Tables["erp_stock_ledger"] {
 		item, itemOK := row["itemId"].(string)

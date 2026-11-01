@@ -82,6 +82,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"pos_shifts.activeState":1`) {
 		t.Fatalf("active shift: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "o1", "organizationId": "org_source", "paymentStatus": "paid"}}, "shop_inventory_reservations": []any{map[string]any{"id": "r1", "organizationId": "org_source", "cartId": "o1", "status": "active"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.orderState":1`) {
+		t.Fatalf("reservation state: %d %s", w.Code, w.Body.String())
+	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("preview wrote data: %d %v", count, err)

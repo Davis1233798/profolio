@@ -5,7 +5,8 @@ import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv, validateWorkspac
 import { seedOrganization } from "../../lib/seed";
 import { getDb } from "../../db";
 import { posCatalogItems, auditEvents } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, getTableColumns, getTableName } from "drizzle-orm";
+import * as schema from "../../db/schema";
 
 test("Full workspace backup restores every business table atomically; rejects foreign tenant and broken references", async () => {
   const organizationId = `backup_${crypto.randomUUID()}`;
@@ -16,6 +17,14 @@ test("Full workspace backup restores every business table atomically; rejects fo
   const goManifest = readFileSync("backend/legacy_backup_manifest.go", "utf8");
   const manifestTables = [...goManifest.matchAll(/"([a-z][a-z0-9_]+)"/g)].map(match => match[1]).sort();
   assert.deepEqual(manifestTables, Object.keys(backup.tables).sort(), "Go backup inspection manifest must match exported business tables");
+  const expectedBooleanFields = Object.values(schema).flatMap(table => {
+    const name = getTableName(table);
+    if (!(name in backup.tables)) return [];
+    return Object.entries(getTableColumns(table)).filter(([, column]) => column.dataType === "boolean").map(([field]) => `${name}.${field}`);
+  }).sort();
+  const goBooleanFields = [...readFileSync("backend/legacy_backup_booleans.go", "utf8").matchAll(/"([a-z0-9_]+\.[A-Za-z0-9]+)":\s+true/g)].map(match => match[1]).sort();
+  assert.ok(expectedBooleanFields.length > 10, "Legacy boolean fields were not discovered");
+  assert.deepEqual(goBooleanFields, expectedBooleanFields, "Go backup boolean types must match the legacy schema");
   const sourceReferences = readFileSync("lib/tenant-backup.ts", "utf8").split("const referenceTargets: Record<string, string> = {")[1].split("};")[0];
   const goReferences = readFileSync("backend/legacy_backup_references.go", "utf8");
   const sourcePairs = [...sourceReferences.matchAll(/([a-z]+_[A-Za-z]+): "([a-z_]+)"/g)].map(match => `${match[1]}=${match[2]}`).sort();

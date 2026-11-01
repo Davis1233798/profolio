@@ -26,6 +26,9 @@ func verifyLegacyImportSession(tx *sql.Tx, id *Identity, sessionToken string) er
 // of one caller-owned transaction. The caller must create a backup; the session
 // and grants are rechecked here within the transaction.
 func recordLegacyCandidate(tx *sql.Tx, id *Identity, sessionToken string, backup legacyBackupPreview, entries []legacyMappingEntry, key string) (int, error) {
+	if backup.Format != "business-suite/v1" || backup.ExportedAt == "" {
+		return 0, fmt.Errorf("invalid legacy backup envelope")
+	}
 	if len(key) < 8 || len(key) > 128 {
 		return 0, fmt.Errorf("invalid import retry key")
 	}

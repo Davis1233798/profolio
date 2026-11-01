@@ -12,7 +12,7 @@ func TestLegacyCandidateTransactionIsAtomic(t *testing.T) {
 	space := token()
 	loginSite(t, a, "admin@suite.test", space, "erp")
 	org := "org_test_" + space
-	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
 	for _, table := range legacyBackupTables {
 		backup.Tables[table] = []map[string]any{}
 	}
@@ -81,7 +81,7 @@ func TestLegacyCandidateRejectsLoggedOutSession(t *testing.T) {
 	}
 	org := "org_test_" + space
 	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
-	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
 	for _, table := range legacyBackupTables {
 		backup.Tables[table] = []map[string]any{}
 	}
@@ -117,7 +117,7 @@ func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	}
 	org := "org_test_" + space
 	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
-	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
 	for _, table := range legacyBackupTables {
 		backup.Tables[table] = []map[string]any{}
 	}
@@ -160,7 +160,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	}
 	org := "org_test_" + space
 	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
-	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
 	for _, table := range legacyBackupTables {
 		backup.Tables[table] = []map[string]any{}
 	}

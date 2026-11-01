@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv } from "../../lib/tenant-backup";
+import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv, validateWorkspaceBackup } from "../../lib/tenant-backup";
 import { seedOrganization } from "../../lib/seed";
 import { getDb } from "../../db";
 import { posCatalogItems, auditEvents } from "../../db/schema";
@@ -16,7 +16,7 @@ test("Full workspace backup restores every business table atomically; rejects fo
   await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
   const oldEmptyBackup = structuredClone(backup);
   oldEmptyBackup.tables.station_accounts = [];
-  await restoreWorkspace(context, oldEmptyBackup);
+  assert.ok(!Object.hasOwn(validateWorkspaceBackup(context, oldEmptyBackup).tables, "station_accounts"));
   const oldSensitiveBackup = structuredClone(backup);
   oldSensitiveBackup.tables.station_accounts = [{ passwordHash: "must-not-restore" }];
   await assert.rejects(restoreWorkspace(context, oldSensitiveBackup), /身分驗證資料/);

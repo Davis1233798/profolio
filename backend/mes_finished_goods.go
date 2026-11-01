@@ -141,7 +141,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 400, "Select inspection evidence")
 				return
 			}
-			if in.Passed < 0 || in.Failed < 0 || in.Passed+in.Failed != quantity || (in.Disposition != "release" && in.Disposition != "quarantine") || (in.Disposition == "release" && in.Failed != 0) {
+			if in.Passed < 0 || in.Passed > 1000000 || in.Failed < 0 || in.Failed > 1000000 || in.Passed+in.Failed != quantity || (in.Disposition != "release" && in.Disposition != "quarantine") || (in.Disposition == "release" && in.Failed != 0) {
 				fail(w, 400, "Invalid quality disposition")
 				return
 			}

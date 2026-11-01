@@ -112,3 +112,57 @@ func TestMaintenanceLockRejectsInvalidIdentityAndSeparatesDatabases(t *testing.T
 	}
 	defer second()
 }
+
+func TestMaintenanceLockStationDatabaseLifecycle(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "station.sqlite")
+	held, err := acquireMaintenanceLock(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if db, closeStation, err := openStationDatabase(path); err == nil {
+		closeStation()
+		db.Close()
+		held()
+		t.Fatal("station opened while maintenance lock held")
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		held()
+		t.Fatal("refused station startup created the database")
+	}
+	if err = held(); err != nil {
+		t.Fatal(err)
+	}
+	db, closeStation, err := openStationDatabase(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if release, err := acquireMaintenanceLock(path); err == nil {
+		release()
+		closeStation()
+		t.Fatal("station did not retain its lock")
+	}
+	if err = closeStation(); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.Ping(); err == nil {
+		t.Fatal("database remained open after station close")
+	}
+	if release, err := acquireMaintenanceLock(path); err != nil {
+		t.Fatalf("lock retained after station close: %v", err)
+	} else if err = release(); err != nil {
+		t.Fatal(err)
+	}
+	invalid := filepath.Join(dir, "invalid.sqlite")
+	if err = os.WriteFile(invalid, []byte("not sqlite"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = openStationDatabase(invalid); err == nil {
+		t.Fatal("invalid database opened")
+	}
+	if release, err := acquireMaintenanceLock(invalid); err != nil {
+		t.Fatalf("failed startup retained lock: %v", err)
+	} else if err = release(); err != nil {
+		t.Fatal(err)
+	}
+}

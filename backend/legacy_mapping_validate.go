@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var errLegacyGrantLookup = errors.New("unable to validate account grants")
@@ -113,6 +114,10 @@ func (a *App) legacyMappingValidate(w http.ResponseWriter, r *http.Request, id *
 	raw, err := io.ReadAll(io.LimitReader(r.Body, 5000001))
 	if err != nil || len(raw) > 5000000 || json.Unmarshal(raw, &input) != nil || len(input.Entries) > 500 || input.Backup.Format != "business-suite/v1" || !strings.HasPrefix(input.Backup.OrganizationID, "org_") || input.Backup.Tables == nil || len(input.Backup.Tables) > 200 {
 		fail(w, 400, "Invalid mapping request")
+		return
+	}
+	if _, err := time.Parse(time.RFC3339Nano, input.Backup.ExportedAt); err != nil {
+		fail(w, 400, "Invalid backup export time")
 		return
 	}
 	if err := validateLegacyMappings(a.db, id.OrganizationID, input.Backup, input.Entries); err != nil {

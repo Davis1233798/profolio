@@ -15,7 +15,7 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 	path := "/api/stations/erp/legacy-mapping-validate"
 	leadAndReport := map[string]any{
 		"entries": []any{map[string]any{"source": "legacy-worker", "target": "org_test_" + space + "_office"}},
-		"backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{
+		"backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "exportedAt": "2026-01-01T00:00:00Z", "tables": map[string]any{
 			"mes_production_reports": []any{map[string]any{"organizationId": "org_old", "operatorId": "legacy-worker"}},
 			"crm_leads":              []any{map[string]any{"organizationId": "org_old", "assignedTo": "legacy-worker"}},
 		}},
@@ -36,7 +36,12 @@ func TestLegacyMappingValidationEnforcesTenantAndGrants(t *testing.T) {
 		t.Fatalf("missing report operator %d", w.Code)
 	}
 	payload := func(target string) map[string]any {
-		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target}}, "backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "tables": map[string]any{"crm_accounts": []any{map[string]any{"organizationId": "org_old", "ownerId": "legacy-op"}}, "shop_orders": []any{map[string]any{"organizationId": "org_old", "userId": "legacy-op"}}}}}
+		return map[string]any{"entries": []any{map[string]any{"source": "legacy-op", "target": target}}, "backup": map[string]any{"format": "business-suite/v1", "organizationId": "org_old", "exportedAt": "2026-01-01T00:00:00Z", "tables": map[string]any{"crm_accounts": []any{map[string]any{"organizationId": "org_old", "ownerId": "legacy-op"}}, "shop_orders": []any{map[string]any{"organizationId": "org_old", "userId": "legacy-op"}}}}}
+	}
+	invalidTime := payload("org_test_" + space + "_office")
+	invalidTime["backup"].(map[string]any)["exportedAt"] = "invalid"
+	if w := request(a, "POST", path, invalidTime, admin...); w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid export time %d", w.Code)
 	}
 	reservation := payload("org_test_" + space + "_office")
 	reservation["backup"].(map[string]any)["tables"].(map[string]any)["shop_inventory_reservations"] = []any{map[string]any{"organizationId": "org_old", "sessionId": "usr_org_old_admin"}}

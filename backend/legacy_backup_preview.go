@@ -66,6 +66,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 				return
 			}
 			columns := map[string]bool{}
+			required := map[string]bool{}
 			for info.Next() {
 				var cid, notnull, pk int
 				var column, typ string
@@ -74,6 +75,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					break
 				}
 				columns[camel(column)] = true
+				if notnull != 0 && def == nil {
+					required[camel(column)] = true
+				}
 			}
 			if err == nil {
 				err = info.Err()
@@ -85,7 +89,13 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 			canCheckConflicts = columns["id"] && columns["organizationId"]
 			unknown := map[string]bool{}
+			missing := map[string]int{}
 			for _, row := range rows {
+				for key := range required {
+					if value, found := row[key]; !found || value == nil {
+						missing[key]++
+					}
+				}
 				for key := range row {
 					if !columns[key] {
 						unknown[key] = true
@@ -95,6 +105,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			for key := range unknown {
 				warnings = append(warnings, fmt.Sprintf("Field %s.%s does not exist in the destination schema", name, key))
 			}
+			for key, count := range missing {
+				warnings = append(warnings, fmt.Sprintf("Table %s has %d rows missing required field %s", name, count, key))
+			}
 		}
 		counts[name] = len(rows)
 		total += len(rows)
@@ -103,6 +116,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			return
 		}
 		seen := map[string]bool{}
+		invalidIDs := 0
 		for _, row := range rows {
 			if row["organizationId"] != backup.OrganizationID {
 				fail(w, 400, "Backup contains a row from another organization")
@@ -110,7 +124,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 			key, valid := row["id"].(string)
 			if !valid || key == "" {
-				warnings = append(warnings, fmt.Sprintf("Table %s contains a missing or invalid ID", name))
+				invalidIDs++
 			} else if seen[key] {
 				duplicateIDs[name]++
 			} else {
@@ -121,6 +135,9 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					identityReferences[name+"."+field]++
 				}
 			}
+		}
+		if invalidIDs > 0 {
+			warnings = append(warnings, fmt.Sprintf("Table %s contains %d missing or invalid IDs", name, invalidIDs))
 		}
 		if canCheckConflicts && len(seen) > 0 {
 			ids := make([]string, 0, len(seen))

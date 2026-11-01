@@ -21,3 +21,5 @@
 Red：[遠端編譯紀錄](https://github.com/Davis1233798/profolio/actions/runs/41308397540/job/124853461003) 顯示 `acquireMaintenanceLock` 尚未定義。其後已加入鎖定函式與伺服器啟動整合；跨平台 Green、實際伺服器衝突與維護模式端到端仍待遠端驗證。
 
 下一輪先以伺服器初始化入口測試：已有持鎖程序時拒絕且不建立資料庫；成功開啟時其他程序不能取得鎖；關閉後可取得；初始化失敗也釋放鎖。遠端 Red 後再調整資源擁有與關閉順序。
+
+生命週期 Red：[遠端編譯紀錄](https://github.com/Davis1233798/profolio/actions/runs/41308708571/job/124854393783) 顯示 `openStationDatabase` 未定義；其後已加入單一資源擁有者，遠端 Green 尚待驗證。

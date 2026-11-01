@@ -11,6 +11,7 @@ func inspectLegacyLedger(rows []map[string]any) map[string]int {
 		edges               int
 	}
 	chains := map[key]*chain{}
+	orderedBalances := map[key]float64{}
 	warnings := map[string]int{}
 	for _, row := range rows {
 		item, itemOK := row["itemId"].(string)
@@ -27,6 +28,10 @@ func inspectLegacyLedger(rows []map[string]any) map[string]int {
 			continue
 		}
 		k := key{item, warehouse}
+		if orderedBalances[k]+change != balance {
+			warnings["erp_stock_ledger.exportOrder"]++
+		}
+		orderedBalances[k] = balance
 		c := chains[k]
 		if c == nil {
 			c = &chain{out: map[float64][]float64{}, inDegree: map[float64]int{}, outDegree: map[float64]int{}}

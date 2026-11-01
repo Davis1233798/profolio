@@ -100,6 +100,16 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 			t.Fatalf("invalid quantity accepted: %d %s", w.Code, w.Body.String())
 		}
 	}
+	var rejectedDispositions, rejectedAudits int
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&rejectedDispositions); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND entity_id=? AND action='mes.finished_goods.qualityDisposition'", org, batchID).Scan(&rejectedAudits); err != nil {
+		t.Fatal(err)
+	}
+	if rejectedDispositions != 0 || rejectedAudits != 0 {
+		t.Fatalf("invalid quantities persisted: dispositions=%d audits=%d", rejectedDispositions, rejectedAudits)
+	}
 	incorrectRelease := map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": failedInspection, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-failed-evidence-01"}
 	if w := post(incorrectRelease, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("failed inspection used to release: %d %s", w.Code, w.Body.String())

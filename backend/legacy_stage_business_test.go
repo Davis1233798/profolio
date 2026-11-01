@@ -27,6 +27,11 @@ func TestStagingRejectsActiveTransactions(t *testing.T) {
 			t.Fatalf("active %s accepted", example.table)
 		}
 	}
+	for _, status := range []string{"pending", "failed"} {
+		if err := validateStagedBusiness(map[string][]map[string]any{"shop_orders": {{"paymentStatus": status}}}); err == nil {
+			t.Fatalf("unsettled order %s accepted", status)
+		}
+	}
 }
 
 func TestStagingRejectsUnbalancedPostedJournal(t *testing.T) {

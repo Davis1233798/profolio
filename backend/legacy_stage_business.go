@@ -46,6 +46,9 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 			if (table == "pos_shifts" && status == "open") || (table == "pos_held_carts" && status == "retrieved") || (table == "shop_inventory_reservations" && status == "active") {
 				return fmt.Errorf("active transactions require resolution before migration in %s", table)
 			}
+			if table == "shop_orders" && (row["paymentStatus"] == "pending" || row["paymentStatus"] == "failed") {
+				return fmt.Errorf("unsettled commerce orders require resolution before migration")
+			}
 			number := func(key string) (float64, bool) { value, ok := row[key].(float64); return value, ok }
 			stock, hasStock := number("stockQuantity")
 			reserved, hasReserved := number("reservedQuantity")

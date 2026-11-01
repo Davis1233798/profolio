@@ -11,8 +11,8 @@ func TestLegacyDestinationConflictIsTenantScoped(t *testing.T) {
 	if err := checkLegacyDestinationConflicts(a.db, "org_test_a", rows); err == nil {
 		t.Fatal("same-tenant conflict accepted")
 	}
-	if err := checkLegacyDestinationConflicts(a.db, "org_test_b", rows); err != nil {
-		t.Fatalf("other tenant leaked: %v", err)
+	if err := checkLegacyDestinationConflicts(a.db, "org_test_b", rows); err == nil {
+		t.Fatal("global primary key conflict missed")
 	}
 	tx, err := a.db.Begin()
 	if err != nil {

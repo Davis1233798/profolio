@@ -20,7 +20,7 @@ func checkLegacyDestinationConflicts(db legacyConflictQuery, organization string
 			if end > len(rows) {
 				end = len(rows)
 			}
-			args := []any{organization}
+			args := []any{}
 			marks := make([]string, 0, end-start)
 			for _, row := range rows[start:end] {
 				id, ok := row["id"].(string)
@@ -31,7 +31,9 @@ func checkLegacyDestinationConflicts(db legacyConflictQuery, organization string
 				marks = append(marks, "?")
 			}
 			var count int
-			query := "SELECT count(*) FROM \"" + table + "\" WHERE organization_id=? AND id IN (" + strings.Join(marks, ",") + ")"
+			// IDs are global primary keys, so a row belonging to any tenant can
+			// prevent insertion. Do not disclose the conflicting tenant or ID.
+			query := "SELECT count(*) FROM \"" + table + "\" WHERE id IN (" + strings.Join(marks, ",") + ")"
 			if err := db.QueryRow(query, args...).Scan(&count); err != nil {
 				return fmt.Errorf("cannot inspect destination table %s", table)
 			}

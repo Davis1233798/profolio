@@ -470,6 +470,15 @@ func main() {
 	if e := os.MkdirAll(filepath.Dir(file), 0700); e != nil {
 		log.Fatal(e)
 	}
+	release, e := acquireMaintenanceLock(file)
+	if e != nil {
+		log.Fatal(e)
+	}
+	defer func() {
+		if err := release(); err != nil {
+			log.Printf("Cannot release database maintenance lock: %v", err)
+		}
+	}()
 	db, e := openDB(file)
 	if e != nil {
 		log.Fatal(e)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -46,10 +47,18 @@ func recordLegacyCandidate(tx *sql.Tx, id *Identity, sessionToken string, backup
 			return 0, fmt.Errorf("administrator access to every workspace is required")
 		}
 	}
+	// Mapping order has no business meaning; canonicalize it for retries.
+	canonicalEntries := append([]legacyMappingEntry(nil), entries...)
+	sort.Slice(canonicalEntries, func(i, j int) bool {
+		if canonicalEntries[i].Source == canonicalEntries[j].Source {
+			return canonicalEntries[i].Target < canonicalEntries[j].Target
+		}
+		return canonicalEntries[i].Source < canonicalEntries[j].Source
+	})
 	raw, err := json.Marshal(struct {
 		Backup  legacyBackupPreview
 		Entries []legacyMappingEntry
-	}{backup, entries})
+	}{backup, canonicalEntries})
 	if err != nil {
 		return 0, fmt.Errorf("invalid import request")
 	}

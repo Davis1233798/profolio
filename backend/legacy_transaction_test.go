@@ -66,6 +66,42 @@ func TestLegacyImportSessionRecheckedInTransaction(t *testing.T) {
 	}
 }
 
+func TestLegacyCandidateRejectsLoggedOutSession(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("missing session cookie")
+	}
+	org := "org_test_" + space
+	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
+	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
+	for _, table := range legacyBackupTables {
+		backup.Tables[table] = []map[string]any{}
+	}
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err = tx.Exec("DELETE FROM station_sessions WHERE token_hash=?", digest(session)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = recordLegacyCandidate(tx, id, session, backup, nil, "logout-import-key"); err == nil {
+		t.Fatal("logged-out import accepted")
+	}
+	var count int
+	if err = tx.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("unexpected audit %d %v", count, err)
+	}
+}
+
 func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	a := appForTest(t)
 	space := token()

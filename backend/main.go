@@ -148,6 +148,9 @@ func openDB(file string) (_ *sql.DB, resultErr error) {
 			return nil, fmt.Errorf("migration %s: %w", f, err)
 		}
 	}
+	if e = upgradeMESFinishedGoodsColumns(tx); e != nil {
+		return nil, e
+	}
 	if e = tx.Commit(); e != nil {
 		return nil, e
 	}

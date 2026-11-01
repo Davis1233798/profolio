@@ -62,7 +62,6 @@ jobs:
       - if: always()
         run: docker compose -f infra/compose.yaml stop
   station-delivery:
-    needs: [web, infrastructure]
     runs-on: ubuntu-latest
     concurrency:
       group: station-delivery-${{ github.event_name }}-${{ github.ref }}

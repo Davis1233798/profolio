@@ -12,4 +12,6 @@ Acceptance requires a real exported multi-table workspace with linked transactio
 
 Isolated staging rejects open POS shifts, claimed held carts, active commerce reservations and orders with pending or failed payment; resolve them in the source workspace and export again. This is an explicit stop-work policy, not automatic cancellation or data modification.
 
+An older demo seed recorded a discounted order with the undiscounted item total. New seeds correct the value; existing workspaces are not silently changed. If staging reports an order total mismatch, reconcile the actual source order and its return history before exporting again; do not assume that a matching ID makes an existing record safe to rewrite.
+
 The preliminary ERP ledger check looks for a possible balance chain beginning at zero for each item and warehouse, independently of row order. It separately warns when the supplied order cannot be replayed through the destination ledger trigger. Legacy export preserves database row order, and timestamps alone do not prove historical order when absent or tied; full migration validation must still verify the source and actual insertion sequence.

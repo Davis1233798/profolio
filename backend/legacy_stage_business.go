@@ -56,7 +56,7 @@ func validateStagedBusiness(data map[string][]map[string]any) error {
 		total, t := row["totalAmount"].(float64)
 		lines := linesByOrder[id]
 		if !s || !d || !h || !t || subtotal < 0 || discount < 0 || discount > subtotal || shipping < 0 || total != subtotal-discount+shipping || lines.count == 0 || lines.gross != subtotal || lines.net != subtotal-discount {
-			return fmt.Errorf("invalid commerce order total")
+			return fmt.Errorf("invalid commerce order total for order %q: check subtotal, discount, shipping and item totals in the source workspace", id)
 		}
 	}
 	type journalTotal struct {

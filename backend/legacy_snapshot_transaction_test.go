@@ -4,10 +4,31 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/url"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
+
+func TestLegacySnapshotReadOnlyURI(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "snapshot #1 &.sqlite")
+	raw, err := legacySnapshotReadOnlyURI(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.ToSlash(path)
+	if runtime.GOOS == "windows" && filepath.VolumeName(path) != "" {
+		want = "/" + want
+	}
+	if parsed.Scheme != "file" || parsed.Host != "" || parsed.Path != want || parsed.Query().Get("mode") != "ro" {
+		t.Fatalf("incorrect snapshot URI: %q", raw)
+	}
+}
 
 func TestLegacySnapshotTransactionRetainsBackupAndRollsBackFailure(t *testing.T) {
 	a := appForTest(t)

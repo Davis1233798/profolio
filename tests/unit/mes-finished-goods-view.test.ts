@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {finishedGoodsView} from '../../web/src/mesFinishedGoodsView';
+import {finishedGoodsView, inspectionChoices} from '../../web/src/mesFinishedGoodsView';
 
 test('reconstructs independent batch states from server datasets', () => {
   const rows = finishedGoodsView({
@@ -18,4 +18,10 @@ test('reconstructs independent batch states from server datasets', () => {
   assert.equal(rows[1].passedQuantity, undefined);
   assert.equal(rows[2].receivedQuantity, 3);
   assert.deepEqual(finishedGoodsView({}), []);
+});
+
+test('inspection choices are scoped to the selected batch report', () => {
+  const checks = [{id:'one',workOrderId:'w',reportId:'r1'}, {id:'two',workOrderId:'w',reportId:'r2'}, {id:'other',workOrderId:'x',reportId:'r1'}];
+  assert.deepEqual(inspectionChoices(checks, {workOrderId:'w',reportId:'r1'}).map(row => row.id), ['one']);
+  assert.deepEqual(inspectionChoices(checks, {workOrderId:'w',reportId:'r2'}).map(row => row.id), ['two']);
 });

@@ -87,3 +87,38 @@ func TestLegacySnapshotTransactionRejectsMultipleConnections(t *testing.T) {
 		t.Fatal("multiple connections accepted")
 	}
 }
+
+func TestLegacySnapshotTransactionRejectsExternalWriteAfterSnapshot(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "source.sqlite")
+	db, err := openDB(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	external, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer external.Close()
+	snapshot := filepath.Join(t.TempDir(), "before.sqlite")
+	err = withLegacySnapshotTransaction(context.Background(), db, snapshot, func(tx *sql.Tx) error {
+		if _, e := external.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('external','org','external','External')"); e != nil {
+			return e
+		}
+		_, e := tx.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('import','org','import','Import')")
+		return e
+	})
+	if err == nil {
+		t.Fatal("stale snapshot transaction committed")
+	}
+	var externalCount, importCount int
+	if err = db.QueryRow("SELECT count(*) FROM erp_items WHERE id='external'").Scan(&externalCount); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.QueryRow("SELECT count(*) FROM erp_items WHERE id='import'").Scan(&importCount); err != nil {
+		t.Fatal(err)
+	}
+	if externalCount != 1 || importCount != 0 {
+		t.Fatalf("unexpected rows: external=%d import=%d", externalCount, importCount)
+	}
+}

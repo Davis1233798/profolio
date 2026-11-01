@@ -19,6 +19,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"missingTables"`) || !strings.Contains(w.Body.String(), `"mes_products"`) {
 		t.Fatalf("preview missing table detection %d: %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"erp_items": nil}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || !strings.Contains(w.Body.String(), "must contain arrays") {
+		t.Fatalf("null table accepted: %d %s", w.Code, w.Body.String())
+	}
 	manyTables := map[string]any{}
 	for i := 0; i < 201; i++ {
 		manyTables[fmt.Sprintf("erp_table_%d", i)] = []any{}

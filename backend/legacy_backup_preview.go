@@ -54,6 +54,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	}
 	rowCount := 0
 	for _, rows := range backup.Tables {
+		if rows == nil {
+			fail(w, 400, "Backup tables must contain arrays")
+			return
+		}
 		rowCount += len(rows)
 		if rowCount > 10000 {
 			fail(w, 400, "Backup exceeds the 10,000 row limit")

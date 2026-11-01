@@ -116,6 +116,32 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	if w := post(closeInput, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("unresolved quarantine was closable: %d %s", w.Code, w.Body.String())
 	}
+	resolve := map[string]any{"action": "resolveQuarantine", "batchId": batchID, "disposition": "scrap", "reason": "Inspection rejection", "idempotencyKey": "fg-resolve-scrap-001"}
+	if w := post(resolve, viewer...); w.Code != http.StatusForbidden {
+		t.Fatalf("readonly resolved quarantine: %d %s", w.Code, w.Body.String())
+	}
+	if w := post(resolve, foreign...); w.Code != http.StatusNotFound {
+		t.Fatalf("foreign resolved quarantine: %d %s", w.Code, w.Body.String())
+	}
+	if w := post(resolve, admin...); w.Code != http.StatusOK {
+		t.Fatalf("scrap quarantine: %d %s", w.Code, w.Body.String())
+	}
+	if w := post(resolve, admin...); w.Code != http.StatusOK {
+		t.Fatalf("scrap retry: %d %s", w.Code, w.Body.String())
+	}
+	if w := post(receive, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("scrapped batch was receivable: %d %s", w.Code, w.Body.String())
+	}
+	if w := post(closeInput, admin...); w.Code != http.StatusOK {
+		t.Fatalf("resolved scrap prevented closure: %d %s", w.Code, w.Body.String())
+	}
+	var inventory, dispositions int
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_inventory WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&inventory); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&dispositions); err != nil || inventory != 0 || dispositions != 2 {
+		t.Fatalf("scrap inventory=%d dispositions=%d err=%v", inventory, dispositions, err)
+	}
 
 	// This contract treats a batch as fully dispositioned only when its good
 	// quantity is released and its failed quantity is explicitly scrapped or

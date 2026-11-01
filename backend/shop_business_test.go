@@ -232,6 +232,7 @@ func TestShopFailedPaymentCanRetryBeforeExpiry(t *testing.T) {
 	space := token()
 	org := "org_test_" + space
 	admin := loginSite(t, a, "admin@suite.test", space, "shop")
+	front := loginSite(t, a, "front@suite.test", space, "shop")
 	var variant string
 	if err := a.db.QueryRow("SELECT id FROM shop_variants WHERE organization_id=? AND stock_quantity=1 LIMIT 1", org).Scan(&variant); err != nil {
 		t.Fatal(err)
@@ -251,6 +252,10 @@ func TestShopFailedPaymentCanRetryBeforeExpiry(t *testing.T) {
 	}
 	if _, err := a.db.Exec("UPDATE shop_orders SET payment_status='failed' WHERE organization_id=? AND id=?", org, body.Data.OrderID); err != nil {
 		t.Fatal(err)
+	}
+	foreignPay := request(a, "POST", path, map[string]any{"action": "pay", "orderId": body.Data.OrderID, "idempotencyKey": "foreign-retry-01"}, front...)
+	if foreignPay.Code != http.StatusForbidden {
+		t.Fatalf("foreign retry %d %s", foreignPay.Code, foreignPay.Body.String())
 	}
 	pay := request(a, "POST", path, map[string]any{"action": "pay", "orderId": body.Data.OrderID, "idempotencyKey": "retry-payment-01"}, admin...)
 	if pay.Code != 200 {

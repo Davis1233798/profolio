@@ -18,6 +18,14 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 {
 		t.Fatalf("preview %d: %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"station_accounts": []any{}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "Empty legacy station_accounts") {
+		t.Fatalf("empty identity table: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"station_accounts": []any{map[string]any{"passwordHash": "secret"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || strings.Contains(w.Body.String(), "secret") {
+		t.Fatalf("identity records not rejected safely: %d %s", w.Code, w.Body.String())
+	}
 	payload["tables"] = map[string]any{"erp_missing": []any{}, "erp_items": []any{map[string]any{"id": "legacy-item", "organizationId": "org_source", "unknownField": true}}}
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "erp_missing") || !strings.Contains(w.Body.String(), "unknownField") || !strings.Contains(w.Body.String(), "missing required field") {
 		t.Fatalf("schema warning: %d %s", w.Code, w.Body.String())

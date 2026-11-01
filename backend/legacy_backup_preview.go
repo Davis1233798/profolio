@@ -49,6 +49,14 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	destinationConflicts := map[string]int{}
 	total := 0
 	for name, rows := range backup.Tables {
+		if name == "station_accounts" {
+			if rows == nil || len(rows) != 0 {
+				fail(w, 400, "Backup contains authentication data; export a backup without account records")
+				return
+			}
+			warnings = append(warnings, "Empty legacy station_accounts table was ignored; account data is never imported")
+			continue
+		}
 		if !(strings.HasPrefix(name, "mes_") || strings.HasPrefix(name, "erp_") || strings.HasPrefix(name, "pos_") || strings.HasPrefix(name, "crm_") || strings.HasPrefix(name, "dining_") || strings.HasPrefix(name, "shop_")) {
 			fail(w, 400, "Unknown backup table")
 			return

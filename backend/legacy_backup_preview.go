@@ -42,6 +42,8 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	}
 	counts := map[string]int{}
 	warnings := []string{}
+	identityReferences := map[string]int{}
+	duplicateIDs := map[string]int{}
 	total := 0
 	for name, rows := range backup.Tables {
 		if !(strings.HasPrefix(name, "mes_") || strings.HasPrefix(name, "erp_") || strings.HasPrefix(name, "pos_") || strings.HasPrefix(name, "crm_") || strings.HasPrefix(name, "dining_") || strings.HasPrefix(name, "shop_")) {
@@ -97,12 +99,26 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			fail(w, 400, "Backup exceeds the 10,000 row limit")
 			return
 		}
+		seen := map[string]bool{}
 		for _, row := range rows {
 			if row["organizationId"] != backup.OrganizationID {
 				fail(w, 400, "Backup contains a row from another organization")
 				return
 			}
+			key, valid := row["id"].(string)
+			if !valid || key == "" {
+				warnings = append(warnings, fmt.Sprintf("Table %s contains a missing or invalid ID", name))
+			} else if seen[key] {
+				duplicateIDs[name]++
+			} else {
+				seen[key] = true
+			}
+			for _, field := range []string{"ownerId", "cashierId", "lockedBy", "userId", "createdBy", "updatedBy"} {
+				if value, ok := row[field].(string); ok && value != "" {
+					identityReferences[name+"."+field]++
+				}
+			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

@@ -22,6 +22,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "erp_missing") || !strings.Contains(w.Body.String(), "unknownField") {
 		t.Fatalf("schema warning: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"crm_accounts": []any{map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}, map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) {
+		t.Fatalf("identity and duplicate counts: %d %s", w.Code, w.Body.String())
+	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("preview wrote data: %d %v", count, err)

@@ -113,6 +113,8 @@ const traditionalChinese:Record<string,string> = {
   "Open full workspace ↗": "開啟完整工作區 ↗",
   "Search data": "搜尋資料",
   "Enter keywords": "輸入關鍵字",
+  "Duplicate IDs in backup": "備份中的重複 ID",
+  "Identity references requiring review": "需要檢查的身分參照",
   "Schema differences detected": "偵測到資料結構差異",
   "Inspect a legacy workspace backup": "檢查舊版工作區備份",
   "This preliminary inspection does not import or change data. Full validation and migration are not yet available.": "此初步檢查不會匯入或變更資料。完整驗證及遷移功能尚未提供。",

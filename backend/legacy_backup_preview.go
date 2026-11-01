@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var legacyIdentityFields = map[string][]string{
@@ -283,6 +284,11 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		status, _ := row["status"].(string)
 		if status != "active" {
 			continue
+		}
+		if expires, ok := row["expiresAt"].(string); !ok {
+			businessWarnings["shop_inventory_reservations.invalidExpiry"]++
+		} else if _, err := time.Parse(time.RFC3339Nano, expires); err != nil {
+			businessWarnings["shop_inventory_reservations.invalidExpiry"]++
 		}
 		order, ok := row["cartId"].(string)
 		payment, found := orderPayment[order]

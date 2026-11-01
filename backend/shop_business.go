@@ -50,6 +50,17 @@ func (a *App) expireShopReservations() error {
 		return e
 	}
 	for _, x := range list {
+		claimed, claimErr := tx.Exec("UPDATE shop_inventory_reservations SET status='expired' WHERE id=? AND organization_id=? AND status='active'", x.id, x.org)
+		if claimErr != nil {
+			return claimErr
+		}
+		claimedCount, claimErr := claimed.RowsAffected()
+		if claimErr != nil {
+			return claimErr
+		}
+		if claimedCount != 1 {
+			return errors.New("reservation state changed during expiry")
+		}
 		result, updateErr := tx.Exec("UPDATE shop_variants SET stock_quantity=stock_quantity+? WHERE id=? AND organization_id=?", x.qty, x.variant, x.org)
 		if updateErr != nil {
 			return updateErr
@@ -60,9 +71,6 @@ func (a *App) expireShopReservations() error {
 		}
 		if count != 1 {
 			return errors.New("reservation variant not found")
-		}
-		if _, e = tx.Exec("UPDATE shop_inventory_reservations SET status='expired' WHERE id=? AND organization_id=? AND status='active'", x.id, x.org); e != nil {
-			return e
 		}
 		if _, e = tx.Exec("UPDATE shop_orders SET payment_status='expired' WHERE id=? AND organization_id=? AND payment_status IN ('pending','failed')", x.order, x.org); e != nil {
 			return e

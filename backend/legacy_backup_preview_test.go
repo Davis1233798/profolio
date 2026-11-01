@@ -98,6 +98,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_orders.incompleteReservations":1`) {
 		t.Fatalf("incomplete reservation: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "o", "organizationId": "org_source", "paymentStatus": "pending"}}, "shop_order_items": []any{map[string]any{"id": "i1", "organizationId": "org_source", "orderId": "o", "variantId": "v1", "quantity": 1}, map[string]any{"id": "i2", "organizationId": "org_source", "orderId": "o", "variantId": "v2", "quantity": 1}}, "shop_inventory_reservations": []any{map[string]any{"id": "r1", "organizationId": "org_source", "cartId": "o", "variantId": "v1", "quantity": 1, "status": "active"}, map[string]any{"id": "r2", "organizationId": "org_source", "cartId": "o", "variantId": "v1", "quantity": 1, "status": "active"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_orders.reservationItemMismatch":2`) {
+		t.Fatalf("reservation item mismatch: %d %s", w.Code, w.Body.String())
+	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("preview wrote data: %d %v", count, err)

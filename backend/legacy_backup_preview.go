@@ -284,7 +284,8 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		order, variant string
 		quantity       float64
 	}
-	orderItems := map[orderItemKey]bool{}
+	orderItems := map[orderItemKey]int{}
+	reservationItems := map[orderItemKey]int{}
 	itemCount := map[string]int{}
 	reservationCount := map[string]int{}
 	for _, row := range backup.Tables["shop_order_items"] {
@@ -295,7 +296,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			itemCount[order]++
 		}
 		if o && v && q {
-			orderItems[orderItemKey{order, variant, quantity}] = true
+			orderItems[orderItemKey{order, variant, quantity}]++
 		}
 	}
 	for _, row := range backup.Tables["shop_inventory_reservations"] {
@@ -319,12 +320,19 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		}
 		variant, variantOK := row["variantId"].(string)
 		quantity, quantityOK := row["quantity"].(float64)
-		if !ok || !variantOK || !quantityOK || !orderItems[orderItemKey{order, variant, quantity}] {
+		if !ok || !variantOK || !quantityOK || orderItems[orderItemKey{order, variant, quantity}] == 0 {
 			businessWarnings["shop_inventory_reservations.unmatchedItem"]++
+		} else {
+			reservationItems[orderItemKey{order, variant, quantity}]++
 		}
 		payment, found := orderPayment[order]
 		if !ok || !found || (payment != "pending" && payment != "failed") {
 			businessWarnings["shop_inventory_reservations.orderState"]++
+		}
+	}
+	for key, count := range orderItems {
+		if (orderPayment[key.order] == "pending" || orderPayment[key.order] == "failed") && reservationItems[key] != count {
+			businessWarnings["shop_orders.reservationItemMismatch"]++
 		}
 	}
 	for order, payment := range orderPayment {

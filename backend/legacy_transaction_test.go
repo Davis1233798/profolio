@@ -42,7 +42,7 @@ func TestLegacyImportSessionRecheckedInTransaction(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -73,7 +73,7 @@ func TestLegacyCandidateRejectsLoggedOutSession(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -109,7 +109,7 @@ func TestLegacyCandidateRejectsInvalidExportTime(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -132,7 +132,7 @@ func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -175,7 +175,7 @@ func TestLegacyCandidateSnapshotRetainedWhenImportFails(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -213,7 +213,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_erp" {
 			session = cookie.Value
 		}
 	}
@@ -289,7 +289,7 @@ func TestLegacyCandidateRetryIgnoresMappingOrder(t *testing.T) {
 	cookies := loginSite(t, a, "admin@suite.test", space, "crm")
 	var session string
 	for _, cookie := range cookies {
-		if cookie.Name == cookieName {
+		if cookie.Name == cookieName+"_crm" {
 			session = cookie.Value
 		}
 	}

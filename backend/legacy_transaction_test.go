@@ -69,7 +69,16 @@ func TestLegacyImportSessionRecheckedInTransaction(t *testing.T) {
 func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	a := appForTest(t)
 	space := token()
-	loginSite(t, a, "admin@suite.test", space, "erp")
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("missing session")
+	}
 	org := "org_test_" + space
 	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
 	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
@@ -79,7 +88,7 @@ func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 	backup.Tables["erp_items"] = []map[string]any{{"id": "snapshot-candidate", "organizationId": "org_old", "sku": "snapshot-candidate", "name": "Item", "unit": "PCS", "boxConversionRatio": float64(1), "category": "general", "isActive": true, "createdAt": "2026-01-01"}}
 	path := filepath.Join(t.TempDir(), "before.sqlite")
 	err := withLegacySnapshotTransaction(context.Background(), a.db, path, func(tx *sql.Tx) error {
-		_, e := recordLegacyCandidate(tx, id, backup, nil, "legacy-snapshot-key")
+		_, e := recordLegacyCandidate(tx, id, session, backup, nil, "legacy-snapshot-key")
 		return e
 	})
 	if err != nil {
@@ -103,7 +112,16 @@ func TestLegacyCandidateSnapshotAndCommit(t *testing.T) {
 func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	a := appForTest(t)
 	space := token()
-	loginSite(t, a, "admin@suite.test", space, "erp")
+	cookies := loginSite(t, a, "admin@suite.test", space, "erp")
+	var session string
+	for _, cookie := range cookies {
+		if cookie.Name == cookieName {
+			session = cookie.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("missing session")
+	}
 	org := "org_test_" + space
 	id := &Identity{OrganizationID: org, UserID: org + "_admin"}
 	backup := legacyBackupPreview{OrganizationID: "org_old", Tables: map[string][]map[string]any{}}
@@ -116,7 +134,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		count, err := recordLegacyCandidate(tx, id, backup, nil, "legacy-retry-key")
+		count, err := recordLegacyCandidate(tx, id, session, backup, nil, "legacy-retry-key")
 		if err != nil || count != 1 {
 			tx.Rollback()
 			t.Fatalf("retry %d: %d %v", i, count, err)
@@ -136,7 +154,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = recordLegacyCandidate(revoked, id, backup, nil, "legacy-retry-key"); err == nil {
+	if _, err = recordLegacyCandidate(revoked, id, session, backup, nil, "legacy-retry-key"); err == nil {
 		revoked.Rollback()
 		t.Fatal("revoked administrator accepted on retry")
 	}
@@ -150,7 +168,7 @@ func TestLegacyCandidateRetryAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
-	if _, err = recordLegacyCandidate(tx, id, backup, nil, "legacy-retry-key"); err == nil {
+	if _, err = recordLegacyCandidate(tx, id, session, backup, nil, "legacy-retry-key"); err == nil {
 		t.Fatal("changed retry accepted")
 	}
 }

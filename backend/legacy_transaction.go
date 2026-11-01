@@ -23,11 +23,14 @@ func verifyLegacyImportSession(tx *sql.Tx, id *Identity, sessionToken string) er
 }
 
 // recordLegacyCandidate makes the data write, retry record, and audit entry part
-// of one caller-owned transaction. The caller must verify the active session
-// and create a backup; grants are rechecked here within the transaction.
-func recordLegacyCandidate(tx *sql.Tx, id *Identity, backup legacyBackupPreview, entries []legacyMappingEntry, key string) (int, error) {
+// of one caller-owned transaction. The caller must create a backup; the session
+// and grants are rechecked here within the transaction.
+func recordLegacyCandidate(tx *sql.Tx, id *Identity, sessionToken string, backup legacyBackupPreview, entries []legacyMappingEntry, key string) (int, error) {
 	if len(key) < 8 || len(key) > 128 {
 		return 0, fmt.Errorf("invalid import retry key")
+	}
+	if err := verifyLegacyImportSession(tx, id, sessionToken); err != nil {
+		return 0, err
 	}
 	for _, site := range sites {
 		var count int

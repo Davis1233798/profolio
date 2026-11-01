@@ -15,6 +15,9 @@ func stageLegacyRows(data map[string][]map[string]any) (int, error) {
 	if err := validateStagedReferences(data); err != nil {
 		return 0, err
 	}
+	if err := validateStagedBusiness(data); err != nil {
+		return 0, err
+	}
 	db, err := openDB(":memory:")
 	if err != nil {
 		return 0, fmt.Errorf("cannot create staging database")

@@ -8,6 +8,10 @@
 
 裝置範圍：可使用現代瀏覽器的觸控／工業平板與智慧螢幕共用響應式 Web；無瀏覽器的 AIoT 感測裝置透過既有 MQTT 服務接入。Electron 以桌面 OS 為目標，不宣稱可安裝於 iOS／Android。
 
+## 桌面版系統範圍
+
+桌面程式目前僅提供 MES、ERP、CRM 的入口與畫面。POS、餐飲和電商繼續使用網頁版；這項調整不改變 Web 的站台功能或資料。
+
 ## 遷移界線
 
 公開 release 18 暫維持既有服務。新增 `backend/` Go、`web/` 純 React、`desktop/` Electron。必須完成原有業務 API 的逐項移植與回歸後才可切換公開站台；Go 不可只是轉送 TypeScript API。

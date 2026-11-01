@@ -19,6 +19,7 @@ async function startBackend(){
 }
 app.whenReady().then(async()=>{try{const origin=await startBackend();session.defaultSession.setPermissionRequestHandler((_w,_p,callback)=>callback(false));session.defaultSession.setPermissionCheckHandler(()=>false);
  window=new BrowserWindow({width:1440,height:960,minWidth:360,minHeight:600,title:'Business Suite',webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,allowRunningInsecureContent:false}});
+ window.webContents.setUserAgent(window.webContents.getUserAgent()+' BusinessSuiteDesktop/1.0');
  window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',(event,url)=>{try{if(new URL(url).origin!==origin)event.preventDefault()}catch{event.preventDefault()}});
  window.webContents.on('will-attach-webview',event=>event.preventDefault());await window.loadURL(origin);window.on('closed',()=>{window=null});
  }catch(e){dialog.showErrorBox('啟動失敗',e.message);app.quit()}});

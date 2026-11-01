@@ -2,6 +2,8 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "This workspace is available on the web": "此系統可使用網頁版",
+  "The desktop app currently includes MES, ERP and CRM.": "桌面程式目前提供 MES、ERP 與 CRM。",
   "Latest 100 events":"最近 100 筆事件",
   "Showing up to 500 recent orders in this workspace.":"顯示此工作區最近最多 500 筆訂單。", "No orders available":"目前沒有訂單",
   "Paid demo revenue":"示範已付款收入", "Demo refunds":"示範退款", "Net demo revenue":"示範淨收入", "Demo revenue includes shipping and subtracts recorded demo refunds; no external payment is charged.":"示範收入包含運費並扣除已記錄的示範退款，不會進行外部扣款。",

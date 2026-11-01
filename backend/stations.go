@@ -157,6 +157,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.crmSupport(w, r, id, g)
 		return
 	}
+	if action == "assign-lead" && site == "crm" {
+		a.crmAssignLead(w, r, id, g)
+		return
+	}
 	if action == "quotes" && site == "crm" {
 		a.crmQuotes(w, r, id, g)
 		return

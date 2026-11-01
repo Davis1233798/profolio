@@ -2,6 +2,9 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Assign lead": "指派潛在客戶",
+  "Lead assigned": "已指派潛在客戶",
+  "Assignee": "指派對象",
   "Full backup inspection requires administrator access to all six workspaces.": "完整備份檢查需要六套系統的後台管理員權限。",
   "This workspace is available on the web": "此系統可使用網頁版",
   "The desktop app currently includes MES, ERP and CRM.": "桌面程式目前提供 MES、ERP 與 CRM。",

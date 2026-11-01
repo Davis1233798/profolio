@@ -1,0 +1,26 @@
+package main
+
+import "testing"
+
+func TestLegacyLedgerOrderIndependent(t *testing.T) {
+	row := func(change, balance float64) map[string]any {
+		return map[string]any{"itemId": "item", "warehouseId": "warehouse", "quantityChange": change, "balanceAfter": balance}
+	}
+	for _, rows := range [][]map[string]any{
+		{row(5, 5), row(-2, 3)},
+		{row(-2, 3), row(5, 5)},
+	} {
+		if got := inspectLegacyLedger(rows); len(got) != 0 {
+			t.Fatalf("valid ledger: %v", got)
+		}
+	}
+	for _, rows := range [][]map[string]any{
+		{row(5, 5), row(-2, 4)},
+		{row(5, 5), row(1, 8), row(-1, 7)}, // disconnected cycle
+		{row(-1, -1)},
+	} {
+		if got := inspectLegacyLedger(rows); got["erp_stock_ledger.balance"] == 0 {
+			t.Fatalf("invalid ledger accepted: %v", rows)
+		}
+	}
+}

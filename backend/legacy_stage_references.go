@@ -9,9 +9,24 @@ import (
 // establish that a candidate can safely be merged into a destination workspace.
 func validateStagedReferences(data map[string][]map[string]any) error {
 	ids := map[string]map[string]bool{}
+	orderForItem := map[string]string{}
+	for _, row := range data["shop_order_items"] {
+		item, itemOK := row["id"].(string)
+		order, orderOK := row["orderId"].(string)
+		if itemOK && orderOK {
+			orderForItem[item] = order
+		}
+	}
 	for table, rows := range data {
 		ids[table] = map[string]bool{}
 		for _, row := range rows {
+			if table == "shop_returns" {
+				item, itemOK := row["orderItemId"].(string)
+				order, orderOK := row["orderId"].(string)
+				if !itemOK || !orderOK || orderForItem[item] != order {
+					return fmt.Errorf("return item does not belong to order")
+				}
+			}
 			id, ok := row["id"].(string)
 			if !ok || id == "" || ids[table][id] {
 				return fmt.Errorf("invalid or duplicate ID in %s", table)

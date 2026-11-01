@@ -23,3 +23,19 @@ func TestStagedReferencesRejectMissingAndWrongInvoicePartner(t *testing.T) {
 		t.Fatal("wrong invoice partner type accepted")
 	}
 }
+
+func TestStagedReturnMustMatchOrderItem(t *testing.T) {
+	data := map[string][]map[string]any{
+		"shop_orders":      {{"id": "order-a"}, {"id": "order-b"}},
+		"shop_variants":    {{"id": "variant"}},
+		"shop_order_items": {{"id": "item", "orderId": "order-a", "variantId": "variant"}},
+		"shop_returns":     {{"id": "return", "orderId": "order-b", "orderItemId": "item"}},
+	}
+	if err := validateStagedReferences(data); err == nil {
+		t.Fatal("return linked to another order accepted")
+	}
+	data["shop_returns"][0]["orderId"] = "order-a"
+	if err := validateStagedReferences(data); err != nil {
+		t.Fatal(err)
+	}
+}

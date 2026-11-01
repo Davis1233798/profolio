@@ -118,6 +118,7 @@ const traditionalChinese:Record<string,string> = {
   "Missing linked records in backup": "備份內缺少的關聯紀錄",
   "IDs already in this workspace": "此工作區已存在的 ID",
   "Duplicate IDs in backup": "備份中的重複 ID",
+  "Legacy identities requiring mapping": "需要對應的舊版身分",
   "Identity references requiring review": "需要檢查的身分參照",
   "Schema differences detected": "偵測到資料結構差異",
   "Inspect a legacy workspace backup": "檢查舊版工作區備份",

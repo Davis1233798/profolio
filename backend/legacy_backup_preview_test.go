@@ -40,7 +40,7 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 		t.Fatalf("schema warning: %d %s", w.Code, w.Body.String())
 	}
 	payload["tables"] = map[string]any{"crm_accounts": []any{map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}, map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}}}
-	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) {
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) || !strings.Contains(w.Body.String(), `"legacy-user":2`) {
 		t.Fatalf("identity and duplicate counts: %d %s", w.Code, w.Body.String())
 	}
 	if _, err := a.db.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('conflict-item',?,'conflict-sku','Conflict')", "org_test_"+space); err != nil {

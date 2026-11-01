@@ -57,6 +57,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	counts := map[string]int{}
 	warnings := []string{}
 	identityReferences := map[string]int{}
+	legacyIdentities := map[string]int{}
 	duplicateIDs := map[string]int{}
 	businessWarnings := map[string]int{}
 	destinationConflicts := map[string]int{}
@@ -210,6 +211,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			for _, field := range []string{"ownerId", "cashierId", "lockedBy", "userId", "createdBy", "updatedBy"} {
 				if value, ok := row[field].(string); ok && value != "" {
 					identityReferences[name+"."+field]++
+					legacyIdentities[value]++
 				}
 			}
 		}
@@ -276,5 +278,5 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			}
 		}
 	}
-	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "missingTables": missingTables, "businessWarnings": businessWarnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
+	ok(w, map[string]any{"sourceOrganization": backup.OrganizationID, "destinationOrganization": id.OrganizationID, "exportedAt": backup.ExportedAt, "rowCount": total, "tableCounts": counts, "schemaWarnings": warnings, "identityReferences": identityReferences, "legacyIdentities": legacyIdentities, "duplicateIds": duplicateIDs, "destinationConflicts": destinationConflicts, "missingReferences": missingReferences, "missingTables": missingTables, "businessWarnings": businessWarnings, "readyToImport": false, "notice": "Preliminary inspection only; schema, references, identities and business rules have not been validated. No data was imported."})
 }

@@ -39,3 +39,12 @@ func TestLegacySnapshotTransactionRetainsBackupAndRollsBackFailure(t *testing.T)
 		t.Fatal("existing snapshot accepted")
 	}
 }
+
+func TestLegacySnapshotTransactionRejectsMultipleConnections(t *testing.T) {
+	a := appForTest(t)
+	a.db.SetMaxOpenConns(2)
+	snapshot := filepath.Join(t.TempDir(), "before.sqlite")
+	if err := withLegacySnapshotTransaction(context.Background(), a.db, snapshot, func(*sql.Tx) error { return nil }); err == nil {
+		t.Fatal("multiple connections accepted")
+	}
+}

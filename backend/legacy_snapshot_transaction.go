@@ -11,6 +11,9 @@ import (
 // connection across snapshot and transaction. External writers must be stopped
 // independently; this helper does not authenticate or expose an import endpoint.
 func withLegacySnapshotTransaction(ctx context.Context, db *sql.DB, destination string, apply func(*sql.Tx) error) error {
+	if db.Stats().MaxOpenConnections != 1 {
+		return fmt.Errorf("snapshot transaction requires a single database connection")
+	}
 	if destination == "" {
 		return fmt.Errorf("snapshot destination required")
 	}

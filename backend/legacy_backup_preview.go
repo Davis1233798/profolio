@@ -287,8 +287,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 		}
 		if expires, ok := row["expiresAt"].(string); !ok {
 			businessWarnings["shop_inventory_reservations.invalidExpiry"]++
-		} else if _, err := time.Parse(time.RFC3339Nano, expires); err != nil {
+		} else if expiry, err := time.Parse(time.RFC3339Nano, expires); err != nil {
 			businessWarnings["shop_inventory_reservations.invalidExpiry"]++
+		} else if !expiry.After(time.Now()) {
+			businessWarnings["shop_inventory_reservations.expiredActive"]++
 		}
 		order, ok := row["cartId"].(string)
 		payment, found := orderPayment[order]

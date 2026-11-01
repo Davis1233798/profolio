@@ -228,6 +228,10 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	if w := request(a, "POST", path, tooMuch, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("batch exceeds report good quantity: %d %s", w.Code, w.Body.String())
 	}
+	additional := map[string]any{"action": "createBatch", "workOrderId": wo, "reportId": reportID, "batchNumber": "FG-EXTRA-" + space, "quantity": 1, "idempotencyKey": "fg-extra-create-0001"}
+	if w := request(a, "POST", path, additional, admin...); w.Code != http.StatusConflict {
+		t.Fatalf("cumulative batches exceeded report: %d %s", w.Code, w.Body.String())
+	}
 
 	qc := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-happy-qc-0001"}
 	if w := request(a, "POST", path, qc, other...); w.Code != http.StatusNotFound {

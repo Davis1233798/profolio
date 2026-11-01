@@ -14,6 +14,12 @@ test("Full workspace backup restores every business table atomically; rejects fo
   assert.ok(Object.keys(backup.tables).length > 60);
   assert.ok(!Object.keys(backup.tables).some(name => name.startsWith("station_")), "Identity and authentication tables must not be exported");
   await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
+  const oldEmptyBackup = structuredClone(backup);
+  oldEmptyBackup.tables.station_accounts = [];
+  await restoreWorkspace(context, oldEmptyBackup);
+  const oldSensitiveBackup = structuredClone(backup);
+  oldSensitiveBackup.tables.station_accounts = [{ passwordHash: "must-not-restore" }];
+  await assert.rejects(restoreWorkspace(context, oldSensitiveBackup), /身分驗證資料/);
   const db = getDb();
   const [item] = backup.tables.pos_catalog_items;
   await db.update(posCatalogItems).set({ stockQuantity: 1 }).where(eq(posCatalogItems.id, item.id));

@@ -30,6 +30,13 @@ const referenceTargets: Record<string, string> = {
 export function validateWorkspaceBackup(context: TenantContext, value: unknown): TenantBackup {
   const backup = value as TenantBackup;
   if (!backup || backup.format !== "business-suite/v1" || backup.organizationId !== context.organizationId || !backup.tables || typeof backup.tables !== "object") throw new Error("只能還原同一展示空間匯出的完整 v1 備份");
+  // Older exports could include an empty station_accounts table. Preserve
+  // compatibility only when it contains no authentication records.
+  if (Object.hasOwn(backup.tables, "station_accounts")) {
+    if (!Array.isArray(backup.tables.station_accounts) || backup.tables.station_accounts.length !== 0) throw new Error("備份含身分驗證資料，不能還原；請重新匯出不含帳號資料的備份");
+    const { station_accounts: _ignored, ...businessTables } = backup.tables;
+    return validateWorkspaceBackup(context, { ...backup, tables: businessTables });
+  }
   const names = Object.keys(backup.tables);
   if (names.length !== tables.length || names.some(name => !byName.has(name))) throw new Error("備份資料表清單不完整或含未知資料表");
   let rowCount = 0;

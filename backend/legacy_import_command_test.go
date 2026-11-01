@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLegacyImportCommandValidatesInputAndProtectsSecrets(t *testing.T) {
@@ -87,5 +89,29 @@ func TestLegacyImportCommandValidatesInputAndProtectsSecrets(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, result.Snapshot)); err != nil {
 		t.Fatalf("snapshot missing: %v", err)
+	}
+}
+
+func TestLegacyImportCommandProcessRejectsInvalidInput(t *testing.T) {
+	if os.Getenv("SUITE_TEST_IMPORT_COMMAND") == "1" {
+		os.Args = []string{"station-server", "--legacy-import"}
+		main()
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	dir := t.TempDir()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestLegacyImportCommandProcessRejectsInvalidInput$")
+	cmd.Env = append(os.Environ(), "SUITE_TEST_IMPORT_COMMAND=1", "SUITE_DB="+filepath.Join(dir, "missing.sqlite"), "SUITE_MIGRATION_BACKUP_DIR="+dir)
+	cmd.Stdin = strings.NewReader(`{"session":"secret-marker"}`)
+	output, err := cmd.CombinedOutput()
+	if ctx.Err() != nil {
+		t.Fatal("command did not reject invalid input promptly")
+	}
+	if err == nil {
+		t.Fatal("invalid command returned success")
+	}
+	if strings.Contains(string(output), "secret-marker") {
+		t.Fatal("command output exposed session")
 	}
 }

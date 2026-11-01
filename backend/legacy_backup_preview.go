@@ -355,6 +355,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 	}
 	type journalAmounts struct {
 		debit, credit float64
+		lines         int
 		invalid       bool
 	}
 	journals := map[string]journalAmounts{}
@@ -366,7 +367,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			continue
 		}
 		totals := journals[id]
-		if !dOK || !cOK || debit < 0 || credit < 0 || (debit > 0 && credit > 0) {
+		totals.lines++
+		code, codeOK := row["accountCode"].(string)
+		name, nameOK := row["accountName"].(string)
+		if !dOK || !cOK || debit < 0 || credit < 0 || debit > 1000000000000 || credit > 1000000000000 || (debit > 0 && credit > 0) || !codeOK || strings.TrimSpace(code) == "" || !nameOK || strings.TrimSpace(name) == "" {
 			totals.invalid = true
 		} else {
 			totals.debit += debit
@@ -381,7 +385,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			continue
 		}
 		amounts := journals[id]
-		if amounts.invalid || amounts.debit <= 0 || amounts.debit != amounts.credit {
+		if amounts.invalid || amounts.lines < 2 || amounts.lines > 100 || amounts.debit <= 0 || amounts.debit != amounts.credit {
 			businessWarnings["erp_journal_entries.invalidJournal"]++
 		}
 	}

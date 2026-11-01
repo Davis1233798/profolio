@@ -66,6 +66,10 @@ func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
 	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "invalid type for paidAmount") {
 		t.Fatalf("invalid type: %d %s", w.Code, w.Body.String())
 	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "bool-type", "organizationId": "org_source", "isActive": true, "boxConversionRatio": true}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "invalid type for boxConversionRatio") || strings.Contains(w.Body.String(), "invalid type for isActive") {
+		t.Fatalf("boolean type distinction: %d %s", w.Code, w.Body.String())
+	}
 	var count int
 	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("preview wrote data: %d %v", count, err)

@@ -133,9 +133,10 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					}
 					typ := types[key]
 					valid := true
-					if strings.Contains(typ, "INT") {
+					if legacyBooleanFields[name+"."+key] {
+						_, valid = value.(bool)
+					} else if strings.Contains(typ, "INT") {
 						switch v := value.(type) {
-						case bool:
 						case float64:
 							valid = math.Trunc(v) == v && math.Abs(v) <= 9007199254740991
 						default:

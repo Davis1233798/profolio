@@ -39,6 +39,9 @@ func stageLegacyRows(data map[string][]map[string]any) (int, error) {
 			return 0, fmt.Errorf("staging row count mismatch in %s", table)
 		}
 	}
+	if err = verifyLegacyStoredRows(tx, data); err != nil {
+		return 0, err
+	}
 	return count, nil
 }
 

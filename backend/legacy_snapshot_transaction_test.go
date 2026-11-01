@@ -30,6 +30,15 @@ func TestLegacySnapshotReadOnlyURI(t *testing.T) {
 	}
 }
 
+func TestLegacySnapshotReadOnlyURIRejectsUNC(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("UNC paths are Windows-specific")
+	}
+	if _, err := legacySnapshotReadOnlyURI(`\\server\share\snapshot.sqlite`); err == nil {
+		t.Fatal("UNC snapshot path accepted")
+	}
+}
+
 func TestLegacySnapshotTransactionRetainsBackupAndRollsBackFailure(t *testing.T) {
 	a := appForTest(t)
 	snapshot := filepath.Join(t.TempDir(), "before.sqlite")

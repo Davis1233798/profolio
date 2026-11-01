@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 )
@@ -67,6 +68,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 				return
 			}
 			columns := map[string]bool{}
+			types := map[string]string{}
 			required := map[string]bool{}
 			for info.Next() {
 				var cid, notnull, pk int
@@ -76,6 +78,7 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 					break
 				}
 				columns[camel(column)] = true
+				types[camel(column)] = strings.ToUpper(typ)
 				if notnull != 0 && def == nil {
 					required[camel(column)] = true
 				}
@@ -91,20 +94,44 @@ func (a *App) legacyBackupPreviewAPI(w http.ResponseWriter, r *http.Request, id 
 			canCheckConflicts = columns["id"] && columns["organizationId"]
 			unknown := map[string]bool{}
 			missing := map[string]int{}
+			invalidTypes := map[string]int{}
 			for _, row := range rows {
 				for key := range required {
 					if value, found := row[key]; !found || value == nil {
 						missing[key]++
 					}
 				}
-				for key := range row {
+				for key, value := range row {
 					if !columns[key] {
 						unknown[key] = true
+						continue
+					}
+					if value == nil {
+						continue
+					}
+					typ := types[key]
+					valid := true
+					if strings.Contains(typ, "INT") {
+						switch v := value.(type) {
+						case bool:
+						case float64:
+							valid = math.Trunc(v) == v && math.Abs(v) <= 9007199254740991
+						default:
+							valid = false
+						}
+					} else if strings.Contains(typ, "TEXT") || strings.Contains(typ, "CHAR") || strings.Contains(typ, "CLOB") {
+						_, valid = value.(string)
+					}
+					if !valid {
+						invalidTypes[key]++
 					}
 				}
 			}
 			for key := range unknown {
 				warnings = append(warnings, fmt.Sprintf("Field %s.%s does not exist in the destination schema", name, key))
+			}
+			for key, count := range invalidTypes {
+				warnings = append(warnings, fmt.Sprintf("Table %s has %d rows with an invalid type for %s", name, count, key))
 			}
 			for key, count := range missing {
 				warnings = append(warnings, fmt.Sprintf("Table %s has %d rows missing required field %s", name, count, key))

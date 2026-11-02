@@ -530,7 +530,8 @@ func (a *App) manageUser(w http.ResponseWriter, r *http.Request, id *Identity, s
 type PrintKind struct{ Site, Dataset, Title, Lines, ForeignKey string }
 
 var printKinds = map[string]PrintKind{
-	"mes-lot-label": {"mes", "lots", "Material label", "", ""}, "mes-order-label": {"mes", "workOrders", "Work order label", "", ""}, "mes-order": {"mes", "workOrders", "Work orders", "mes_work_order_materials", "work_order_id"}, "mes-report": {"mes", "reports", "Production report", "", ""},
+	"mes-finished-goods-label": {"mes", "finishedGoodsBatches", "Finished goods label", "", ""},
+	"mes-lot-label":            {"mes", "lots", "Material label", "", ""}, "mes-order-label": {"mes", "workOrders", "Work order label", "", ""}, "mes-order": {"mes", "workOrders", "Work orders", "mes_work_order_materials", "work_order_id"}, "mes-report": {"mes", "reports", "Production report", "", ""},
 	"erp-item-label": {"erp", "items", "Item label", "", ""}, "erp-purchase": {"erp", "purchaseOrders", "Purchase orders", "erp_purchase_order_lines", "po_id"}, "erp-sale": {"erp", "salesOrders", "Sales orders", "erp_sales_order_lines", "so_id"}, "erp-receipt": {"erp", "receipts", "Receipts", "erp_receipt_lines", "receipt_id"},
 	"pos-item-label": {"pos", "catalogItems", "Product label", "", ""}, "pos-receipt": {"pos", "sales", "Receipts", "pos_sale_lines", "sale_id"}, "pos-shift": {"pos", "shifts", "Shift report", "pos_sales", "shift_id"},
 	"crm-account-label": {"crm", "accounts", "Customer label", "", ""}, "crm-quote": {"crm", "quotes", "Customer quote", "crm_quote_items", "quote_id"},

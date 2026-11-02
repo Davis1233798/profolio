@@ -169,3 +169,30 @@ func TestRestoreCandidateContentComparison(t *testing.T) {
 		t.Fatal("cancelled comparison accepted")
 	}
 }
+
+func TestRestoreComparisonIncludesSQLiteLikeUserTable(t *testing.T) {
+	source, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "source.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer source.Close()
+	candidate, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "candidate.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer candidate.Close()
+	for _, db := range []*sql.DB{source, candidate} {
+		if _, err := db.Exec("CREATE TABLE organizations (id TEXT)"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := source.Exec("CREATE TABLE sqliteXrecords (value TEXT)"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := source.Exec("INSERT INTO sqliteXrecords VALUES ('important')"); err != nil {
+		t.Fatal(err)
+	}
+	if err := compareRestoreDatabases(context.Background(), source, candidate); err == nil {
+		t.Fatal("missing user table accepted")
+	}
+}

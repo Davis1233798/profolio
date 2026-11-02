@@ -25,3 +25,13 @@ test('inspection choices are scoped to the selected batch report', () => {
   assert.deepEqual(inspectionChoices(checks, {workOrderId:'w',reportId:'r1'}).map(row => row.id), ['one']);
   assert.deepEqual(inspectionChoices(checks, {workOrderId:'w',reportId:'r2'}).map(row => row.id), ['two']);
 });
+
+test('a reworked pending batch does not show an old quarantine as current inspection', () => {
+  const rows = finishedGoodsView({
+    finishedGoodsBatches: [{id:'b',batchNumber:'B',workOrderId:'w',reportId:'r',quantity:5,status:'pending_inspection'}],
+    finishedGoodsQualityDispositions: [{batchId:'b',passedQuantity:2,failedQuantity:3,disposition:'quarantine'}]
+  });
+  assert.equal(rows[0].passedQuantity, undefined);
+  assert.equal(rows[0].failedQuantity, undefined);
+  assert.equal(rows[0].disposition, undefined);
+});

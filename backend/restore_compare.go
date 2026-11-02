@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -15,7 +16,7 @@ import (
 type restoreSchemaEntry struct{ kind, name, table, definition string }
 
 func restoreSchema(ctx context.Context, db *sql.DB) ([]restoreSchemaEntry, error) {
-	rows, err := db.QueryContext(ctx, `SELECT type, name, tbl_name, COALESCE(sql,'') FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' OR name='sqlite_sequence' ORDER BY type, name`)
+	rows, err := db.QueryContext(ctx, `SELECT type, name, tbl_name, COALESCE(sql,'') FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' OR name='sqlite_sequence' ORDER BY type, name`)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func restoreTableHashes(ctx context.Context, db *sql.DB, table string) ([][32]by
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	sort.Slice(hashes, func(i, j int) bool { return strings.Compare(string(hashes[i][:]), string(hashes[j][:])) < 0 })
+	sort.Slice(hashes, func(i, j int) bool { return bytes.Compare(hashes[i][:], hashes[j][:]) < 0 })
 	return hashes, nil
 }
 

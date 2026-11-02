@@ -202,12 +202,15 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 	if w := post(closeInput, admin...); w.Code != http.StatusOK {
 		t.Fatalf("resolved scrap prevented closure: %d %s", w.Code, w.Body.String())
 	}
-	var inventory, dispositions int
+	var inventory, dispositions, resolutions int
 	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_inventory WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&inventory); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&dispositions); err != nil || inventory != 0 || dispositions != 2 {
-		t.Fatalf("scrap inventory=%d dispositions=%d err=%v", inventory, dispositions, err)
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&dispositions); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_resolutions WHERE organization_id=? AND batch_id=? AND disposition='scrap'", org, batchID).Scan(&resolutions); err != nil || inventory != 0 || dispositions != 1 || resolutions != 1 {
+		t.Fatalf("scrap inventory=%d inspections=%d resolutions=%d err=%v", inventory, dispositions, resolutions, err)
 	}
 
 	// This contract treats a batch as fully dispositioned only when its good
@@ -312,6 +315,13 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	if w := request(a, "POST", path, rework, admin...); w.Code != http.StatusOK {
 		t.Fatalf("rework: %d %s", w.Code, w.Body.String())
 	}
+	var inspected, reworked int
+	if err := a.db.QueryRow("SELECT COALESCE(sum(passed_quantity+failed_quantity),0) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&inspected); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT COALESCE(sum(quantity),0) FROM mes_finished_goods_resolutions WHERE organization_id=? AND batch_id=? AND disposition='rework'", org, batchID).Scan(&reworked); err != nil || inspected != target || reworked != target {
+		t.Fatalf("inspection=%d rework=%d err=%v", inspected, reworked, err)
+	}
 	if w := request(a, "POST", path, map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": oldPassed, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-old-inspection-01"}, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("pre-rework inspection accepted: %d %s", w.Code, w.Body.String())
 	}
@@ -389,7 +399,7 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	}
 	a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_receipts WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&receipts)
 	a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=?", org, batchID).Scan(&checks)
-	if onHand != target || receipts != 1 || checks != 3 {
+	if onHand != target || receipts != 1 || checks != 2 {
 		t.Fatalf("inventory=%d receipts=%d dispositions=%d", onHand, receipts, checks)
 	}
 

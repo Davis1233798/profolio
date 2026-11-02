@@ -107,8 +107,26 @@ func TestMESMaterialQualityAndDowntime(t *testing.T) {
 		t.Fatalf("report %d %s", w.Code, w.Body.String())
 	}
 	qc := map[string]any{"action": "quality", "workOrderId": wo, "sample": 5, "failed": 1, "disposition": "quarantine", "idempotencyKey": "mes-quality-0001"}
-	if w := request(a, "POST", path, qc, staff...); w.Code != 200 {
-		t.Fatalf("quality %d %s", w.Code, w.Body.String())
+	quality := request(a, "POST", path, qc, staff...)
+	if quality.Code != 200 {
+		t.Fatalf("quality %d %s", quality.Code, quality.Body.String())
+	}
+	var qualityResult struct {
+		Data struct {
+			QualityCheckID string `json:"qualityCheckId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(quality.Body.Bytes(), &qualityResult); err != nil || qualityResult.Data.QualityCheckID == "" {
+		t.Fatalf("missing quality identifier: %v %s", err, quality.Body.String())
+	}
+	replay := request(a, "POST", path, qc, staff...)
+	var replayResult struct {
+		Data struct {
+			QualityCheckID string `json:"qualityCheckId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(replay.Body.Bytes(), &replayResult); err != nil || replay.Code != 200 || replayResult.Data.QualityCheckID != qualityResult.Data.QualityCheckID {
+		t.Fatalf("quality retry: %d %v %s", replay.Code, err, replay.Body.String())
 	}
 	bad := map[string]any{"action": "quality", "workOrderId": wo, "sample": 5, "failed": 1, "disposition": "release", "idempotencyKey": "mes-quality-0002"}
 	if w := request(a, "POST", path, bad, staff...); w.Code != 400 {

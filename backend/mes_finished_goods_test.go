@@ -505,3 +505,32 @@ func TestMESFinishedGoodsConcurrentReceiptAndHistoricalCompletedOrder(t *testing
 	}
 	_ = operator
 }
+
+func TestMESFinishedGoodsFullyScrappedOrderClosesWithoutInventory(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	admin := loginSite(t, a, "admin@suite.test", space, "mes")
+	operator := loginSite(t, a, "front@suite.test", space, "mes")
+	var order, operation string
+	var target int
+	if err := a.db.QueryRow("SELECT id,target_quantity FROM mes_work_orders WHERE organization_id=? AND status='released' AND materials_staged=1 LIMIT 1", org).Scan(&order, &target); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT id FROM mes_operations WHERE organization_id=? AND work_order_id=? LIMIT 1", org, order).Scan(&operation); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", "/api/stations/mes/business", map[string]any{"action": "start", "workOrderId": order}, admin...); w.Code != http.StatusOK {
+		t.Fatalf("start: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(a, "POST", "/api/stations/mes/business", map[string]any{"action": "report", "workOrderId": order, "operationId": operation, "goodQuantity": 0, "scrapQuantity": target, "idempotencyKey": "fg-all-scrap-report-01"}, operator...); w.Code != http.StatusOK {
+		t.Fatalf("report: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(a, "POST", "/api/stations/mes/finished-goods", map[string]any{"action": "close", "workOrderId": order, "idempotencyKey": "fg-all-scrap-close-01"}, admin...); w.Code != http.StatusOK {
+		t.Fatalf("close: %d %s", w.Code, w.Body.String())
+	}
+	var inventory int
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_inventory WHERE organization_id=?", org).Scan(&inventory); err != nil || inventory != 0 {
+		t.Fatalf("unexpected inventory %d: %v", inventory, err)
+	}
+}

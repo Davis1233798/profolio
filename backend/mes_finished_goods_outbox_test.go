@@ -7,11 +7,12 @@ import (
 )
 
 type finishedGoodsOutboxFixture struct {
-	org       string
-	batchID   string
-	productID string
-	quantity  int
-	admin     []*http.Cookie
+	org         string
+	workOrderID string
+	batchID     string
+	productID   string
+	quantity    int
+	admin       []*http.Cookie
 }
 
 func prepareFinishedGoodsOutboxFixture(t *testing.T, a *App) finishedGoodsOutboxFixture {
@@ -76,7 +77,7 @@ func prepareFinishedGoodsOutboxFixture(t *testing.T, a *App) finishedGoodsOutbox
 	if release.Code != http.StatusOK {
 		t.Fatalf("release batch: %d %s", release.Code, release.Body.String())
 	}
-	return finishedGoodsOutboxFixture{org: org, batchID: batchResult.Data.BatchID, productID: productID, quantity: quantity, admin: admin}
+	return finishedGoodsOutboxFixture{org: org, workOrderID: workOrderID, batchID: batchResult.Data.BatchID, productID: productID, quantity: quantity, admin: admin}
 }
 
 func TestMESFinishedGoodsReceiptOutboxAtomicityAndRetry(t *testing.T) {
@@ -89,6 +90,14 @@ func TestMESFinishedGoodsReceiptOutboxAtomicityAndRetry(t *testing.T) {
 		if first.Code != http.StatusOK {
 			t.Fatalf("receive: %d %s", first.Code, first.Body.String())
 		}
+		var firstResult struct {
+			Data struct {
+				EventID string `json:"eventId"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(first.Body.Bytes(), &firstResult); err != nil || firstResult.Data.EventID == "" {
+			t.Fatalf("receive response missing event ID: %v %s", err, first.Body.String())
+		}
 		var receiptID, eventID, payload string
 		if err := a.db.QueryRow("SELECT id FROM mes_finished_goods_receipts WHERE organization_id=? AND batch_id=?", fixture.org, fixture.batchID).Scan(&receiptID); err != nil {
 			t.Fatalf("receipt row missing: %v", err)
@@ -100,6 +109,7 @@ func TestMESFinishedGoodsReceiptOutboxAtomicityAndRetry(t *testing.T) {
 			t.Fatal("event ID must be stable and non-empty")
 		}
 		var event struct {
+			EventID       string `json:"eventId"`
 			SchemaVersion int    `json:"schemaVersion"`
 			Organization  string `json:"organizationId"`
 			SourceReceipt string `json:"sourceReceiptId"`
@@ -111,12 +121,20 @@ func TestMESFinishedGoodsReceiptOutboxAtomicityAndRetry(t *testing.T) {
 		if err := json.Unmarshal([]byte(payload), &event); err != nil {
 			t.Fatalf("invalid event payload: %v", err)
 		}
-		if event.SchemaVersion != 1 || event.Organization != fixture.org || event.SourceReceipt != receiptID || event.Batch != fixture.batchID || event.Product != fixture.productID || event.Quantity != fixture.quantity || event.OccurredAt == "" {
+		if event.EventID != eventID || firstResult.Data.EventID != eventID || event.SchemaVersion != 1 || event.Organization != fixture.org || event.SourceReceipt != receiptID || event.Batch != fixture.batchID || event.Product != fixture.productID || event.Quantity != fixture.quantity || event.OccurredAt == "" {
 			t.Fatalf("incomplete receipt event: %+v", event)
 		}
 		retry := request(a, http.MethodPost, path, input, fixture.admin...)
 		if retry.Code != http.StatusOK {
 			t.Fatalf("same-key receive retry: %d %s", retry.Code, retry.Body.String())
+		}
+		var retryResult struct {
+			Data struct {
+				EventID string `json:"eventId"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(retry.Body.Bytes(), &retryResult); err != nil || retryResult.Data.EventID != eventID {
+			t.Fatalf("same-key retry changed event ID: %v %s", err, retry.Body.String())
 		}
 		var receipts, events int
 		if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_receipts WHERE organization_id=? AND batch_id=?", fixture.org, fixture.batchID).Scan(&receipts); err != nil {
@@ -127,6 +145,41 @@ func TestMESFinishedGoodsReceiptOutboxAtomicityAndRetry(t *testing.T) {
 		}
 		if receipts != 1 || events != 1 {
 			t.Fatalf("retry duplicated receipt/event: receipts=%d events=%d", receipts, events)
+		}
+	})
+
+	t.Run("released batch referencing another tenant product is rejected without side effects", func(t *testing.T) {
+		a := appForTest(t)
+		fixture := prepareFinishedGoodsOutboxFixture(t, a)
+		foreignSpace := token()
+		_ = loginSite(t, a, "admin@suite.test", foreignSpace, "mes")
+		foreignOrg := "org_test_" + foreignSpace
+		var foreignProduct string
+		if err := a.db.QueryRow("SELECT id FROM mes_products WHERE organization_id=? LIMIT 1", foreignOrg).Scan(&foreignProduct); err != nil {
+			t.Fatalf("foreign tenant product missing: %v", err)
+		}
+		if _, err := a.db.Exec("UPDATE mes_work_orders SET product_id=? WHERE organization_id=? AND id=?", foreignProduct, fixture.org, fixture.workOrderID); err != nil {
+			t.Fatalf("prepare cross-tenant product reference: %v", err)
+		}
+		response := request(a, http.MethodPost, "/api/stations/mes/finished-goods", map[string]any{
+			"action": "receive", "batchId": fixture.batchID, "quantity": fixture.quantity,
+			"idempotencyKey": "fg-outbox-cross-tenant-" + token(),
+		}, fixture.admin...)
+		if response.Code != http.StatusConflict {
+			t.Fatalf("expected cross-tenant product conflict, got %d %s", response.Code, response.Body.String())
+		}
+		var receipts, inventory, events int
+		if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_receipts WHERE organization_id=? AND batch_id=?", fixture.org, fixture.batchID).Scan(&receipts); err != nil {
+			t.Fatal(err)
+		}
+		if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_inventory WHERE organization_id=? AND batch_id=?", fixture.org, fixture.batchID).Scan(&inventory); err != nil {
+			t.Fatal(err)
+		}
+		if err := a.db.QueryRow("SELECT count(*) FROM outbox_events WHERE organization_id=? AND event_type='mes.finished_goods.received'", fixture.org).Scan(&events); err != nil {
+			t.Fatal(err)
+		}
+		if receipts != 0 || inventory != 0 || events != 0 {
+			t.Fatalf("cross-tenant rejection left state: receipts=%d inventory=%d events=%d", receipts, inventory, events)
 		}
 	})
 

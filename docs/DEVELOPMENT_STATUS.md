@@ -12,6 +12,7 @@
 | 共用 Go 站台／六站 | 同主機維護窗口協調 | 已實作，等待遠端 Green | [鎖定架構、限制與 Red 證據](engineering/MAINTENANCE_LOCK.md)。不約束未遵循協定的程序；伺服器與維護模式端到端尚待驗證。 |
 | 共用／列印 | 批次標籤條碼與重複預覽 | 實作後等待遠端 CI 和瀏覽器驗收 | 不支援的條碼停用列印；實體掃描器驗收尚未完成。 |
 | MES／ForgeFlow | 品檢放行、成品批次入庫與工單結案 | 初版與後續處置歷程整合中 | [MES 功能架構與測試計畫](engineering/MES_FINISHED_GOODS.md)。PR `02aa3f5` 的 CI 全部通過；後續處置歷程仍在分支驗證，ERP 庫存同步及實際裝置驗收未完成。 |
+| MES／ERP | 成品入庫與 ERP 庫存同步 | 架構與程式邊界完成；測試與實作待完成 | [事件、商品及倉庫映射與成本邊界](engineering/MES_ERP_INTEGRATION.md)。現有帳本尚未同步。 |
 | 桌面版／MES、ERP、CRM | Electron 工作區與 Windows 打包 | 遠端回歸中 | 其他系統維持網頁版；先前 Windows 快照失敗已修正，`cac79a0` 的 Windows CI 通過，最新版本仍須驗證。 |
 | 共用／部署 | GitHub Actions 與公開站台 | 尚未完成切換 | PR `02aa3f5` 的 CI 已通過，但部署 job 因非預設分支而略過；不以程式碼推送推論部署成功。 |
 

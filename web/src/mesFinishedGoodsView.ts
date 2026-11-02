@@ -11,7 +11,9 @@ export function finishedGoodsView(data: Record<string, Row[]>) {
     const candidates = dispositions.filter(row => row.batchId === batch.id);
     const quality = batch.status === 'released' || batch.status === 'received'
       ? candidates.find(row => row.disposition === 'release')
-      : candidates.filter(row => row.disposition === 'quarantine').sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+      : batch.status === 'quarantined'
+        ? candidates.filter(row => row.disposition === 'quarantine').sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0]
+        : undefined;
     const stock = inventory.find(row => row.batchId === batch.id);
     return {
       batchId: String(batch.id), batchNumber: String(batch.batchNumber),

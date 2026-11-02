@@ -202,8 +202,8 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 		result["batchId"] = entity
 	case "close":
 		var state string
-		var good int64
-		err = tx.QueryRow("SELECT status,completed_quantity FROM mes_work_orders WHERE organization_id=? AND id=?", id.OrganizationID, in.WorkOrderID).Scan(&state, &good)
+		var good, scrap, target int64
+		err = tx.QueryRow("SELECT status,completed_quantity,scrapped_quantity,target_quantity FROM mes_work_orders WHERE organization_id=? AND id=?", id.OrganizationID, in.WorkOrderID).Scan(&state, &good, &scrap, &target)
 		if errors.Is(err, sql.ErrNoRows) {
 			fail(w, 404, "Work order not found")
 			return
@@ -218,7 +218,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			fail(w, 503, "Cannot inspect batches")
 			return
 		}
-		if state != "completed" || good < 1 || received != good || pending != 0 {
+		if state != "completed" || target < 1 || good < 0 || scrap < 0 || good+scrap != target || received != good || pending != 0 {
 			fail(w, 409, "Finished goods are not fully received")
 			return
 		}

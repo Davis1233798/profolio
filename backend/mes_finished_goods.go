@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type mesFinishedGoodsRequest struct {
@@ -105,9 +106,9 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			fail(w, 400, "Select a batch")
 			return
 		}
-		var state, orderStatus string
+		var state, orderStatus, productID string
 		var quantity int64
-		err = tx.QueryRow("SELECT b.status,b.quantity,w.status FROM mes_finished_goods_batches b JOIN mes_work_orders w ON w.organization_id=b.organization_id AND w.id=b.work_order_id WHERE b.organization_id=? AND b.id=?", id.OrganizationID, in.BatchID).Scan(&state, &quantity, &orderStatus)
+		err = tx.QueryRow("SELECT b.status,b.quantity,w.status,w.product_id FROM mes_finished_goods_batches b JOIN mes_work_orders w ON w.organization_id=b.organization_id AND w.id=b.work_order_id WHERE b.organization_id=? AND b.id=?", id.OrganizationID, in.BatchID).Scan(&state, &quantity, &orderStatus, &productID)
 		if errors.Is(err, sql.ErrNoRows) {
 			fail(w, 404, "Batch not found")
 			return
@@ -186,12 +187,23 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 409, "Batch is not fully released")
 				return
 			}
-			_, err = tx.Exec("INSERT INTO mes_finished_goods_receipts(id,organization_id,batch_id,quantity,idempotency_key) VALUES(?,?,?,?,?)", "fgr_"+token(), id.OrganizationID, entity, in.Quantity, in.Key)
+			receiptID := "fgr_" + token()
+			_, err = tx.Exec("INSERT INTO mes_finished_goods_receipts(id,organization_id,batch_id,quantity,idempotency_key) VALUES(?,?,?,?,?)", receiptID, id.OrganizationID, entity, in.Quantity, in.Key)
 			if err == nil {
 				_, err = tx.Exec("INSERT INTO mes_finished_goods_inventory(id,organization_id,batch_id,quantity_on_hand) VALUES(?,?,?,?)", "fgi_"+token(), id.OrganizationID, entity, in.Quantity)
 			}
 			if err == nil {
 				_, err = tx.Exec("UPDATE mes_finished_goods_batches SET status='received' WHERE organization_id=? AND id=?", id.OrganizationID, entity)
+			}
+			if err == nil {
+				eventID := "mes.received:" + receiptID
+				event, marshalErr := json.Marshal(map[string]any{"eventId": eventID, "schemaVersion": 1, "organizationId": id.OrganizationID, "sourceReceiptId": receiptID, "batchId": entity, "mesProductId": productID, "quantity": in.Quantity, "occurredAt": time.Now().UTC().Format(time.RFC3339Nano)})
+				if marshalErr != nil {
+					err = marshalErr
+				} else {
+					_, err = tx.Exec("INSERT INTO outbox_events(id,organization_id,event_type,payload) VALUES(?,?,'mes.finished_goods.received',?)", eventID, id.OrganizationID, string(event))
+				}
+				result["eventId"] = eventID
 			}
 			result["status"] = "received"
 		}

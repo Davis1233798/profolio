@@ -97,7 +97,7 @@ func (a *App) mesERPMapping(w http.ResponseWriter, r *http.Request, id *Identity
 		_, err = tx.Exec("INSERT INTO audit_events(id,organization_id,actor_id,actor_role,action,entity_type,entity_id,after_value) VALUES(?,?,?,?,?,'mes_erp_mapping',?,?)", "audit_"+token(), id.OrganizationID, id.UserID, g.Role, "erp.mes.mapProduct", mappingID, string(encoded))
 	}
 	if err != nil {
-		fail(w, 409, "Cannot apply mapping; retry if the mapping changed")
+		fail(w, 503, "Cannot apply mapping; retry the operation")
 		return
 	}
 	if err = tx.Commit(); err != nil {

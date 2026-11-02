@@ -284,7 +284,7 @@ func (a *App) mesOperations(w http.ResponseWriter, r *http.Request, id *Identity
 		}
 		entity = "quality_" + token()
 		_, e = tx.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?)", entity, id.OrganizationID, in.WorkOrderID, report, id.UserID, in.Sample, in.Sample-in.Failed, in.Failed, qcStatus, disposition, in.Notes)
-		result = map[string]any{"status": qcStatus, "disposition": disposition, "passed": in.Sample - in.Failed, "failed": in.Failed}
+		result = map[string]any{"qualityCheckId": entity, "status": qcStatus, "disposition": disposition, "passed": in.Sample - in.Failed, "failed": in.Failed}
 	case "downtime":
 		var found int
 		e = tx.QueryRow("SELECT count(*) FROM mes_work_centers WHERE organization_id=? AND id=?", id.OrganizationID, in.CenterID).Scan(&found)

@@ -131,7 +131,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 			if in.Disposition == "scrap" {
 				next = "scrapped"
 			}
-			_, err = tx.Exec("INSERT INTO mes_finished_goods_quality_dispositions(id,organization_id,batch_id,passed_quantity,failed_quantity,disposition,reason,reinspection_after) VALUES(?,?,?,?,?,?,?,(SELECT COALESCE(MAX(rowid),0) FROM mes_quality_checks))", "fgqc_"+token(), id.OrganizationID, entity, 0, quantity, in.Disposition, in.Reason)
+			_, err = tx.Exec("INSERT INTO mes_finished_goods_resolutions(id,organization_id,batch_id,quantity,disposition,reason,reinspection_after) VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(rowid),0) FROM mes_quality_checks))", "fgrs_"+token(), id.OrganizationID, entity, quantity, in.Disposition, in.Reason)
 			if err == nil {
 				_, err = tx.Exec("UPDATE mes_finished_goods_batches SET status=? WHERE organization_id=? AND id=?", next, id.OrganizationID, entity)
 			}
@@ -160,7 +160,7 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 503, "Cannot read inspection")
 				return
 			}
-			if err = tx.QueryRow("SELECT COALESCE(MAX(reinspection_after),0) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=? AND disposition='rework'", id.OrganizationID, entity).Scan(&reinspectionAfter); err != nil {
+			if err = tx.QueryRow("SELECT MAX(COALESCE((SELECT MAX(reinspection_after) FROM mes_finished_goods_quality_dispositions WHERE organization_id=? AND batch_id=? AND disposition='rework'),0),COALESCE((SELECT MAX(reinspection_after) FROM mes_finished_goods_resolutions WHERE organization_id=? AND batch_id=? AND disposition='rework'),0))", id.OrganizationID, entity, id.OrganizationID, entity).Scan(&reinspectionAfter); err != nil {
 				fail(w, 503, "Cannot read rework history")
 				return
 			}

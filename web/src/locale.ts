@@ -357,7 +357,7 @@ const traditionalChinese:Record<string,string> = {
   "capacity_rejected": "容量不足拒絕",
   "request_error": "請求錯誤",
   "FINISHED GOODS": "成品管理",
-  "Barcode unavailable: the identifier contains unsupported characters. Printing is disabled.": "無法產生條碼：識別碼包含不支援的字元。已停用列印。",
+  "Barcode could not be generated. Printing is disabled.": "無法產生條碼，已停用列印。",
   "Resolution history": "處置歷程",
   "No resolution events loaded.": "沒有已載入的處置紀錄。",
   "Close fully scrapped work order": "結案全數報廢工單",

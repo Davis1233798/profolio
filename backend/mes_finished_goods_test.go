@@ -253,6 +253,25 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	reportID = reportData.Data.ReportID
 	path := "/api/stations/mes/finished-goods"
 	create := map[string]any{"action": "createBatch", "workOrderId": wo, "reportId": reportID, "batchNumber": "FG-HAPPY-" + space, "quantity": target, "idempotencyKey": "fg-happy-create-0001"}
+	if _, err := a.db.Exec(`CREATE TRIGGER test_fail_finished_goods_audit BEFORE INSERT ON audit_events WHEN NEW.action='mes.finished_goods.createBatch' BEGIN SELECT RAISE(ABORT, 'simulated audit failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", path, create, admin...); w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("audit failure: %d %s", w.Code, w.Body.String())
+	}
+	var partialBatches, retryRows int
+	if err := a.db.QueryRow("SELECT count(*) FROM mes_finished_goods_batches WHERE organization_id=? AND batch_number=?", org, "FG-HAPPY-"+space).Scan(&partialBatches); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM idempotency_keys WHERE organization_id=? AND key=?", org, "fg-happy-create-0001").Scan(&retryRows); err != nil {
+		t.Fatal(err)
+	}
+	if partialBatches != 0 || retryRows != 0 {
+		t.Fatalf("failed transaction persisted batch=%d retry=%d", partialBatches, retryRows)
+	}
+	if _, err := a.db.Exec("DROP TRIGGER test_fail_finished_goods_audit"); err != nil {
+		t.Fatal(err)
+	}
 	if w := request(a, "POST", path, create, other...); w.Code != http.StatusNotFound {
 		t.Fatalf("foreign tenant: %d %s", w.Code, w.Body.String())
 	}

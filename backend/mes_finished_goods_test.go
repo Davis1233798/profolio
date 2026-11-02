@@ -269,19 +269,26 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 		t.Fatalf("batch response: %v %s", err, created.Body.String())
 	}
 	batchID := batchData.Data.BatchID
-	failedCheck := "fg-failed-check-" + space
-	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,0,1,'quarantined','quarantine')", failedCheck, org, wo, reportID, org+"_admin"); err != nil {
-		t.Fatal(err)
+	createInspection := func(failed int, key string) string {
+		t.Helper()
+		response := request(a, "POST", "/api/stations/mes/operations", map[string]any{"action": "quality", "workOrderId": wo, "reportId": reportID, "sample": 1, "failed": failed, "idempotencyKey": key}, operator...)
+		var result struct {
+			Data struct {
+				ID string `json:"qualityCheckId"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil || response.Code != http.StatusOK || result.Data.ID == "" {
+			t.Fatalf("inspection: %d %v %s", response.Code, err, response.Body.String())
+		}
+		return result.Data.ID
 	}
+	failedCheck := createInspection(1, "fg-failed-check-0001")
 	quarantine := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target - 1, "failedQuantity": 1, "disposition": "quarantine", "idempotencyKey": "fg-rework-quarantine-01"}
 	quarantine["qualityCheckId"] = failedCheck
 	if w := request(a, "POST", path, quarantine, admin...); w.Code != http.StatusOK {
 		t.Fatalf("quarantine before rework: %d %s", w.Code, w.Body.String())
 	}
-	oldPassed := "fg-old-pass-" + space
-	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,1,0,'passed','release')", oldPassed, org, wo, reportID, org+"_admin"); err != nil {
-		t.Fatal(err)
-	}
+	oldPassed := createInspection(0, "fg-old-pass-check-0001")
 	rework := map[string]any{"action": "resolveQuarantine", "batchId": batchID, "disposition": "rework", "reason": "Correct defects", "idempotencyKey": "fg-rework-resolve-01"}
 	if w := request(a, "POST", path, rework, admin...); w.Code != http.StatusOK {
 		t.Fatalf("rework: %d %s", w.Code, w.Body.String())
@@ -289,10 +296,7 @@ func TestMESFinishedGoodsHappyPathIdempotencyAndBounds(t *testing.T) {
 	if w := request(a, "POST", path, map[string]any{"action": "qualityDisposition", "batchId": batchID, "qualityCheckId": oldPassed, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-old-inspection-01"}, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("pre-rework inspection accepted: %d %s", w.Code, w.Body.String())
 	}
-	passedCheck := "fg-passed-check-" + space
-	if _, err := a.db.Exec("INSERT INTO mes_quality_checks(id,organization_id,work_order_id,report_id,inspector_id,sample_quantity,passed_quantity,failed_quantity,status,disposition) VALUES(?,?,?,?,?,1,1,0,'passed','release')", passedCheck, org, wo, reportID, org+"_admin"); err != nil {
-		t.Fatal(err)
-	}
+	passedCheck := createInspection(0, "fg-passed-check-0001")
 	if w := request(a, "POST", path, map[string]any{"action": "receive", "batchId": batchID, "quantity": target, "idempotencyKey": "fg-rework-pending-01"}, admin...); w.Code != http.StatusConflict {
 		t.Fatalf("uninspected rework received: %d %s", w.Code, w.Body.String())
 	}

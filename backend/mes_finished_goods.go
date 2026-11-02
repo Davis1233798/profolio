@@ -187,6 +187,15 @@ func (a *App) mesFinishedGoods(w http.ResponseWriter, r *http.Request, id *Ident
 				fail(w, 409, "Batch is not fully released")
 				return
 			}
+			var productCount int
+			if err = tx.QueryRow("SELECT count(*) FROM mes_products WHERE organization_id=? AND id=?", id.OrganizationID, productID).Scan(&productCount); err != nil {
+				fail(w, 503, "Cannot verify product")
+				return
+			}
+			if productCount != 1 {
+				fail(w, 409, "Work order product is unavailable in this workspace")
+				return
+			}
 			receiptID := "fgr_" + token()
 			_, err = tx.Exec("INSERT INTO mes_finished_goods_receipts(id,organization_id,batch_id,quantity,idempotency_key) VALUES(?,?,?,?,?)", receiptID, id.OrganizationID, entity, in.Quantity, in.Key)
 			if err == nil {

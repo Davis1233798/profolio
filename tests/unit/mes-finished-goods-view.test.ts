@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {finishedGoodsView, inspectionChoices, canManageFinishedGoods} from '../../web/src/mesFinishedGoodsView';
+import {finishedGoodsView, inspectionChoices, canManageFinishedGoods, batchResolutions} from '../../web/src/mesFinishedGoodsView';
 
 test('reconstructs independent batch states from server datasets', () => {
   const rows = finishedGoodsView({
@@ -30,6 +30,17 @@ test('only administrators can manage finished goods', () => {
   assert.equal(canManageFinishedGoods('admin'), true);
   assert.equal(canManageFinishedGoods('operator'), false);
   assert.equal(canManageFinishedGoods('readonly'), false);
+});
+
+test('resolution history is scoped to the selected batch and ordered newest first', () => {
+  const rows = [
+    {id:'old',batchId:'a',disposition:'rework',quantity:5,reason:'repair',createdAt:'2026-01-01'},
+    {id:'other',batchId:'b',disposition:'scrap',quantity:2,reason:'other batch',createdAt:'2026-01-03'},
+    {id:'new',batchId:'a',disposition:'scrap',quantity:5,reason:'damaged',createdAt:'2026-01-02'}
+  ];
+  assert.deepEqual(batchResolutions(rows, 'a').map(row => row.id), ['new', 'old']);
+  assert.deepEqual(batchResolutions(rows, 'missing'), []);
+  assert.deepEqual(rows.map(row => row.id), ['old', 'other', 'new']);
 });
 
 test('a reworked pending batch does not show an old quarantine as current inspection', () => {

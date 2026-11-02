@@ -357,6 +357,8 @@ const traditionalChinese:Record<string,string> = {
   "capacity_rejected": "容量不足拒絕",
   "request_error": "請求錯誤",
   "FINISHED GOODS": "成品管理",
+  "Resolution history": "處置歷程",
+  "No resolution events loaded.": "沒有已載入的處置紀錄。",
   "Close fully scrapped work order": "結案全數報廢工單",
   "Finished goods label": "成品批次標籤",
   "Inspection evidence": "品檢紀錄",

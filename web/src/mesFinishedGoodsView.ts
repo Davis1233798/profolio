@@ -2,6 +2,11 @@ type Row = Record<string, any>;
 
 export function canManageFinishedGoods(role: string) { return role === 'admin'; }
 
+export function batchResolutions(rows: Row[], batchId: string) {
+  return rows.filter(row => row.batchId === batchId)
+    .sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || String(b.id).localeCompare(String(a.id)));
+}
+
 export function inspectionChoices(checks: Row[], batch: {workOrderId:string; reportId:string}) {
   return checks.filter(row => row.workOrderId === batch.workOrderId && row.reportId === batch.reportId);
 }

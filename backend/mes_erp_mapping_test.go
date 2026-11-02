@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -256,4 +257,60 @@ func TestMESERPProductMappingRequiresBothBackOfficeAdministrators(t *testing.T) 
 			t.Fatalf("revoked ERP grant wrote state: mappings=%d audits=%d idempotency=%d", mappings, audits, idempotency)
 		}
 	})
+}
+
+func TestMESERPProductMappingAuditFailureRollsBackAllWrites(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPMappingFixture(t, a)
+	beforeMappings, beforeAudits, beforeIdempotency := mesERPMappingWriteCounts(t, a, f.org)
+	if _, err := a.db.Exec("CREATE TRIGGER test_fail_mes_erp_mapping_audit BEFORE INSERT ON audit_events WHEN NEW.action='erp.mes.mapProduct' BEGIN SELECT RAISE(ABORT, 'simulated mapping audit failure'); END"); err != nil {
+		t.Fatalf("create audit failure trigger: %v", err)
+	}
+	w := postMESProductMapping(a, f.admin, mapMESProductRequest(f.product1, f.item1, f.warehouse, "map-audit-failure-01"))
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("audit write failure should return 503, got %d %s", w.Code, w.Body.String())
+	}
+	mappings, audits, idempotency := mesERPMappingWriteCounts(t, a, f.org)
+	if mappings != beforeMappings || audits != beforeAudits || idempotency != beforeIdempotency {
+		t.Fatalf("audit failure left partial mapping transaction: mappings=%d audits=%d idempotency=%d", mappings, audits, idempotency)
+	}
+}
+
+func TestMESERPProductMappingConcurrentUpdatesKeepSingleActiveVersion(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPMappingFixture(t, a)
+	start := make(chan struct{})
+	statuses := make(chan int, 2)
+	var wg sync.WaitGroup
+	for i, item := range []string{f.item1, f.item2} {
+		wg.Add(1)
+		go func(i int, item string) {
+			defer wg.Done()
+			<-start
+			key := []string{"map-concurrent-update-01", "map-concurrent-update-02"}[i]
+			w := postMESProductMapping(a, f.admin, mapMESProductRequest(f.product1, item, f.warehouse, key))
+			statuses <- w.Code
+		}(i, item)
+	}
+	close(start)
+	wg.Wait()
+	close(statuses)
+	successes := 0
+	for status := range statuses {
+		if status == http.StatusOK {
+			successes++
+		} else if status != http.StatusConflict && status != http.StatusServiceUnavailable {
+			t.Fatalf("unexpected concurrent mapping status %d", status)
+		}
+	}
+	if successes == 0 {
+		t.Fatal("all concurrent mapping updates failed")
+	}
+	var rows, active, maxVersion int
+	if err := a.db.QueryRow("SELECT count(*),COALESCE(sum(is_active),0),COALESCE(max(version),0) FROM mes_erp_product_mappings WHERE organization_id=? AND mes_product_id=?", f.org, f.product1).Scan(&rows, &active, &maxVersion); err != nil {
+		t.Fatalf("inspect concurrent mapping versions: %v", err)
+	}
+	if rows != successes || active != 1 || maxVersion != successes {
+		t.Fatalf("concurrent updates left inconsistent history: successes=%d rows=%d active=%d maxVersion=%d", successes, rows, active, maxVersion)
+	}
 }

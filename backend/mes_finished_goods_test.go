@@ -86,6 +86,28 @@ func TestMESFinishedGoodsReleaseReceiptAndClose(t *testing.T) {
 		t.Fatalf("unexpected batch result: err=%v body=%s", err, created.Body.String())
 	}
 	batchID := batchResult.Data.BatchID
+	labelPath := "/api/stations/mes/print?kind=mes-finished-goods-label&id=" + batchID
+	label := request(a, "GET", labelPath, nil, admin...)
+	var labelData struct {
+		Data struct {
+			Record struct {
+				BatchNumber string `json:"batchNumber"`
+				Status      string `json:"status"`
+			} `json:"record"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(label.Body.Bytes(), &labelData); err != nil || label.Code != http.StatusOK || labelData.Data.Record.BatchNumber != "FG-"+space || labelData.Data.Record.Status != "pending_inspection" {
+		t.Fatalf("batch label %d %v %s", label.Code, err, label.Body.String())
+	}
+	if w := request(a, "GET", labelPath, nil, operator...); w.Code != http.StatusForbidden {
+		t.Fatalf("front printed batch: %d", w.Code)
+	}
+	if w := request(a, "GET", labelPath, nil, foreign...); w.Code != http.StatusNotFound {
+		t.Fatalf("foreign printed batch: %d", w.Code)
+	}
+	if w := request(a, "GET", labelPath, nil); w.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous printed batch: %d", w.Code)
+	}
 	withoutInspection := map[string]any{"action": "qualityDisposition", "batchId": batchID, "passedQuantity": target, "failedQuantity": 0, "disposition": "release", "idempotencyKey": "fg-no-inspection-0001"}
 	if w := post(withoutInspection, admin...); w.Code != http.StatusBadRequest {
 		t.Fatalf("batch released without inspection evidence: %d %s", w.Code, w.Body.String())

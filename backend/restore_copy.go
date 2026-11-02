@@ -68,6 +68,9 @@ func restoreBackupToNewFile(ctx context.Context, source, destination string) err
 	if err = inspectRestoreDatabase(ctx, candidate); err != nil {
 		return fmt.Errorf("candidate created but validation failed: %w", err)
 	}
+	if err = compareRestoreDatabases(ctx, db, candidate); err != nil {
+		return fmt.Errorf("candidate created but content verification failed: %w", err)
+	}
 	return nil
 }
 

@@ -120,29 +120,52 @@ func TestRestoreCopyCommandRequiresTwoPaths(t *testing.T) {
 
 // Comparison must detect logical differences even when both files pass quick_check.
 func TestRestoreCandidateContentComparison(t *testing.T) {
-    ctx := context.Background()
-    create := func() *sql.DB {
-        db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "comparison.sqlite"))
-        if err != nil { t.Fatal(err) }
-        t.Cleanup(func(){ db.Close() })
-        for _, q := range []string{
-            "CREATE TABLE organizations (id TEXT PRIMARY KEY)",
-            "CREATE TABLE records (value, payload BLOB)",
-            "INSERT INTO organizations VALUES ('org')",
-            "INSERT INTO records VALUES ('same', x'00ff'), ('same', x'00ff'), (NULL, x'01')",
-            "PRAGMA user_version=7",
-        } { if _, err := db.Exec(q); err != nil { t.Fatal(err) } }
-        return db
-    }
-    source := create()
-    t.Run("equal", func(t *testing.T) { if err := compareRestoreDatabases(ctx, source, create()); err != nil { t.Fatal(err) } })
-    for _, tc := range []struct{name, change string}{
-        {"value", "UPDATE records SET value='changed' WHERE value='same'"},
-        {"duplicate", "DELETE FROM records WHERE rowid=(SELECT MIN(rowid) FROM records WHERE value='same')"},
-        {"blob", "UPDATE records SET payload=x'00fe' WHERE value='same'"},
-        {"schema", "CREATE TABLE extra (value TEXT)"},
-        {"version", "PRAGMA user_version=8"},
-    } { t.Run(tc.name, func(t *testing.T) { other:=create(); if _,err:=other.Exec(tc.change);err!=nil {t.Fatal(err)}; if err:=compareRestoreDatabases(ctx,source,other);err==nil {t.Fatal("different databases accepted")} }) }
-    cancelled, cancel := context.WithCancel(ctx); cancel()
-    if err := compareRestoreDatabases(cancelled, source, create()); err == nil { t.Fatal("cancelled comparison accepted") }
+	ctx := context.Background()
+	create := func() *sql.DB {
+		db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "comparison.sqlite"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { db.Close() })
+		for _, q := range []string{
+			"CREATE TABLE organizations (id TEXT PRIMARY KEY)",
+			"CREATE TABLE records (value, payload BLOB)",
+			"INSERT INTO organizations VALUES ('org')",
+			"INSERT INTO records VALUES ('same', x'00ff'), ('same', x'00ff'), (NULL, x'01')",
+			"PRAGMA user_version=7",
+		} {
+			if _, err := db.Exec(q); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return db
+	}
+	source := create()
+	t.Run("equal", func(t *testing.T) {
+		if err := compareRestoreDatabases(ctx, source, create()); err != nil {
+			t.Fatal(err)
+		}
+	})
+	for _, tc := range []struct{ name, change string }{
+		{"value", "UPDATE records SET value='changed' WHERE value='same'"},
+		{"duplicate", "DELETE FROM records WHERE rowid=(SELECT MIN(rowid) FROM records WHERE value='same')"},
+		{"blob", "UPDATE records SET payload=x'00fe' WHERE value='same'"},
+		{"schema", "CREATE TABLE extra (value TEXT)"},
+		{"version", "PRAGMA user_version=8"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			other := create()
+			if _, err := other.Exec(tc.change); err != nil {
+				t.Fatal(err)
+			}
+			if err := compareRestoreDatabases(ctx, source, other); err == nil {
+				t.Fatal("different databases accepted")
+			}
+		})
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if err := compareRestoreDatabases(cancelled, source, create()); err == nil {
+		t.Fatal("cancelled comparison accepted")
+	}
 }

@@ -2,6 +2,14 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "● Stopped": "● 已停止",
+  "Isolated transaction lab: this does not execute actual MES reports or shop orders.": "隔離交易實驗室：不會執行實際 MES 報工或電商訂單。",
+  "Stopped before sending all requests.": "已停止，尚未送出全部請求。",
+  "requests not sent": "筆請求未送出",
+  "Run ID": "執行識別碼",
+  "Response unconfirmed": "回應未確認",
+  "Measured against this running service: Go HTTP handlers and a SQLite ledger. SQLite writes use one database connection and serialize at commit. Rejections show exhausted capacity; response errors may include transactions committed before a timeout. This bounded burst demonstrates correctness and backpressure under contention; the measured rate is not a production capacity claim.": "測量此服務的 Go HTTP 處理與 SQLite 台帳。SQLite 寫入使用單一資料庫連線並依序提交；容量不足會拒絕請求，回應錯誤可能包含逾時前已提交的交易。此有限流量展示競爭時的正確性與背壓，測得速率不代表正式環境容量。",
+
   "MES finished goods integration": "MES 成品整合",
   "MES receipt and ERP posting are separate. Confirm the mapping and cost before posting.": "MES 收貨與 ERP 過帳是獨立步驟；過帳前請確認映射與成本。",
   "Up to 500 records are shown for each list.": "每個清單最多顯示 500 筆。",

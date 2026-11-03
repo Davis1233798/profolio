@@ -4,7 +4,6 @@ set -Eeuo pipefail
 sha=${1:?commit SHA required}
 expected=${2:?archive checksum required}
 [[ $sha =~ ^[0-9a-f]{40}$ && $expected =~ ^[0-9a-f]{64}$ ]] || exit 2
-export SUITE_RELEASE_SHA="$sha"
 root=/srv/business-suite
 archive="$root/releases/$sha.tgz"
 release="$root/releases/${sha}-$(date -u +%Y%m%d%H%M%S)"
@@ -15,10 +14,14 @@ printf '%s  %s\n' "$expected" "$archive" | sha256sum -c -
 mkdir "$release"
 tar -xzf "$archive" -C "$release"
 ln -s "$root/shared/infra.env" "$release/infra/.env"
+printf 'SUITE_RELEASE_SHA=%s\n' "$sha" > "$release/infra/.revision.env"
+chmod 600 "$release/infra/.revision.env"
 printf '%s\n' "$sha" > "$release/COMMIT"
 compose() {
   local dir=$1; shift
-  (cd "$dir/infra" && sudo -n docker compose --project-name business-suite --env-file .env \
+  local env_args=(--env-file .env)
+  if [[ -f "$dir/infra/.revision.env" ]]; then env_args+=(--env-file .revision.env); fi
+  (cd "$dir/infra" && sudo -n docker compose --project-name business-suite "${env_args[@]}" \
     -f compose.yaml -f linux/compose.web.yaml -f linux/compose.public-sites.yaml \
     -f linux/compose.stations.yaml "$@")
 }

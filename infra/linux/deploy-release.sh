@@ -53,7 +53,7 @@ trap rollback ERR
 compose "$release" up -d --no-build --no-deps --wait --wait-timeout 180 "${services[@]}"
 compose "$release" up -d --no-build --no-deps --force-recreate --wait --wait-timeout 180 edge
 curl --fail --silent --show-error --retry 5 --retry-delay 2 https://blockchen.duckdns.org/ -o /dev/null
-curl --fail --silent --show-error --retry 5 --retry-delay 2 https://station.blockchen.duckdns.org/api/health -o /dev/null
+curl --fail --silent --show-error --retry 5 --retry-delay 2 https://station.blockchen.duckdns.org/api/health | python3 "$release/scripts/check-station-revision.py" "$sha"
 ln -sfn "$release" "$root/current"
 trap - ERR
 printf 'Deployed commit %s to %s\n' "$sha" "$release"

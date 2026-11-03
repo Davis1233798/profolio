@@ -23,6 +23,7 @@ def clean(info):
     return info
 
 target = Path('outputs/linux-business-suite.tgz')
+items.append('scripts/check-station-revision.py')
 items.append('scripts/smoke-station-isolation.mjs')
 items.append('scripts/load-commerce.mjs')
 items.append('scripts/smoke-public-edge.py')

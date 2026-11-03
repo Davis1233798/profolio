@@ -138,7 +138,7 @@ func openDB(file string) (_ *sql.DB, resultErr error) {
 	if !hasOrder {
 		files = append(files, "0002_dining_takeout.sql")
 	}
-	files = append(files, "0003_mes_projection.sql", "0004_station_identity.sql", "0005_traffic_lab.sql", "0006_mes_finished_goods.sql", "0007_mes_finished_goods_resolutions.sql", "0008_mes_erp_mapping.sql")
+	files = append(files, "0003_mes_projection.sql", "0004_station_identity.sql", "0005_traffic_lab.sql", "0006_mes_finished_goods.sql", "0007_mes_finished_goods_resolutions.sql", "0008_mes_erp_mapping.sql", "0009_erp_mes_receipts.sql")
 	for _, f := range files {
 		b, err := migrations.ReadFile("migrations/" + f)
 		if err != nil {

@@ -125,6 +125,10 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		a.diningBusiness(w, r, id, g)
 		return
 	}
+	if action == "mes-receipt" && site == "erp" {
+		a.postMESERPReceipt(w, r, id, g)
+		return
+	}
 	if action == "mes-integration" && site == "erp" {
 		a.mesERPMapping(w, r, id, g)
 		return

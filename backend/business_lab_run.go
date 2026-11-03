@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"time"
 )
 
 type businessLabResult struct {
@@ -17,6 +18,8 @@ type businessLabResult struct {
 	Succeeded    int    `json:"succeeded"`
 	Conflicts    int    `json:"conflicts"`
 	Unknown      int    `json:"unknown"`
+	Failed       int    `json:"failed"`
+	Reconciled   bool   `json:"reconciled"`
 	BusinessRows int    `json:"businessRows"`
 	Remaining    int    `json:"remaining"`
 }
@@ -105,19 +108,35 @@ func runBusinessLab(ctx context.Context, manager *businessLabManager, site strin
 		case http.StatusConflict:
 			result.Conflicts++
 		default:
-			result.Unknown++
+			if ctx.Err() != nil || status >= 500 {
+				result.Unknown++
+			} else {
+				result.Failed++
+			}
 		}
+	}
+	// The client may cancel after a transaction commits. Reconcile using a bounded
+	// independent context before returning cancellation and deleting the lab DB.
+	reconcileCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if site == "mes" {
+		var status string
+		var completed, scrapped, targetQuantity int
+		err = lab.app.db.QueryRowContext(reconcileCtx, `SELECT (SELECT COUNT(*) FROM mes_production_reports WHERE organization_id=? AND work_order_id=?),target_quantity-completed_quantity-scrapped_quantity,status,completed_quantity,scrapped_quantity,target_quantity FROM mes_work_orders WHERE organization_id=? AND id=?`, org, object, org, object).Scan(&result.BusinessRows, &result.Remaining, &status, &completed, &scrapped, &targetQuantity)
+		result.Reconciled = err == nil && result.BusinessRows == 1 && result.Remaining == 0 && status == "completed" && completed == targetQuantity && scrapped == 0
+	} else {
+		var orders, reservations int
+		err = lab.app.db.QueryRowContext(reconcileCtx, `SELECT (SELECT COUNT(*) FROM shop_order_items i JOIN shop_orders o ON o.organization_id=i.organization_id AND o.id=i.order_id WHERE i.organization_id=? AND i.variant_id=? AND o.payment_status='pending'),stock_quantity,(SELECT COUNT(*) FROM shop_orders o JOIN shop_order_items i ON i.organization_id=o.organization_id AND i.order_id=o.id WHERE o.organization_id=? AND i.variant_id=? AND o.payment_status='pending'),(SELECT COUNT(*) FROM shop_inventory_reservations r JOIN shop_orders o ON o.organization_id=r.organization_id AND o.id=r.cart_id WHERE r.organization_id=? AND r.variant_id=? AND r.status='active' AND o.payment_status='pending') FROM shop_variants WHERE organization_id=? AND id=?`, org, object, org, object, org, object, org, object).Scan(&result.BusinessRows, &result.Remaining, &orders, &reservations)
+		result.Reconciled = err == nil && result.BusinessRows == 1 && result.Remaining == 0 && orders == 1 && reservations == 1
+	}
+	if err != nil {
+		return result, fmt.Errorf("cannot reconcile isolated business results: %w", err)
 	}
 	if err = ctx.Err(); err != nil {
 		return result, err
 	}
-	if site == "mes" {
-		err = lab.app.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM mes_production_reports WHERE organization_id=? AND work_order_id=?),target_quantity-completed_quantity-scrapped_quantity FROM mes_work_orders WHERE organization_id=? AND id=?`, org, object, org, object).Scan(&result.BusinessRows, &result.Remaining)
-	} else {
-		err = lab.app.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM shop_order_items WHERE organization_id=? AND variant_id=?),stock_quantity FROM shop_variants WHERE organization_id=? AND id=?`, org, object, org, object).Scan(&result.BusinessRows, &result.Remaining)
-	}
-	if err != nil {
-		return result, fmt.Errorf("cannot reconcile isolated business results: %w", err)
+	if !result.Reconciled || result.Succeeded != 1 || result.Conflicts != contenders-1 || result.Unknown != 0 || result.Failed != 0 {
+		return result, errors.New("business contention did not reconcile")
 	}
 	return result, nil
 }

@@ -37,6 +37,8 @@ func TestLegacyImportAndRestoreCandidateRehearsal(t *testing.T) {
 		tables[table] = []map[string]any{}
 	}
 	tables["erp_items"] = []map[string]any{{"id": "rehearsal-item", "organizationId": "org_old", "sku": "REHEARSAL-ITEM", "name": "Rehearsal item", "unit": "PCS", "boxConversionRatio": 1, "category": "general", "isActive": true, "createdAt": "2026-01-01"}}
+	tables["erp_warehouses"] = []map[string]any{{"id": "rehearsal-warehouse", "organizationId": "org_old", "code": "REHEARSAL-WH", "name": "Rehearsal warehouse", "isActive": true, "createdAt": "2026-01-01"}}
+	tables["erp_stock_ledger"] = []map[string]any{{"id": "rehearsal-ledger", "organizationId": "org_old", "itemId": "rehearsal-item", "warehouseId": "rehearsal-warehouse", "changeType": "adjustment", "quantityChange": 3, "balanceAfter": 3, "unitCost": 10, "totalValue": 30, "referenceDoc": "REHEARSAL", "createdAt": "2026-01-01"}}
 	backup := legacyBackupPreview{Format: "business-suite/v1", ExportedAt: "2026-01-01T00:00:00Z", OrganizationID: "org_old", Tables: tables}
 	input := map[string]any{"organizationId": org, "userId": org + "_admin", "session": session, "confirmOrganizationId": org, "idempotencyKey": "rehearsal-import-0001", "entries": []any{}, "backup": backup}
 	raw, err := json.Marshal(input)
@@ -52,7 +54,7 @@ func TestLegacyImportAndRestoreCandidateRehearsal(t *testing.T) {
 		Rows     int    `json:"rows"`
 		Snapshot string `json:"snapshot"`
 	}
-	if err = json.Unmarshal(output.Bytes(), &result); err != nil || result.Rows != 1 || result.Snapshot == "" || filepath.Base(result.Snapshot) != result.Snapshot {
+	if err = json.Unmarshal(output.Bytes(), &result); err != nil || result.Rows != 3 || result.Snapshot == "" || filepath.Base(result.Snapshot) != result.Snapshot {
 		t.Fatalf("invalid result: %v %s", err, output.String())
 	}
 	snapshot := filepath.Join(dir, result.Snapshot)
@@ -79,6 +81,16 @@ func TestLegacyImportAndRestoreCandidateRehearsal(t *testing.T) {
 	}
 	if err = current.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&audits); err != nil {
 		t.Fatal(err)
+	}
+	var linked, restoredLinked int
+	if err = current.QueryRow("SELECT count(*) FROM erp_stock_ledger l JOIN erp_items i ON i.organization_id=l.organization_id AND i.id=l.item_id JOIN erp_warehouses w ON w.organization_id=l.organization_id AND w.id=l.warehouse_id WHERE l.organization_id=? AND l.id='rehearsal-ledger' AND l.quantity_change=3 AND l.balance_after=3", org).Scan(&linked); err != nil {
+		t.Fatal(err)
+	}
+	if err = restored.QueryRow("SELECT count(*) FROM erp_stock_ledger WHERE organization_id=? AND id='rehearsal-ledger'", org).Scan(&restoredLinked); err != nil {
+		t.Fatal(err)
+	}
+	if linked != 1 || restoredLinked != 0 {
+		t.Fatalf("inventory relationship current=%d restored=%d", linked, restoredLinked)
 	}
 	if currentRows != 1 || restoredRows != 0 || audits != 1 {
 		t.Fatalf("current=%d restored=%d audits=%d", currentRows, restoredRows, audits)

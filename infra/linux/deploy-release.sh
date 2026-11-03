@@ -14,10 +14,14 @@ printf '%s  %s\n' "$expected" "$archive" | sha256sum -c -
 mkdir "$release"
 tar -xzf "$archive" -C "$release"
 ln -s "$root/shared/infra.env" "$release/infra/.env"
+printf 'SUITE_RELEASE_SHA=%s\n' "$sha" > "$release/infra/.revision.env"
+chmod 600 "$release/infra/.revision.env"
 printf '%s\n' "$sha" > "$release/COMMIT"
 compose() {
   local dir=$1; shift
-  (cd "$dir/infra" && sudo -n docker compose --project-name business-suite --env-file .env \
+  local env_args=(--env-file .env)
+  if [[ -f "$dir/infra/.revision.env" ]]; then env_args+=(--env-file .revision.env); fi
+  (cd "$dir/infra" && sudo -n docker compose --project-name business-suite "${env_args[@]}" \
     -f compose.yaml -f linux/compose.web.yaml -f linux/compose.public-sites.yaml \
     -f linux/compose.stations.yaml "$@")
 }
@@ -52,7 +56,7 @@ trap rollback ERR
 compose "$release" up -d --no-build --no-deps --wait --wait-timeout 180 "${services[@]}"
 compose "$release" up -d --no-build --no-deps --force-recreate --wait --wait-timeout 180 edge
 curl --fail --silent --show-error --retry 5 --retry-delay 2 https://blockchen.duckdns.org/ -o /dev/null
-curl --fail --silent --show-error --retry 5 --retry-delay 2 https://station.blockchen.duckdns.org/api/health -o /dev/null
+curl --fail --silent --show-error --retry 5 --retry-delay 2 https://station.blockchen.duckdns.org/api/health | python3 "$release/scripts/check-station-revision.py" "$sha"
 ln -sfn "$release" "$root/current"
 trap - ERR
 printf 'Deployed commit %s to %s\n' "$sha" "$release"

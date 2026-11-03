@@ -3,6 +3,8 @@ services:
     build:
       context: ..
       dockerfile: infra/linux/Dockerfile.station
+      args:
+        SUITE_RELEASE_SHA: ${SUITE_RELEASE_SHA:-unknown}
     restart: unless-stopped
     environment:
       SUITE_WEB: /srv/station/web-dist

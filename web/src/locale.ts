@@ -21,6 +21,7 @@ const traditionalChinese:Record<string,string> = {
   "Receipt events": "收貨事件",
   "No receipt events": "沒有收貨事件",
   "Integration operation saved": "整合作業已儲存",
+  "The operation succeeded, but refreshing data failed. Reload the workspace.": "作業已成功，但資料重新整理失敗；請重新載入工作區。",
 
   "Stage backup in isolation": "在隔離環境驗證備份",
   "Isolated staging passed; no data has been imported.": "隔離環境驗證通過；尚未匯入任何資料。",

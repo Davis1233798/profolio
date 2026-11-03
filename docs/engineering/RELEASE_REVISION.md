@@ -13,3 +13,5 @@ OCI 切換完成前，部署腳本須取得公開 Go 健康回應，驗證 `succ
 部署以 release 目錄內只含公開 SHA 的 `.revision.env` 作為第二個 Compose env file；不依賴 sudo 保留呼叫端環境，也不修改共用機密 env。舊版 release 若沒有該檔，回滾使用其原設定及舊映像。遠端 CI 以實際 Docker Compose 設定解析驗證 SHA 覆寫及預設值；映像 build 與公開端點仍須在部署後驗證。
 
 遠端部署以 `bash -s` 從 SSH 標準輸入接收腳本時，備份容器及任何可能讀 stdin 的子程序不得繼承腳本串流；否則子程序可能讀走尚未執行的後半段，令部署在 build 後假成功。備份命令必須將 stdin 連到 `/dev/null`；遠端 CI 以會嘗試讀取 stdin 的假 Docker／備份命令執行整段腳本，驗證尾端切換與健康檢查確實執行，並在失敗時回滾。尚未驗證前不能將 SSH exit 0 當作完成切換的證據。
+
+部署 workflow 同時將版本專屬腳本上傳為檔案，再透過 `bash <file>` 執行，SSH stdin 使用 `/dev/null`；因此整個部署流程不依賴串流標準輸入，其他子程序也無法吃掉腳本尾端。

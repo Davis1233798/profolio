@@ -151,3 +151,26 @@ func TestMESERPBackfillRejectsReceiptWithoutMatchingMESInventory(t *testing.T) {
 		})
 	}
 }
+
+func TestMESERPBackfillPreservesOriginalReceiptTime(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPReceiptPostingFixture(t, a)
+	var receipt string
+	if err := a.db.QueryRow("SELECT json_extract(payload,'$.sourceReceiptId') FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID).Scan(&receipt); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("DELETE FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("UPDATE mes_finished_goods_receipts SET created_at='2024-01-02 03:04:05' WHERE organization_id=? AND id=?", f.org, receipt); err != nil {
+		t.Fatal(err)
+	}
+	w := request(a, http.MethodPost, "/api/stations/erp/mes-receipt-backfill", map[string]any{"receiptId": receipt, "idempotencyKey": "historical-time-0001"}, f.erpAdmin...)
+	if w.Code != http.StatusOK {
+		t.Fatalf("backfill: %d %s", w.Code, w.Body.String())
+	}
+	var occurred string
+	if err := a.db.QueryRow("SELECT json_extract(payload,'$.occurredAt') FROM outbox_events WHERE id=?", f.eventID).Scan(&occurred); err != nil || occurred != "2024-01-02T03:04:05Z" {
+		t.Fatalf("original time=%q err=%v", occurred, err)
+	}
+}

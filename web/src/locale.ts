@@ -2,6 +2,26 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "MES finished goods integration": "MES 成品整合",
+  "MES receipt and ERP posting are separate. Confirm the mapping and cost before posting.": "MES 收貨與 ERP 過帳是獨立步驟；過帳前請確認映射與成本。",
+  "Up to 500 records are shown for each list.": "每個清單最多顯示 500 筆。",
+  "Loading integration data…": "正在載入整合資料…",
+  "Map finished product": "建立成品映射",
+  "MES product": "MES 商品",
+  "ERP item": "ERP 品項",
+  "Save product mapping": "儲存商品映射",
+  "Post MES receipt to ERP": "將 MES 收貨過帳至 ERP",
+  "Pending receipt": "待處理收貨",
+  "Select a receipt": "選擇收貨",
+  "Confirmed mapping": "確認的映射",
+  "Select a mapping": "選擇映射",
+  "Unit cost": "單位成本",
+  "Cost reason": "成本依據",
+  "Confirm ERP posting": "確認 ERP 過帳",
+  "Receipt events": "收貨事件",
+  "No receipt events": "沒有收貨事件",
+  "Integration operation saved": "整合作業已儲存",
+
   "Stage backup in isolation": "在隔離環境驗證備份",
   "Isolated staging passed; no data has been imported.": "隔離環境驗證通過；尚未匯入任何資料。",
   "Assign lead": "指派潛在客戶",

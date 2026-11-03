@@ -24,7 +24,7 @@ func (a *App) mesERPWorkspace(w http.ResponseWriter, r *http.Request, id *Identi
 		"items":      "SELECT id,sku,name,unit,is_active FROM erp_items WHERE organization_id=? ORDER BY id LIMIT 500",
 		"warehouses": "SELECT id,name,code,is_active FROM erp_warehouses WHERE organization_id=? ORDER BY id LIMIT 500",
 		"mappings":   "SELECT id,mes_product_id,erp_item_id,warehouse_id,version,is_active FROM mes_erp_product_mappings WHERE organization_id=? ORDER BY rowid DESC LIMIT 500",
-		"events":     `SELECT id,status,json_extract(payload,'$.eventId') AS event_id,json_extract(payload,'$.sourceReceiptId') AS source_receipt_id,json_extract(payload,'$.batchId') AS batch_id,json_extract(payload,'$.mesProductId') AS mes_product_id,json_extract(payload,'$.quantity') AS quantity,json_extract(payload,'$.occurredAt') AS occurred_at FROM outbox_events WHERE organization_id=? AND event_type='mes.finished_goods.received' ORDER BY rowid DESC LIMIT 500`,
+		"events":     `SELECT id,status,json_extract(payload,'$.eventId') AS event_id,json_extract(payload,'$.sourceReceiptId') AS source_receipt_id,json_extract(payload,'$.batchId') AS batch_id,json_extract(payload,'$.mesProductId') AS mes_product_id,json_extract(payload,'$.quantity') AS quantity,json_extract(payload,'$.occurredAt') AS occurred_at FROM outbox_events WHERE organization_id=? AND event_type='mes.finished_goods.received' ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,rowid DESC LIMIT 500`,
 	}
 	result := map[string]any{}
 	for key, query := range queries {

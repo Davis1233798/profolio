@@ -16,6 +16,7 @@
 | 餐飲／TableCraft | 後台付款明細 | 測試與實作完成，等待遠端 CI | [付款明細範圍](engineering/DINING_PAYMENTS.md)。 |
 | 電商／MarketLane | 模擬營運摘要退款關聯 | 測試與實作完成，等待遠端 CI | [摘要範圍](engineering/SHOP_OPERATIONS_SUMMARY.md)。 |
 | 桌面版／MES、ERP、CRM | Electron 工作區與 Windows 打包 | 遠端回歸中 | 其他系統維持網頁版；先前 Windows 快照失敗已修正，`cac79a0` 的 Windows CI 通過，最新版本仍須驗證。 |
+| 共用／部署 | 公開 Go 站台版本識別 | 架構與邊界完成；測試與實作中 | [部署版本識別](engineering/RELEASE_REVISION.md)。 |
 | 共用／部署 | GitHub Actions 與公開站台 | 尚未完成切換 | PR `02aa3f5` 的 CI 已通過，但部署 job 因非預設分支而略過；不以程式碼推送推論部署成功。 |
 
 先前已進行的程式修改不追溯宣稱符合新指定順序；自本次起依架構、邊界、測試、實作的順序迭代。

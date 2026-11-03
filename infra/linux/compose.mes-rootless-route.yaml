@@ -1,0 +1,5 @@
+# Caddy receives a read-only view of the host socket boundary only.
+services:
+  edge:
+    volumes:
+      - /run/mes-ingress:/run/mes-ingress:ro

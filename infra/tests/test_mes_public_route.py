@@ -36,6 +36,12 @@ class MesPublicRouteTests(unittest.TestCase):
         self.assertEqual(config['overlay'], 'linux/compose.mes-public-route.yaml')
         self.assertEqual(config['network'], 'business-suite-mes_default')
 
+    def test_rootless_mode_uses_only_the_fixed_host_unix_socket_overlay(self):
+        config = route_config('rootless')
+        self.assertEqual(config['upstream'], 'unix//run/mes-ingress/upstream.sock')
+        self.assertEqual(config['overlay'], 'linux/compose.mes-rootless-route.yaml')
+        self.assertIsNone(config['network'])
+
     def test_unknown_mode_cannot_choose_an_arbitrary_upstream(self):
         for mode in ('localhost:18095', 'https://other.example', '', 'SHARED'):
             with self.subTest(mode=mode):
@@ -84,6 +90,7 @@ class MesPublicRouteTests(unittest.TestCase):
         caddy = (ROOT / 'infra' / 'linux' / 'Caddyfile.sites').read_text(encoding='utf-8')
         compose = (ROOT / 'infra' / 'linux' / 'compose.public-sites.yaml').read_text(encoding='utf-8')
         isolated_overlay = (ROOT / 'infra' / 'linux' / 'compose.mes-public-route.yaml').read_text(encoding='utf-8')
+        rootless_overlay = (ROOT / 'infra' / 'linux' / 'compose.mes-rootless-route.yaml').read_text(encoding='utf-8')
         self.assertIn('reverse_proxy {$MES_PUBLIC_UPSTREAM}', caddy)
         self.assertIn('MES_PUBLIC_UPSTREAM: ${MES_PUBLIC_UPSTREAM:?route upstream must come from the allowlisted IaC mode}', compose)
         mes_block = caddy.split('mes.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0]
@@ -95,6 +102,14 @@ class MesPublicRouteTests(unittest.TestCase):
         self.assertNotIn('mes-station:', isolated_overlay)
         self.assertNotIn('volumes:', isolated_overlay)
         self.assertNotIn('ports:', isolated_overlay)
+        self.assertIn('/run/mes-ingress:/run/mes-ingress:ro', rootless_overlay)
+        self.assertNotIn('business-suite-mes_default', rootless_overlay)
+
+    def test_rootless_cutover_checks_socket_health_before_mutation_and_keeps_shared_rollback(self):
+        script = (ROOT / 'infra' / 'linux' / 'cutover-mes-public-route.sh').read_text(encoding='utf-8')
+        self.assertIn('verify_rootless_service', script)
+        self.assertIn('check-unix-health', script)
+        self.assertIn('python3 "$route_tool" set "$env_file" "$old_mode"', script)
 
     def test_operator_cutover_checks_health_and_has_a_route_only_rollback(self):
         script = (ROOT / 'infra' / 'linux' / 'cutover-mes-public-route.sh').read_text(encoding='utf-8')

@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 target=${1:?usage: cutover-mes-public-route.sh <shared|isolated>}
-[[ "$target" == shared || "$target" == isolated ]] || { echo 'Route must be shared or isolated' >&2; exit 2; }
+[[ "$target" == shared || "$target" == isolated || "$target" == rootless ]] || { echo 'Route must be shared, isolated or rootless' >&2; exit 2; }
 
 root=/srv/business-suite
 [[ -d "$root/shared" && ! -L "$root/shared" ]] || { echo 'Shared release state directory is missing or unsafe' >&2; exit 1; }
@@ -49,6 +49,10 @@ verify_isolated_service() {
   docker run --rm --network "$network" --entrypoint /bin/sh caddy:2.10-alpine -ec 'wget -q -O - -T 4 http://mes-station:8095/api/health' | python3 "$route_tool" check-health >/dev/null
 }
 
+verify_rootless_service() {
+  python3 "$route_tool" check-unix-health >/dev/null
+}
+
 verify_current_edge() {
   mapfile -t edges < <(docker ps -aq --filter label=com.docker.compose.project=business-suite --filter label=com.docker.compose.service=edge)
   [[ ${#edges[@]} -eq 1 ]] || { echo 'Expected exactly one existing central Caddy edge container; refusing to create or replace ingress.' >&2; return 1; }
@@ -65,7 +69,7 @@ public_health() {
   [[ "$base_domain" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ && "$base_domain" != *..* ]] || { echo 'BASE_DOMAIN must be a plain DNS hostname' >&2; return 1; }
   url="https://mes.${base_domain}/api/health"
   body=$(curl --fail --silent --show-error --retry 5 --retry-connrefused --retry-delay 2 --max-time 10 "$url") || return 1
-  if [[ "$mode" == isolated ]]; then
+  if [[ "$mode" == isolated || "$mode" == rootless ]]; then
     printf '%s' "$body" | python3 "$route_tool" check-health >/dev/null
   else
     printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if d.get("success") is True else 1)'
@@ -78,6 +82,7 @@ if [[ "$old_mode" == "$target" ]]; then
   exit 0
 fi
 if [[ "$target" == isolated ]]; then verify_isolated_service; fi
+if [[ "$target" == rootless ]]; then verify_rootless_service; fi
 
 route_changed=0
 rollback() {

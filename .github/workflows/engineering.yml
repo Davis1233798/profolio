@@ -57,6 +57,10 @@ jobs:
         working-directory: infra
       - name: Verify MES public cutover across isolated Docker networks
         run: python infra/tests/smoke_mes_public_route.py
+      - name: Install systemd socket activation tools for Unix ingress integration
+        run: sudo apt-get update && sudo apt-get install -y systemd-container
+      - name: Verify rootless MES Unix ingress with socket-activated proxy and Caddy
+        run: python infra/tests/integration_mes_unix_ingress.py
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up -d --build --wait --wait-timeout 180
       - run: python infra/tests/smoke.py

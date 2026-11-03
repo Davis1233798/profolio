@@ -47,6 +47,6 @@ npm run engineering:check
 
 Linux 整站包：先建置，再執行 `python scripts/package-linux.py`。封裝會排除 `.env`、`.dev.vars`、資料庫與連結，輸出 SHA-256 收據。正式主機獨立產生服務密碼，不沿用本機測試憑證。
 
-`MES_PUBLIC_ROUTE` 未設定或設為 `shared` 時，`mes.<BASE_DOMAIN>` 維持既有 `web:8080` upstream。只有受控切換腳本完成健康驗證後，才改為 `isolated` 並指向獨立 Go station。切換依賴 external Docker network `business-suite-mes_default`；中央 Caddy container 不可用主機 loopback `127.0.0.1:18095` 作 upstream。詳見 [MES 公開路由安全切換](../docs/engineering/MES_PUBLIC_ROUTE_CUTOVER.md)。
+`MES_PUBLIC_ROUTE` 未設定或設為 `shared` 時，`mes.<BASE_DOMAIN>` 維持既有 `web:8080` upstream。受控切換可選擇 `isolated` Docker network 或 `rootless` 固定 Unix socket；rootless Caddy 僅掛載 `/run/mes-ingress` 唯讀目錄，切換前必須通過 Unix socket Go health。詳見 [MES ingress 架構與界線](../docs/engineering/MES_UNIX_INGRESS.md) 及 [MES 公開路由安全切換](../docs/engineering/MES_PUBLIC_ROUTE_CUTOVER.md)。
 
 配置依據：[Compose 啟動順序](https://docs.docker.com/compose/how-tos/startup-order/)、[PostgreSQL 分區](https://www.postgresql.org/docs/17/ddl-partitioning.html)、[RabbitMQ confirms](https://www.rabbitmq.com/docs/confirms)。

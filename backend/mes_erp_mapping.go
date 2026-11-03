@@ -16,8 +16,12 @@ type mesERPMappingRequest struct {
 }
 
 func (a *App) mesERPMapping(w http.ResponseWriter, r *http.Request, id *Identity, g *Grant) {
+	if r.Method == http.MethodGet {
+		a.mesERPWorkspace(w, r, id, g)
+		return
+	}
 	if r.Method != http.MethodPost {
-		fail(w, 405, "Use POST")
+		fail(w, 405, "Use GET or POST")
 		return
 	}
 	if g.Role != "admin" || g.Scope != "back" {

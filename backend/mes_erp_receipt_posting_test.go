@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -197,5 +198,91 @@ func TestMESERPReceiptPostingWriteFailureRollsBack(t *testing.T) {
 	}
 	if ledgerRows != 0 || costRows != 0 {
 		t.Fatalf("failed posting left partial inventory: ledger=%d costing=%d", ledgerRows, costRows)
+	}
+	var postingRows int
+	if err := a.db.QueryRow("SELECT count(*) FROM erp_mes_receipt_postings WHERE organization_id=? AND event_id=?", f.org, f.eventID).Scan(&postingRows); err != nil {
+		t.Fatal(err)
+	}
+	if postingRows != 0 {
+		t.Fatalf("failed posting left immutable posting rows=%d", postingRows)
+	}
+}
+
+func TestMESERPReceiptPostingRejectsRevokedAdministratorGrants(t *testing.T) {
+	for _, site := range []string{"mes", "erp"} {
+		t.Run(site, func(t *testing.T) {
+			a := appForTest(t)
+			f := prepareMESERPReceiptPostingFixture(t, a)
+			var userID string
+			if err := a.db.QueryRow("SELECT user_id FROM station_accounts WHERE organization_id=? AND email=?", f.org, "admin@suite.test").Scan(&userID); err != nil {
+				t.Fatalf("find administrator: %v", err)
+			}
+			if _, err := a.db.Exec("UPDATE station_grants SET role='operator' WHERE user_id=? AND site=?", userID, site); err != nil {
+				t.Fatalf("revoke %s administrator grant: %v", site, err)
+			}
+			w := postMESERPReceipt(a, f.erpAdmin, mesERPReceiptPostingRequest(f.eventID, f.mappingID, 125, "Approved manufacturing cost record", "mes-erp-revoked-"+site))
+			if w.Code != http.StatusForbidden {
+				t.Fatalf("posting with revoked %s admin grant: got %d %s", site, w.Code, w.Body.String())
+			}
+			var status string
+			if err := a.db.QueryRow("SELECT status FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID).Scan(&status); err != nil || status != "pending" {
+				t.Fatalf("revoked grant changed event status=%q err=%v", status, err)
+			}
+			var postings, ledger int
+			if err := a.db.QueryRow("SELECT count(*) FROM erp_mes_receipt_postings WHERE organization_id=? AND event_id=?", f.org, f.eventID).Scan(&postings); err != nil {
+				t.Fatal(err)
+			}
+			if err := a.db.QueryRow("SELECT count(*) FROM erp_stock_ledger WHERE organization_id=? AND item_id=?", f.org, f.itemID).Scan(&ledger); err != nil {
+				t.Fatal(err)
+			}
+			if postings != 0 || ledger != 0 {
+				t.Fatalf("revoked grant wrote records: postings=%d ledger=%d", postings, ledger)
+			}
+		})
+	}
+}
+
+func TestMESERPReceiptPostingConcurrentSameEventCreatesSinglePosting(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPReceiptPostingFixture(t, a)
+	input := mesERPReceiptPostingRequest(f.eventID, f.mappingID, 125, "Approved manufacturing cost record", "mes-erp-concurrent-key-0001")
+	const requests = 2
+	start := make(chan struct{})
+	responses := make([]*httptest.ResponseRecorder, requests)
+	var wg sync.WaitGroup
+	wg.Add(requests)
+	for i := 0; i < requests; i++ {
+		go func(i int) {
+			defer wg.Done()
+			<-start
+			responses[i] = postMESERPReceipt(a, f.erpAdmin, input)
+		}(i)
+	}
+	close(start)
+	wg.Wait()
+
+	successes := 0
+	for i, w := range responses {
+		if w == nil {
+			t.Fatalf("request %d produced no response", i)
+		}
+		if w.Code == http.StatusOK {
+			successes++
+		} else if w.Code != http.StatusConflict && w.Code != http.StatusServiceUnavailable {
+			t.Fatalf("request %d unexpected response: %d %s", i, w.Code, w.Body.String())
+		}
+	}
+	if successes < 1 {
+		t.Fatalf("both concurrent requests failed: %d %s; %d %s", responses[0].Code, responses[0].Body.String(), responses[1].Code, responses[1].Body.String())
+	}
+	var postings, ledger int
+	if err := a.db.QueryRow("SELECT count(*) FROM erp_mes_receipt_postings WHERE organization_id=? AND event_id=?", f.org, f.eventID).Scan(&postings); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM erp_stock_ledger WHERE organization_id=? AND item_id=? AND warehouse_id=? AND change_type='mes_receipt'", f.org, f.itemID, f.warehouseID).Scan(&ledger); err != nil {
+		t.Fatal(err)
+	}
+	if postings != 1 || ledger != 1 {
+		t.Fatalf("same event concurrent posting duplicated: postings=%d ledger=%d", postings, ledger)
 	}
 }

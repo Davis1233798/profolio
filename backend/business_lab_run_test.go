@@ -21,7 +21,7 @@ func TestRunBusinessLabMESAndShop(t *testing.T) {
 			}
 			// A successful race must have committed at least one real business row,
 			// while the contested MES quantity / single shop unit is fully consumed.
-			if result.BusinessRows < 1 || result.Remaining != 0 {
+			if result.BusinessRows != 1 || result.Remaining != 0 || !result.Reconciled || result.Unknown != 0 || result.Failed != 0 {
 				t.Fatalf("business result not reconciled: %+v", result)
 			}
 			entries, err := os.ReadDir(root)

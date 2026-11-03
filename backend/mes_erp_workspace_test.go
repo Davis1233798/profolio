@@ -194,6 +194,65 @@ func workspaceHasRow(rows []any, field string, want any) bool {
 	return false
 }
 
+func TestMESERPWorkspaceHistoricalReceiptsOnlyListsBackfillableInventory(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPReceiptPostingFixture(t, a)
+	var legalReceipt, workOrderID, operationID, operatorID string
+	if err := a.db.QueryRow(`SELECT r.id,b.work_order_id,rpt.operation_id,rpt.operator_id
+		FROM mes_finished_goods_receipts r
+		JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id
+		JOIN mes_production_reports rpt ON rpt.organization_id=b.organization_id AND rpt.id=b.report_id
+		WHERE r.organization_id=? AND r.batch_id=(SELECT batch_id FROM mes_finished_goods_receipts WHERE organization_id=? ORDER BY rowid DESC LIMIT 1)
+		ORDER BY r.rowid DESC LIMIT 1`, f.org, f.org).Scan(&legalReceipt, &workOrderID, &operationID, &operatorID); err != nil {
+		t.Fatalf("read legal receipt lineage: %v", err)
+	}
+	if _, err := a.db.Exec("DELETE FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID); err != nil {
+		t.Fatalf("remove original event to model historical receipt: %v", err)
+	}
+
+	makeReceipt := func(name string, batchQuantity, receiptQuantity int, inventoryQuantity *int) string {
+		t.Helper()
+		suffix := token()
+		reportID := "workspace-history-report-" + suffix
+		batchID := "workspace-history-batch-" + suffix
+		receiptID := "workspace-history-receipt-" + suffix
+		if _, err := a.db.Exec("INSERT INTO mes_production_reports(id,organization_id,work_order_id,operation_id,operator_id,good_quantity,scrap_quantity) VALUES(?,?,?,?,?,?,0)", reportID, f.org, workOrderID, operationID, operatorID, batchQuantity); err != nil {
+			t.Fatalf("insert %s report: %v", name, err)
+		}
+		if _, err := a.db.Exec("INSERT INTO mes_finished_goods_batches(id,organization_id,work_order_id,report_id,batch_number,quantity,status) VALUES(?,?,?,?,?,?,'received')", batchID, f.org, workOrderID, reportID, "HISTORY-"+suffix, batchQuantity); err != nil {
+			t.Fatalf("insert %s batch: %v", name, err)
+		}
+		if _, err := a.db.Exec("INSERT INTO mes_finished_goods_receipts(id,organization_id,batch_id,quantity,idempotency_key) VALUES(?,?,?,?,?)", receiptID, f.org, batchID, receiptQuantity, "history-key-"+suffix); err != nil {
+			t.Fatalf("insert %s receipt: %v", name, err)
+		}
+		if inventoryQuantity != nil {
+			if _, err := a.db.Exec("INSERT INTO mes_finished_goods_inventory(id,organization_id,batch_id,quantity_on_hand) VALUES(?,?,?,?)", "workspace-history-inventory-"+suffix, f.org, batchID, *inventoryQuantity); err != nil {
+				t.Fatalf("insert %s inventory: %v", name, err)
+			}
+		}
+		return receiptID
+	}
+	missingInventory := makeReceipt("missing inventory", 2, 2, nil)
+	wrongInventoryQuantity := 1
+	mismatchedInventory := makeReceipt("mismatched inventory", 2, 2, &wrongInventoryQuantity)
+	receiptMismatchInventory := 1
+	mismatchedReceipt := makeReceipt("receipt quantity mismatch", 2, 1, &receiptMismatchInventory)
+
+	w := getMESERPWorkspace(a, f.erpAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET ERP MES workspace: %d %s", w.Code, w.Body.String())
+	}
+	receipts := workspaceRows(t, decodeMESERPWorkspace(t, w), "historicalReceipts")
+	if !workspaceHasRow(receipts, "id", legalReceipt) {
+		t.Fatalf("valid historical receipt %q was omitted: %#v", legalReceipt, receipts)
+	}
+	for _, invalidID := range []string{missingInventory, mismatchedInventory, mismatchedReceipt} {
+		if workspaceHasRow(receipts, "id", invalidID) {
+			t.Errorf("ineligible historical receipt %q was listed: %#v", invalidID, receipts)
+		}
+	}
+}
+
 func TestMESERPWorkspaceListsHistoricalReceiptsUntilBackfilled(t *testing.T) {
 	a := appForTest(t)
 	f := prepareMESERPReceiptPostingFixture(t, a)

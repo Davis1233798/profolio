@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 作品集／六站 | 專題 repository 拆分與主頁連結 | 六個 repo 已公開，各站 main 已通過遠端驗證及映像發布 | [連結與範圍](engineering/REPOSITORY_LINKS.md)。共用程式、正式資料遷移及獨立站部署尚未完成。 |
 | MES／ForgeFlow | 獨立部署與回滾 | 範本已合併；正式部署尚未設定 | [MES 部署架構](https://github.com/Davis1233798/business-suite-mes/blob/main/docs/deployment/ISOLATED_DEPLOYMENT.md)。GitHub 遠端驗證包含隔離資料卷、惡意封存檔及失敗回滾；尚未設定公開路由與部署憑證。 |
-| MES／ForgeFlow | 真實報工併發展示 | 開發中 | 現有流量台帳不是實際報工；正移植工單交易並規劃獨立臨時資料庫、權限檢查與結果核對。 |
+| MES／ForgeFlow | 真實報工併發展示 | 已合併單站 main；正式站切換待完成 | [MES PR](https://github.com/Davis1233798/business-suite-mes/pull/3) 在獨立臨時資料庫呼叫工單報工 API 並核對結果；僅限單程序 SQLite，異常中止後的殘留目錄需人工處理。 |
 | 電商／MarketLane | 真實結帳併發展示 | 開發中；草稿需修改後再審查 | [Shop PR](https://github.com/Davis1233798/business-suite-shop/pull/3)。測試資料不得寫入正式工作區；需完整驗證交易、隔離、清理及授權。 |
 | 作品集／部署 | GitHub Actions 自動部署修正 | 已合併並完成正式站版本驗證 | [部署修正](https://github.com/Davis1233798/profolio/pull/12)；main 版本 `fac13aa` 已由公開健康端點與主機 current 路徑核對，主頁回應含專題連結。各站獨立部署仍未完成。 |
 | 共用資料移轉／MES、ERP、POS、CRM、餐飲、電商 | 舊版備份檢查、身分對應、隔離暫存與匯入前快照 | 功能已實作；正式演練待完成 | [快照架構與邊界](engineering/WINDOWS_MIGRATION_SNAPSHOT.md)。已有受控離線命令，沒有 HTTP 匯入；舊版 Node 與 Go 資料庫分開，正式切換未完成。 |

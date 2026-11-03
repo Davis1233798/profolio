@@ -67,15 +67,23 @@ func (a *App) backfillMESReceipt(w http.ResponseWriter, r *http.Request, id *Ide
 		fail(w, 503, "Cannot inspect retry state")
 		return
 	}
-	var batch, product string
+	var batch, product, createdAt string
 	var quantity int64
-	err = tx.QueryRow(`SELECT b.id,wo.product_id,r.quantity FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id JOIN mes_products p ON p.organization_id=wo.organization_id AND p.id=wo.product_id JOIN mes_finished_goods_inventory inv ON inv.organization_id=b.organization_id AND inv.batch_id=b.id AND inv.quantity_on_hand=r.quantity WHERE r.organization_id=? AND r.id=? AND b.status='received' AND r.quantity=b.quantity AND r.quantity BETWEEN 1 AND 1000000`, id.OrganizationID, in.ReceiptID).Scan(&batch, &product, &quantity)
+	err = tx.QueryRow(`SELECT b.id,wo.product_id,r.quantity,r.created_at FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id JOIN mes_products p ON p.organization_id=wo.organization_id AND p.id=wo.product_id JOIN mes_finished_goods_inventory inv ON inv.organization_id=b.organization_id AND inv.batch_id=b.id AND inv.quantity_on_hand=r.quantity WHERE r.organization_id=? AND r.id=? AND b.status='received' AND r.quantity=b.quantity AND r.quantity BETWEEN 1 AND 1000000`, id.OrganizationID, in.ReceiptID).Scan(&batch, &product, &quantity, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		fail(w, 404, "Eligible MES receipt not found")
 		return
 	}
 	if err != nil {
 		fail(w, 503, "Cannot inspect MES receipt")
+		return
+	}
+	created, parseErr := time.Parse(time.RFC3339Nano, createdAt)
+	if parseErr != nil {
+		created, parseErr = time.Parse("2006-01-02 15:04:05", createdAt)
+	}
+	if parseErr != nil {
+		fail(w, 409, "Invalid historical receipt time")
 		return
 	}
 	eventID := "mes.received:" + in.ReceiptID
@@ -88,7 +96,7 @@ func (a *App) backfillMESReceipt(w http.ResponseWriter, r *http.Request, id *Ide
 		fail(w, 409, "Receipt event already exists")
 		return
 	}
-	event, _ := json.Marshal(mesReceiptEvent{EventID: eventID, SchemaVersion: 1, OrganizationID: id.OrganizationID, SourceReceiptID: in.ReceiptID, BatchID: batch, ProductID: product, Quantity: quantity, OccurredAt: time.Now().UTC().Format(time.RFC3339Nano)})
+	event, _ := json.Marshal(mesReceiptEvent{EventID: eventID, SchemaVersion: 1, OrganizationID: id.OrganizationID, SourceReceiptID: in.ReceiptID, BatchID: batch, ProductID: product, Quantity: quantity, OccurredAt: created.UTC().Format(time.RFC3339Nano)})
 	_, err = tx.Exec("INSERT INTO outbox_events(id,organization_id,event_type,payload) VALUES(?,?,'mes.finished_goods.received',?)", eventID, id.OrganizationID, string(event))
 	result := map[string]any{"eventId": eventID}
 	encoded, _ := json.Marshal(result)

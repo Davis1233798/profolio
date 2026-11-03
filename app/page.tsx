@@ -3,6 +3,7 @@ import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WorkspaceTools } from "@/components/workspace-tools";
+import { projectRepositories } from "@/lib/project-repositories";
 import { ArrowUpRight, Factory, Database, Calculator, Users, UtensilsCrossed, ShoppingBag, ArrowRight, Code2 } from "lucide-react";
 
 const projects = [
@@ -41,7 +42,7 @@ export default function PortfolioPage() {
         <div className="project-visual" data-project={p.id}><span className="project-icon"><p.icon size={38} strokeWidth={1.2}/></span><span className="project-watermark" aria-hidden="true">{p.id.toUpperCase()}</span><div className="project-flow">{p.steps.map((step,i)=><div key={step}><span>0{i+1}</span><b>{step}</b><span className="flow-line"/></div>)}</div><span className="project-category">{p.category} / {p.id.toUpperCase()}</span></div>
         <div className="project-body"><p className="project-name">{p.name}<ArrowUpRight size={17}/></p><h3>{p.title}</h3><p className="project-description">{p.description}</p>
           {selected===p.id&&<div className="project-boundary" id={`boundary-${p.id}`}><b>Scope</b><p>{p.limitation}</p><p>Initial records are demonstration data.</p></div>}
-          <div className="project-actions"><button aria-expanded={selected===p.id} aria-controls={selected===p.id?`boundary-${p.id}`:undefined} onClick={()=>setSelected(selected===p.id?null:p.id)}>{selected===p.id?"Hide details":"View details"}</button><Link href={`${stationBase || "https://station.blockchen.duckdns.org"}/${p.id}/login`}>Enter workspace <ArrowRight size={15}/></Link></div>{stationBase && <a className="station-entry" href={`${stationBase}/${p.id}/login`} target="_blank" rel="noreferrer">Sign in to workspace <ArrowUpRight size={14}/></a>}
+          <div className="project-actions"><button aria-expanded={selected===p.id} aria-controls={selected===p.id?`boundary-${p.id}`:undefined} onClick={()=>setSelected(selected===p.id?null:p.id)}>{selected===p.id?"Hide details":"View details"}</button><Link href={`${stationBase || "https://station.blockchen.duckdns.org"}/${p.id}/login`}>Enter workspace <ArrowRight size={15}/></Link></div><a className="station-entry" href={projectRepositories[p.id as keyof typeof projectRepositories]} target="_blank" rel="noopener noreferrer">View source on GitHub <ArrowUpRight size={14}/></a>{stationBase && <a className="station-entry" href={`${stationBase}/${p.id}/login`} target="_blank" rel="noreferrer">Sign in to workspace <ArrowUpRight size={14}/></a>}
         </div>
       </SpotlightCard>)}</div>
     </section>

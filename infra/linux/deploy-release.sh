@@ -36,11 +36,11 @@ compose "$release" build "${services[@]}"
 # Snapshot the station database using the newly built binary against the existing
 # volume. VACUUM INTO creates a consistent snapshot even while the service runs.
 station_backup="/srv/station/data/backup-before-$(basename "$release").sqlite"
-compose "$release" run --rm --no-deps station /srv/station/station-server --backup "$station_backup"
+compose "$release" run --rm --no-deps station /srv/station/station-server --backup "$station_backup" < /dev/null
 # Take a consistent SQLite snapshot in the existing volume before replacing services.
 backup="/srv/app/.data/backup-before-$(basename "$release").sqlite"
 sudo -n docker exec business-suite-web-1 node --input-type=commonjs -e \
-  'const {DatabaseSync}=require("node:sqlite"); const db=new DatabaseSync("/srv/app/.data/portfolio.sqlite"); db.prepare("VACUUM INTO ?").run(process.argv[1]); db.close();' "$backup"
+  'const {DatabaseSync}=require("node:sqlite"); const db=new DatabaseSync("/srv/app/.data/portfolio.sqlite"); db.prepare("VACUUM INTO ?").run(process.argv[1]); db.close();' "$backup" < /dev/null
 rollback() {
   local status=$?
   trap - ERR

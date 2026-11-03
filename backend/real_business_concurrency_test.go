@@ -131,7 +131,7 @@ func TestRealBusinessAPIConcurrency(t *testing.T) {
 		a := appForTest(t)
 		space := token()
 		org := "org_test_" + space
-		admin := loginSite(t, a, "admin@suite.test", space, "shop")
+		_ = loginSite(t, a, "admin@suite.test", space, "shop")
 		front := loginSite(t, a, "front@suite.test", space, "shop")
 		otherAdmin := loginSite(t, a, "admin@suite.test", token(), "shop")
 

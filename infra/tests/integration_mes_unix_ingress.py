@@ -102,7 +102,6 @@ def main():
         # Prove the container's socket-directory mount is read-only.
         result = run(['docker', 'exec', f'{project}-edge-1', 'sh', '-c', 'touch /run/mes-ingress/forbidden'], check=False)
         if result.returncode == 0: raise RuntimeError('Caddy socket mount unexpectedly permits writes')
-        print('PASS: systemd socket proxy forwarded Go health; TCP outage and recovery propagated; Caddy socket mount is read-only.')
     finally:
         if caddy_up: run(['docker', 'compose', '-p', project, '-f', compose, 'down', '--volumes', '--remove-orphans'], check=False)
         if proxy and proxy.poll() is None:
@@ -110,9 +109,10 @@ def main():
             try: proxy.wait(timeout=5)
             except subprocess.TimeoutExpired: subprocess.run(['sudo', 'kill', '-KILL', '--', f'-{proxy.pid}'], check=False)
         if server: server.close()
-        if sock.exists(): sock.unlink()
+        if sock.exists(): run(['sudo', 'rm', '-f', '--', sock])
         subprocess.run(['sudo', 'chown', '-R', f'{os.getuid()}:{os.getgid()}', str(base)], check=False)
         shutil.rmtree(base, ignore_errors=True)
+    print('PASS: systemd socket proxy forwarded Go health; TCP outage and recovery propagated; Caddy socket mount is read-only.')
 
 
 if __name__ == '__main__': main()

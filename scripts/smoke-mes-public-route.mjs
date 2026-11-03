@@ -1,0 +1,10 @@
+const input=process.argv[2];
+if(!input)throw new Error('Usage: node scripts/smoke-mes-public-route.mjs https://mes.example.test');
+const url=new URL(input);
+if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)throw new Error('MES route smoke requires a plain HTTPS base URL');
+url.pathname=`${url.pathname.replace(/\/$/,'')}/api/health`;
+const response=await fetch(url,{redirect:'error',cache:'no-store',signal:AbortSignal.timeout(10000),headers:{accept:'application/json'}});
+if(response.status!==200)throw new Error(`MES route health returned HTTP ${response.status}`);
+const value=await response.json();
+if(value?.success!==true||value?.data?.backend!=='go'||value?.data?.status!=='ready')throw new Error('MES route did not reach the ready Go station health endpoint');
+console.log(`PASS: ${url.host} served the ready Go MES health response`);

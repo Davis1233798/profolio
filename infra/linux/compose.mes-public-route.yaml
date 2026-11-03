@@ -1,0 +1,11 @@
+# Add this overlay only after the separately managed MES project is healthy.
+services:
+  edge:
+    networks:
+      default: {}
+      mes-isolated: {}
+
+networks:
+  mes-isolated:
+    external: true
+    name: business-suite-mes_default

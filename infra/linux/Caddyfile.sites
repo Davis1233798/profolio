@@ -1,4 +1,4 @@
-(suite-proxy) {
+(suite-policy) {
     encode gzip
     request_body {
         max_size 6MB
@@ -10,6 +10,10 @@
     }
     @internal path /api/platform/dispatch
     respond @internal 404
+}
+
+(suite-proxy) {
+    import suite-policy
     reverse_proxy web:8080
 }
 
@@ -18,7 +22,8 @@
 }
 mes.{$BASE_DOMAIN} {
     redir / /mes 302
-    import suite-proxy
+    import suite-policy
+    reverse_proxy {$MES_PUBLIC_UPSTREAM}
 }
 erp.{$BASE_DOMAIN} {
     redir / /erp 302

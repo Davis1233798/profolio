@@ -35,6 +35,22 @@ MQTT 及資料庫保持 Docker 私有網路。設備透過後續配置的 VPN／
 
 更新同一個 Compose project 可保留 volume；更新前備份兩個 PostgreSQL、TimescaleDB 與 D1。回滾應使用前版 source 與相容 schema，不得刪 volume 回復。
 
+## MES 公開路由切換
+
+中央 `mes.<BASE_DOMAIN>` 預設仍代理至 `web:8080`。獨立 repo 的 Go station 是另一個 Compose project；它以 `business-suite-mes_default` 網路服務名稱 `mes-station:8095` 提供 upstream。主機 loopback `127.0.0.1:18095` 只供主機探測，中央 Caddy container 不得直接使用該位址。
+
+只有在獨立 Go station 已部署、`mes-station` 健康、project/network labels 正確且 `/api/health` 回覆 Go `ready` 後，才由維運人員明確執行：
+
+```bash
+bash /srv/business-suite/current/infra/linux/cutover-mes-public-route.sh isolated
+```
+
+此命令只切換 `mes.<BASE_DOMAIN>` 的 Caddy upstream，並重建 `edge`。任何設定、Caddy validate、edge 重建或 HTTPS Go health 驗證失敗，都會原子還原先前的 `MES_PUBLIC_ROUTE`、依原路由重建 edge，並驗證原公開 health；若回滾健康檢查失敗，腳本以 exit 70 明確要求人工介入。回到既有服務可執行 `bash /srv/business-suite/current/infra/linux/cutover-mes-public-route.sh shared`。
+
+另從主機外執行 `node scripts/smoke-mes-public-route.mjs https://mes.<BASE_DOMAIN>` 驗證公開 HTTPS 實際回到 Go station。這是唯讀 health probe，不會登入或修改 MES 資料。PR CI 不連正式 hostname，也不部署。
+
+隔離 Go SQLite volume 與中央 Web volume 完全分離。切換、發布和回滾均不得掛載、複製、清除或自動遷移任何一方資料；帳號及業務資料搬遷需另案設計與核准。
+
 已知待辦：主機連線、DNS/TLS、主站正式執行環境與 cron 仍需在實際環境驗證。容器成功啟動不能代替正式連線驗收。
 
 ## GitHub Actions 自動部署

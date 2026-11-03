@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       BASE_DOMAIN: ${BASE_DOMAIN:?set the selected registered BASE_DOMAIN}
+      MES_PUBLIC_UPSTREAM: ${MES_PUBLIC_UPSTREAM:?route upstream must come from the allowlisted IaC mode}
     ports: ["80:80", "443:443"]
     volumes:
       - ./linux/Caddyfile.sites:/etc/caddy/Caddyfile:ro

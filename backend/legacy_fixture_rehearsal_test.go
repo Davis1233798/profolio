@@ -275,3 +275,27 @@ func legacyFixtureRehearsalBackup(t *testing.T, sourceOrganization string) legac
 		Tables:         tables,
 	}
 }
+
+func TestLegacyFixtureRehearsalRejectsUnsettledOperations(t *testing.T) {
+	cases := []struct{ name, table, field, value string }{
+		{"open POS shift", "pos_shifts", "status", "open"},
+		{"pending shop order", "shop_orders", "paymentStatus", "pending"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			source := "org_fixture_negative_" + token()
+			backup := legacyFixtureRehearsalBackup(t, source)
+			if len(backup.Tables[tc.table]) == 0 {
+				t.Fatalf("fixture missing %s", tc.table)
+			}
+			backup.Tables[tc.table][0][tc.field] = tc.value
+			original := backup.Tables[tc.table][0][tc.field]
+			if err := validateStagedBusiness(backup.Tables); err == nil {
+				t.Fatalf("unsettled %s accepted", tc.name)
+			}
+			if backup.Tables[tc.table][0][tc.field] != original {
+				t.Fatal("validation modified source data")
+			}
+		})
+	}
+}

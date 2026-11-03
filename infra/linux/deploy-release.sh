@@ -34,7 +34,7 @@ if [[ "$route_mode" == isolated ]]; then
   [[ "$mes_state" == running && "$mes_health" == healthy ]] || { echo 'Isolated mes-station must be running and healthy before deploying the isolated public route' >&2; exit 1; }
   curl --fail --silent --show-error --max-time 5 http://127.0.0.1:18095/api/health | python3 "$route_tool" check-health >/dev/null
 elif [[ "$route_mode" == rootless ]]; then
-  python3 "$route_tool" check-unix-health >/dev/null
+  sudo -n python3 "$route_tool" check-unix-health >/dev/null
 fi
 compose() {
   local dir=$1; shift

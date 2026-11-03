@@ -40,7 +40,7 @@ for option in "$@"; do
         curl --fail --silent --show-error --max-time 5 http://127.0.0.1:18095/api/health | python3 linux/mes_public_route.py check-health >/dev/null
         args+=(-f linux/compose.mes-public-route.yaml)
       elif [[ "$route_mode" == rootless ]]; then
-        python3 linux/mes_public_route.py check-unix-health >/dev/null
+        sudo -n python3 linux/mes_public_route.py check-unix-health >/dev/null
         args+=(-f linux/compose.mes-rootless-route.yaml)
       fi
       ;;

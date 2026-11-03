@@ -168,6 +168,8 @@ def validate_socket_path(path='/run/mes-ingress/upstream.sock', expected_uid=0, 
         info = current.lstat()
         if stat.S_ISLNK(info.st_mode):
             raise ValueError('MES ingress path must not contain symlinks')
+        if current in {Path('/'), Path('/run')} and (info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) & 0o022):
+            raise ValueError('MES ingress ancestor ownership or mode is unsafe')
         if current == candidate.parent:
             if not stat.S_ISDIR(info.st_mode) or info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) != 0o755:
                 raise ValueError('MES ingress directory ownership or mode is unsafe')

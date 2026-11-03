@@ -6,8 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'linux'))
-from mes_unix_ingress import validate_socket_path
-from mes_public_route import route_config
+from mes_public_route import route_config, validate_socket_path
 
 
 class UnixIngressTests(unittest.TestCase):
@@ -24,12 +23,12 @@ class UnixIngressTests(unittest.TestCase):
             target = directory / 'upstream.sock'
             target.write_text('not a socket')
             with self.assertRaises(ValueError):
-            validate_socket_path(target, os.getuid(), require_root_path=False)
+                validate_socket_path(target, os.getuid(), require_root_path=False)
             target.unlink()
             with socket.socket(socket.AF_UNIX) as listener:
                 listener.bind(str(target))
                 target.chmod(0o600)
-                validate_socket_path(target, os.getuid())
+                validate_socket_path(target, os.getuid(), require_root_path=False)
                 directory.chmod(0o777)
                 with self.assertRaises(ValueError):
                     validate_socket_path(target, os.getuid(), require_root_path=False)

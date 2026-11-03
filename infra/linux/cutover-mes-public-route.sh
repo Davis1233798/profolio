@@ -50,7 +50,7 @@ verify_isolated_service() {
 }
 
 verify_rootless_service() {
-  python3 "$route_tool" check-unix-health >/dev/null
+  sudo -n python3 "$route_tool" check-unix-health >/dev/null
 }
 
 verify_current_edge() {

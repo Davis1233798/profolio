@@ -105,6 +105,26 @@ class MesPublicRouteTests(unittest.TestCase):
         self.assertIn('up -d --no-deps --force-recreate --wait --wait-timeout 180 edge', script)
         self.assertNotIn('down --volumes', script)
 
+    def test_cutover_acquires_the_release_lock_before_reading_current_or_route(self):
+        cutover = (ROOT / 'infra' / 'linux' / 'cutover-mes-public-route.sh').read_text(encoding='utf-8')
+        deploy = (ROOT / 'infra' / 'linux' / 'deploy-release.sh').read_text(encoding='utf-8')
+        lock = 'exec 9>"$root/shared/deploy.lock"'
+        self.assertIn(lock, deploy)
+        self.assertIn(lock, cutover)
+        self.assertLess(cutover.index(lock), cutover.index('release=$(realpath -e -- "$current")'))
+        self.assertLess(cutover.index('flock -n 9'), cutover.index('release=$(realpath -e -- "$current")'))
+        self.assertLess(cutover.index('flock -n 9'), cutover.index('old_mode=$(python3 "$route_tool" get "$env_file")'))
+
+    def test_apply_uses_the_same_release_lock_before_touching_environment_or_services(self):
+        apply = (ROOT / 'infra' / 'linux' / 'apply.sh').read_text(encoding='utf-8')
+        deploy = (ROOT / 'infra' / 'linux' / 'deploy-release.sh').read_text(encoding='utf-8')
+        self.assertIn('"$server_root/shared/deploy.lock"', apply)
+        self.assertIn('exec 9>', apply)
+        self.assertIn('flock -n 9', apply)
+        self.assertLess(apply.index('flock -n 9'), apply.index('chmod 600 .env'))
+        self.assertLess(apply.index('flock -n 9'), apply.index('route_mode=$(python3'))
+        self.assertIn('shared/deploy.lock', deploy)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -21,6 +21,11 @@ const traditionalChinese:Record<string,string> = {
   "Receipt events": "收貨事件",
   "No receipt events": "沒有收貨事件",
   "Integration operation saved": "整合作業已儲存",
+  "Backfill historical receipt": "補送歷史收貨",
+  "Check external ERP records before creating a pending event. This does not post inventory.": "建立待處理事件前請核對外部 ERP 紀錄；此操作不會過帳庫存。",
+  "Confirm this receipt has not already been posted to an external ERP.": "請確認此收貨尚未在外部 ERP 過帳。",
+  "Historical MES receipt": "歷史 MES 收貨",
+  "Create pending event": "建立待處理事件",
   "The operation succeeded, but refreshing data failed. Reload the workspace.": "作業已成功，但資料重新整理失敗；請重新載入工作區。",
 
   "Stage backup in isolation": "在隔離環境驗證備份",

@@ -143,3 +143,53 @@ func TestMESERPWorkspaceReturnsArraysForNewTenant(t *testing.T) {
 		workspaceRows(t, data, key)
 	}
 }
+
+func TestMESERPWorkspaceKeepsOlderPendingEventWithin500EventLimit(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPReceiptPostingFixture(t, a)
+	tx, err := a.db.Begin()
+	if err != nil {
+		t.Fatalf("begin newer processed event fixture: %v", err)
+	}
+	for i := 0; i < 500; i++ {
+		eventID := "mes.received:processed-" + token()
+		payload, marshalErr := json.Marshal(map[string]any{
+			"eventId": eventID, "schemaVersion": 1, "organizationId": f.org,
+			"sourceReceiptId": "receipt-" + token(), "batchId": "batch-" + token(),
+			"mesProductId": f.productID, "quantity": 1, "occurredAt": "2026-11-03T00:00:00Z",
+		})
+		if marshalErr != nil {
+			tx.Rollback()
+			t.Fatalf("marshal processed event payload: %v", marshalErr)
+		}
+		if _, err := tx.Exec("INSERT INTO outbox_events(id,organization_id,event_type,payload,status) VALUES(?,?,'mes.finished_goods.received',?,'processed')", eventID, f.org, string(payload)); err != nil {
+			tx.Rollback()
+			t.Fatalf("insert newer processed event %d: %v", i, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit newer processed event fixture: %v", err)
+	}
+
+	w := getMESERPWorkspace(a, f.erpAdmin)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET ERP MES workspace with event history: %d %s", w.Code, w.Body.String())
+	}
+	events := workspaceRows(t, decodeMESERPWorkspace(t, w), "events")
+	if len(events) > 500 {
+		t.Fatalf("workspace returned %d events, exceeds 500-row limit", len(events))
+	}
+	if !workspaceHasRow(events, "id", f.eventID) {
+		t.Fatalf("older pending event %q was hidden by newer processed events", f.eventID)
+	}
+}
+
+func workspaceHasRow(rows []any, field string, want any) bool {
+	for _, value := range rows {
+		row, ok := value.(map[string]any)
+		if ok && row[field] == want {
+			return true
+		}
+	}
+	return false
+}

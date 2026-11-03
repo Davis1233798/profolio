@@ -193,3 +193,32 @@ func workspaceHasRow(rows []any, field string, want any) bool {
 	}
 	return false
 }
+
+func TestMESERPWorkspaceListsHistoricalReceiptsUntilBackfilled(t *testing.T) {
+	a := appForTest(t)
+	f := prepareMESERPReceiptPostingFixture(t, a)
+	var receipt string
+	if err := a.db.QueryRow("SELECT json_extract(payload,'$.sourceReceiptId') FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID).Scan(&receipt); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("DELETE FROM outbox_events WHERE organization_id=? AND id=?", f.org, f.eventID); err != nil {
+		t.Fatal(err)
+	}
+	get := func() []any {
+		w := getMESERPWorkspace(a, f.erpAdmin)
+		if w.Code != http.StatusOK {
+			t.Fatalf("workspace %d %s", w.Code, w.Body.String())
+		}
+		return workspaceRows(t, decodeMESERPWorkspace(t, w), "historicalReceipts")
+	}
+	if !workspaceHasRow(get(), "id", receipt) {
+		t.Fatal("historical receipt not listed")
+	}
+	response := request(a, http.MethodPost, "/api/stations/erp/mes-receipt-backfill", map[string]any{"receiptId": receipt, "idempotencyKey": "historical-workspace-0001"}, f.erpAdmin...)
+	if response.Code != http.StatusOK {
+		t.Fatalf("backfill %d %s", response.Code, response.Body.String())
+	}
+	if workspaceHasRow(get(), "id", receipt) {
+		t.Fatal("backfilled receipt still listed")
+	}
+}

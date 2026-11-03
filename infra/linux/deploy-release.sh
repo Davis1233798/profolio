@@ -7,9 +7,9 @@ expected=${2:?archive checksum required}
 root=/srv/business-suite
 archive="$root/releases/$sha.tgz"
 release="$root/releases/${sha}-$(date -u +%Y%m%d%H%M%S)"
-previous=$(readlink -f "$root/current")
 exec 9>"$root/shared/deploy.lock"
 flock -n 9 || { echo 'Another deployment is running'; exit 1; }
+previous=$(readlink -f "$root/current")
 printf '%s  %s\n' "$expected" "$archive" | sha256sum -c -
 mkdir "$release"
 tar -xzf "$archive" -C "$release"

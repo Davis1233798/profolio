@@ -9,3 +9,26 @@ MES and commerce back-office pages include an isolated load workbench. It issues
 Verification: `npm test`, `go -C backend test ./...`, `npx tsc --noEmit`, `npm run build`, `npm run web:build`, and `python scripts/verify-traffic-http.py`. The HTTP verifier uses a disposable database and checks both domains, capacity saturation, retries, queue consumption and readonly denial. Browser QA covers login, language persistence, switching back to login, a commerce burst and consumer results.
 
 These are local repository changes. Public deployments require both the station Go binary/static bundle and the portfolio build to be updated together.
+
+
+## Go workstation transaction progress
+
+The Go station now supports MES BOM version creation with cycle checks, work-order creation, material lot creation/issue, BOM staging checks, work-order start, production reporting, quality checks and downtime recording; ERP item and sales order creation, stock transfers and purchase order submission/approval/receipt, sales shipments and purchase returns with moving-average costing, demo invoice payments and balanced journals/trial balance; POS open/close shift, multi-item cash sales, held-cart claim/release, administrator refund and Taipei-date daily sales/refund reporting; CRM lead creation/conversion, opportunity stage changes, follow-up activities, versioned quote approval, opt-in contact consent and support tickets with Taipei business-hour SLA; dining table opening, multi-item dine-in and prepaid demo takeout orders with modifiers, split bill settlement, reservations, item voids, demo takeout refunds, kitchen ticket transitions and urgent flags; and multi-variant commerce checkout, simulated payment and shipment, shipped-order returns and verified-purchaser reviews. Transactions use the authenticated station organization and enforce role checks, idempotency and atomic inventory guards. The Go station database remains distinct from the legacy Node demo database. Other business workflows are not yet migrated; the Go station must not be described as feature-equivalent to the Node suite.
+
+Commerce reservations expire after 15 minutes, and a station worker releases expired unpaid inventory. Simulated payment writes an outbox event transactionally. When the internal gateway is configured, the station retries publishing that event to the existing RabbitMQ fulfillment service; the downstream PostgreSQL consumer deduplicates events. Gateway acceptance is not confirmation of physical shipment. `scripts/verify-station-outbox.py` verifies this path against an isolated Compose stack in CI; mock gateway unit tests verify retry and tenant mapping.
+
+`load-tests/station-business-race.js` tests actual Go station checkout and MES report writes under contention. The isolated k6 runner also tests the corresponding legacy Node APIs and the separate educational lab. All tests use temporary local databases; results are not production capacity claims.
+
+ERP stock issues proportionally remove inventory cost and preserve rounding remainders. Supplier returns are limited to the original receipt line and warehouse, including prior returns; they do not create external logistics or supplier credits. Administrator stock counts use a captured ledger version to reject stale balances, and update inventory and moving-average costing together. A positive adjustment requires an existing nonzero costing quantity, because a reliable cost cannot otherwise be inferred.
+
+Before replacing services, the deployment script snapshots both the existing Node database and the station database. Snapshots are retained on their respective volumes; rollback of application images does not automatically restore a snapshot or merge the two separate databases.
+
+ERP invoice payments are demo ledger entries and do not initiate bank transfers. Journal posting requires balanced nonzero debits and credits and rejects closed fiscal periods.
+
+MES start verifies actual BOM material movements in addition to the staged flag. New demo fixtures contain fully staged materials; existing spaces are preserved and may need material lots and issues before starting.
+
+Commerce returns require a paid, shipped order, restore the returned quantity and record a demo refund; they do not reverse an external payment. Reviews are restricted to the original purchaser and front-office order lines are owner-filtered.
+
+POS held carts do not reserve stock; checkout revalidates current prices and stock. Claimed carts remain visible to their claimant until completed or released.
+
+Commerce multi-item checkout reserves each line in one transaction. If any reservation expires, all active reservations for the pending order are released together; payment checks the complete set against order lines.

@@ -8,6 +8,10 @@
 
 裝置範圍：可使用現代瀏覽器的觸控／工業平板與智慧螢幕共用響應式 Web；無瀏覽器的 AIoT 感測裝置透過既有 MQTT 服務接入。Electron 以桌面 OS 為目標，不宣稱可安裝於 iOS／Android。
 
+## 桌面版系統範圍
+
+桌面程式目前僅提供 MES、ERP、CRM 的入口與畫面。POS、餐飲和電商繼續使用網頁版；這項調整不改變 Web 的站台功能或資料。
+
 ## 遷移界線
 
 公開 release 18 暫維持既有服務。新增 `backend/` Go、`web/` 純 React、`desktop/` Electron。必須完成原有業務 API 的逐項移植與回歸後才可切換公開站台；Go 不可只是轉送 TypeScript API。
@@ -30,6 +34,7 @@
 - `npm run go:test`、`node scripts/verify-go-migrations.mjs`
 - `npm run desktop:prepare`：建置 React 與目前 OS 的 Go binary。
 - `npm run desktop:dev`：使用本機 Go 與獨立 userData 開啟桌面版。
+- GitHub Actions `desktop-windows` 在 push 與 pull request 建置 Windows 未簽章目錄，執行桌面啟動與站台入口檢查後上傳 workflow artifact；預設分支部署須等待此工作通過。此自動檢查不等同完整視覺與業務流程驗收。
 - Windows：`npm run desktop:package` 產生 `outputs/desktop/win-unpacked/Business Suite.exe`（未簽章，需攜帶整個目錄）。
 - 本機 Go Web 預覽：`http://127.0.0.1:8095/mes/login`，目前與既有 SSH 8791 預覽分開。
 

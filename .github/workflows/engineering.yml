@@ -3,6 +3,10 @@ on: [push, pull_request]
 jobs:
   web:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: web-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     env:
       COMPOSE_PROJECT_NAME: suite-web-ci
       SERVICE_USER: ci
@@ -18,6 +22,9 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
+      - run: npm run web:build
+      - name: Validate Linux deployment package
+        run: python3 scripts/package-linux.py
       - run: python3 scripts/verify-control-graph.py
       - run: docker compose -f infra/compose.yaml -f infra/linux/compose.web.yaml up -d --build --wait --wait-timeout 180
       - run: node scripts/smoke-http.mjs http://127.0.0.1:8090
@@ -28,6 +35,9 @@ jobs:
         run: docker compose -f infra/compose.yaml -f infra/linux/compose.web.yaml stop
   infrastructure:
     runs-on: ubuntu-latest
+    concurrency:
+      group: infrastructure-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     env:
       COMPOSE_PROJECT_NAME: suite-ci
       SERVICE_USER: ci
@@ -38,17 +48,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
       - run: pip install -r infra/runtime/requirements.txt
       - run: python -m unittest discover -s tests -v
         working-directory: infra
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up -d --build --wait --wait-timeout 180
       - run: python infra/tests/smoke.py
+      - run: python scripts/verify-station-outbox.py
       - if: always()
         run: docker compose -f infra/compose.yaml stop
   station-delivery:
-    needs: [web, infrastructure]
     runs-on: ubuntu-latest
+    concurrency:
+      group: station-delivery-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,7 +78,8 @@ jobs:
       - run: npm run install:ci
       - run: npx tsc --noEmit
       - run: npm run web:build
-      - run: go -C backend test ./...
+      - name: Test station transactions with race detector
+        run: go -C backend test -race ./...
       - name: Build Linux station server
         working-directory: backend
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../release/station-server .
@@ -70,9 +88,11 @@ jobs:
           cp -R web-dist release/web-dist
           cp README.md release/README.md
           cp docs/engineering/STATION-DELIVERY.md release/START.md
+          mkdir -p release/docs/engineering
+          cp docs/engineering/WORKSPACE_REFACTOR.md release/docs/engineering/WORKSPACE_REFACTOR.md
           printf '%s\n' "$GITHUB_SHA" > release/COMMIT
       - name: Upload deployable station package
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: actions/upload-artifact@v4
         with:
           name: station-linux-amd64-${{ github.sha }}
@@ -80,10 +100,90 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  desktop-windows:
+    name: Build Windows desktop app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    concurrency:
+      group: desktop-windows-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Verify Windows migration snapshot transactions
+        run: go -C backend test -count=1 -run "Test(Legacy(CandidateSnapshot|SnapshotTransaction|SnapshotReadOnlyURI|OfflineImport|ImportCommand)|RestoreCopy|MaintenanceLock)" ./...
+      - run: npm run install:ci
+      - name: Build desktop frontend and Go backend
+        run: npm run desktop:prepare
+      - name: Package Windows application
+        run: npm run desktop:package
+      - name: Smoke test packaged desktop routes
+        shell: pwsh
+        run: |
+          $env:SUITE_DESKTOP_SMOKE = '1'
+          $env:ELECTRON_ENABLE_LOGGING = '1'
+          $env:SUITE_DESKTOP_SMOKE_DATA = Join-Path $env:RUNNER_TEMP ('desktop-smoke-' + $env:GITHUB_RUN_ID)
+          New-Item -ItemType Directory -Path $env:SUITE_DESKTOP_SMOKE_DATA -Force | Out-Null
+          $stdoutPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stdout.log'
+          $stderrPath = Join-Path $env:RUNNER_TEMP 'desktop-smoke.stderr.log'
+          $process = Start-Process -FilePath 'outputs/desktop/win-unpacked/Business Suite.exe' -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+          $finished = $process.WaitForExit(180000)
+          if (-not $finished) { Stop-Process -Id $process.Id -Force }
+          if (Test-Path -LiteralPath $stdoutPath) { Get-Content -LiteralPath $stdoutPath }
+          if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath }
+          if (-not $finished) { throw 'Desktop smoke timed out' }
+          if ($process.ExitCode -ne 0) { throw "Desktop smoke failed with exit code $($process.ExitCode)" }
+      - name: Upload Windows desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-suite-desktop-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: outputs/desktop/win-unpacked/
+          if-no-files-found: error
+          retention-days: 7
+
+  k6-isolated:
+    name: k6 isolated transaction tests
+    runs-on: ubuntu-latest
+    concurrency:
+      group: k6-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '2.3.0'
+      - run: npm run install:ci
+      - run: npm run web:build
+      - run: npm run build
+      - name: Run against temporary local databases
+        run: python3 scripts/run-k6-isolated.py
+      - name: Upload k6 summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-isolated-${{ github.sha }}
+          path: outputs/k6/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
   deploy:
     name: Deploy to OCI
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [web, infrastructure, station-delivery]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: [web, infrastructure, station-delivery, k6-isolated, desktop-windows]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
@@ -96,13 +196,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Verify this is still the latest master commit
+      - name: Verify this is still the latest default-branch commit
         env:
           GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          latest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/master" --jq .sha)
+          latest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${DEFAULT_BRANCH}" --jq .sha)
           if [ "$latest" != "$GITHUB_SHA" ]; then
-            echo "A newer commit exists; skip this deployment."
+            echo "A newer default-branch commit exists; skip this deployment."
             exit 1
           fi
       - run: npm run install:ci

@@ -3,8 +3,8 @@
     {
       "id": "crm_acc_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "示範雲端客戶 A（虛構）",
-      "industry": "雲端軟體",
+      "name": "Demo Cloud Customer A (Fictional)",
+      "industry": "Cloud software",
       "phone": "DEMO-PHONE-001",
       "email": "contact@customer-a.example.test",
       "owner_id": "usr_org_go_fixture_admin",
@@ -16,7 +16,7 @@
       "id": "crm_act_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "activity_type": "meeting",
-      "subject": "客戶方案需求第二階段審核會議",
+      "subject": "Customer requirements review meeting",
       "due_date": "2026-11-05 14:00",
       "completed": 0,
       "completed_at": null,
@@ -42,10 +42,10 @@
       "id": "crm_cont_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "account_id": "crm_acc_01_org_go_fixture",
-      "name": "示範聯絡人 A",
+      "name": "Demo Contact A",
       "email": "person-a@customer-a.example.test",
       "phone": "DEMO-PHONE-002",
-      "title": "雲端架構處長",
+      "title": "Cloud Architecture Lead",
       "created_at": "2026-10-30 16:30:21"
     }
   ],
@@ -53,8 +53,8 @@
     {
       "id": "crm_lead_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "示範聯絡人 B",
-      "company": "示範製造潛客 B（虛構）",
+      "name": "Demo Contact B",
+      "company": "Demo Manufacturing Prospect B (Fictional)",
       "email": "person-b@prospect-b.example.test",
       "phone": "DEMO-PHONE-003",
       "status": "new",
@@ -69,7 +69,7 @@
     {
       "id": "crm_opp_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "智慧製造數位雙生升級案",
+      "name": "Smart manufacturing digital twin upgrade",
       "account_id": "crm_acc_01_org_go_fixture",
       "primary_contact_id": "crm_cont_01_org_go_fixture",
       "owner_id": "usr_org_go_fixture_admin",
@@ -89,7 +89,7 @@
       "id": "crm_qti_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "quote_id": "crm_qt_01_org_go_fixture",
-      "item_name": "數位雙生現場架設與授權 (年度)",
+      "item_name": "Digital twin deployment and annual license",
       "quantity": 1,
       "unit_price": 100000,
       "line_total": 100000,
@@ -114,7 +114,7 @@
     {
       "id": "crm_stg_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "初步接觸",
+      "name": "Initial contact",
       "position": 1,
       "probability": 10,
       "is_won": 0,
@@ -123,7 +123,7 @@
     {
       "id": "crm_stg_02_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "需求確認",
+      "name": "Requirements",
       "position": 2,
       "probability": 30,
       "is_won": 0,
@@ -132,7 +132,7 @@
     {
       "id": "crm_stg_03_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "方案報價",
+      "name": "Proposal",
       "position": 3,
       "probability": 60,
       "is_won": 0,
@@ -141,7 +141,7 @@
     {
       "id": "crm_stg_04_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "商務談判",
+      "name": "Negotiation",
       "position": 4,
       "probability": 80,
       "is_won": 0,
@@ -150,7 +150,7 @@
     {
       "id": "crm_stg_05_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "成功結案",
+      "name": "Closed won",
       "position": 5,
       "probability": 100,
       "is_won": 1,
@@ -159,7 +159,7 @@
     {
       "id": "crm_stg_06_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "結案失單",
+      "name": "Closed lost",
       "position": 6,
       "probability": 0,
       "is_won": 0,
@@ -173,7 +173,7 @@
       "ticket_number": "TCK-202610-001",
       "customer_id": "crm_acc_01_org_go_fixture",
       "contact_id": "crm_cont_01_org_go_fixture",
-      "subject": "API 對接金鑰權限授權配置詢問",
+      "subject": "API integration key access configuration",
       "priority": "high",
       "status": "in_progress",
       "sla_hours": 24,
@@ -189,9 +189,9 @@
       "order_id": "din_ord_01_org_go_fixture",
       "order_item_id": "din_oi_01_org_go_fixture",
       "station": "cold_bar",
-      "item_name": "手熬黑糖珍珠鮮奶",
+      "item_name": "Brown sugar pearl milk",
       "quantity": 1,
-      "modifiers_text": "微糖 (3分)",
+      "modifiers_text": "Light sugar (30%)",
       "status": "received",
       "urgent_flag": 0,
       "created_at": "2026-10-30 16:30:21"
@@ -202,7 +202,7 @@
       "order_id": "din_ord_01_org_go_fixture",
       "order_item_id": "din_oi_02_org_go_fixture",
       "station": "hot_kitchen",
-      "item_name": "松露黑醋牛肝菌燉飯 (前菜分享版)",
+      "item_name": "Truffle mushroom risotto (sharing)",
       "quantity": 1,
       "modifiers_text": "",
       "status": "received",
@@ -214,7 +214,7 @@
     {
       "id": "din_loc_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "TableCraft 示範餐廳 A",
+      "name": "TableCraft Demo Restaurant A",
       "service_fee_rate": 10,
       "created_at": "2026-10-30 16:30:21"
     }
@@ -223,8 +223,8 @@
     {
       "id": "din_menu_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "炭烤特級肋眼牛排",
-      "category": "排餐",
+      "name": "Chargrilled ribeye steak",
+      "category": "Steak",
       "price": 450,
       "is_sold_out": 0,
       "station": "hot_kitchen",
@@ -233,8 +233,8 @@
     {
       "id": "din_menu_02_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "松露黑醋牛肝菌燉飯",
-      "category": "主食",
+      "name": "Truffle mushroom risotto",
+      "category": "Main course",
       "price": 320,
       "is_sold_out": 0,
       "station": "hot_kitchen",
@@ -243,8 +243,8 @@
     {
       "id": "din_menu_03_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "手熬黑糖珍珠鮮奶",
-      "category": "飲品",
+      "name": "Brown sugar pearl milk",
+      "category": "Drinks",
       "price": 100,
       "is_sold_out": 0,
       "station": "cold_bar",
@@ -253,8 +253,8 @@
     {
       "id": "din_menu_04_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "限量法式主廚威靈頓牛排",
-      "category": "限定",
+      "name": "Limited chef beef Wellington",
+      "category": "Special",
       "price": 680,
       "is_sold_out": 1,
       "station": "hot_kitchen",
@@ -265,7 +265,7 @@
     {
       "id": "din_modg_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "甜度 (必選)",
+      "name": "Sweetness (required)",
       "min_selection": 1,
       "max_selection": 1,
       "is_required": 1,
@@ -274,7 +274,7 @@
     {
       "id": "din_modg_02_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "加料升級",
+      "name": "Add-ons",
       "min_selection": 0,
       "max_selection": 3,
       "is_required": 0,
@@ -286,7 +286,7 @@
       "id": "din_modo_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "group_id": "din_modg_01_org_go_fixture",
-      "name": "無糖 (0分)",
+      "name": "No sugar (0%)",
       "additional_price": 0,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -294,7 +294,7 @@
       "id": "din_modo_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "group_id": "din_modg_01_org_go_fixture",
-      "name": "微糖 (3分)",
+      "name": "Light sugar (30%)",
       "additional_price": 0,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -302,7 +302,7 @@
       "id": "din_modo_03_org_go_fixture",
       "organization_id": "org_go_fixture",
       "group_id": "din_modg_01_org_go_fixture",
-      "name": "正常糖 (全糖)",
+      "name": "Regular sugar",
       "additional_price": 0,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -310,7 +310,7 @@
       "id": "din_modo_04_org_go_fixture",
       "organization_id": "org_go_fixture",
       "group_id": "din_modg_02_org_go_fixture",
-      "name": "雙份手工黑糖珍珠",
+      "name": "Double brown sugar pearls",
       "additional_price": 10,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -318,7 +318,7 @@
       "id": "din_modo_05_org_go_fixture",
       "organization_id": "org_go_fixture",
       "group_id": "din_modg_02_org_go_fixture",
-      "name": "日式特濃奶蓋",
+      "name": "Cream topping",
       "additional_price": 20,
       "created_at": "2026-10-30 16:30:21"
     }
@@ -329,10 +329,10 @@
       "organization_id": "org_go_fixture",
       "order_id": "din_ord_01_org_go_fixture",
       "menu_item_id": "din_menu_03_org_go_fixture",
-      "item_name": "手熬黑糖珍珠鮮奶",
+      "item_name": "Brown sugar pearl milk",
       "unit_price": 100,
       "quantity": 1,
-      "modifiers_json": "[{\"name\":\"微糖 (3分)\"}]",
+      "modifiers_json": "[{\"name\":\"Light sugar (30%)\"}]",
       "line_total": 100,
       "status": "preparing",
       "cancelled_reason": null,
@@ -343,7 +343,7 @@
       "organization_id": "org_go_fixture",
       "order_id": "din_ord_01_org_go_fixture",
       "menu_item_id": "din_menu_02_org_go_fixture",
-      "item_name": "松露黑醋牛肝菌燉飯 (前菜分享版)",
+      "item_name": "Truffle mushroom risotto (sharing)",
       "unit_price": 200,
       "quantity": 1,
       "modifiers_json": null,
@@ -414,7 +414,7 @@
       "id": "erp_cust_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "CUST-DEMO-01",
-      "name": "示範企業客戶 A（虛構）",
+      "name": "Demo Business Customer A (Fictional)",
       "contact_email": "procure@customer-a.example.test",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
@@ -462,10 +462,10 @@
       "id": "erp_item_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "sku": "SKU-SENS-01",
-      "name": "工業級溫濕度傳感器 (單件)",
+      "name": "Industrial temperature and humidity sensor (single)",
       "unit": "PCS",
       "box_conversion_ratio": 1,
-      "category": "電子元件",
+      "category": "Electronic components",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -473,10 +473,10 @@
       "id": "erp_item_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "sku": "SKU-SENS-BOX10",
-      "name": "工業級溫濕度傳感器 (十入盒裝)",
+      "name": "Industrial temperature and humidity sensor (box of ten)",
       "unit": "BOX",
       "box_conversion_ratio": 10,
-      "category": "箱裝成品",
+      "category": "Boxed products",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
     }
@@ -487,7 +487,7 @@
       "organization_id": "org_go_fixture",
       "entry_number": "JE-202610-001",
       "entry_date": "2026-10-15",
-      "description": "期初股本與銀行存款開帳",
+      "description": "Opening capital and bank balance",
       "reference_doc": "INITIAL_CAPITAL",
       "status": "posted",
       "created_at": "2026-10-30 16:30:21"
@@ -499,7 +499,7 @@
       "organization_id": "org_go_fixture",
       "journal_id": "erp_je_01_org_go_fixture",
       "account_code": "1101",
-      "account_name": "銀行存款 (Bank Deposit)",
+      "account_name": "Bank Deposit",
       "debit_amount": 100000,
       "credit_amount": 0,
       "created_at": "2026-10-30 16:30:21"
@@ -509,7 +509,7 @@
       "organization_id": "org_go_fixture",
       "journal_id": "erp_je_01_org_go_fixture",
       "account_code": "3101",
-      "account_name": "普通股股本 (Common Stock)",
+      "account_name": "Common Stock",
       "debit_amount": 0,
       "credit_amount": 100000,
       "created_at": "2026-10-30 16:30:21"
@@ -596,7 +596,7 @@
       "id": "erp_sup_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "SUP-DEMO-01",
-      "name": "示範供應商 A（虛構）",
+      "name": "Demo Supplier A (Fictional)",
       "contact_email": "sales@supplier-a.example.test",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
@@ -607,7 +607,7 @@
       "id": "erp_wh_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "WH-TP",
-      "name": "台北總倉",
+      "name": "Taipei Main Warehouse",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
     },
@@ -615,7 +615,7 @@
       "id": "erp_wh_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "WH-TC",
-      "name": "台中轉運倉",
+      "name": "Taichung Distribution Warehouse",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
     }
@@ -626,7 +626,7 @@
       "organization_id": "org_go_fixture",
       "bom_version_id": "mes_bom_v1_org_go_fixture",
       "material_sku": "RAW-ALUM-6061",
-      "material_name": "航太級6061原鋁塊",
+      "material_name": "6061 aluminum billet",
       "quantity_per_unit": 2,
       "unit": "PCS",
       "created_at": "2026-10-30 16:30:21"
@@ -636,7 +636,7 @@
       "organization_id": "org_go_fixture",
       "bom_version_id": "mes_bom_v1_org_go_fixture",
       "material_sku": "RAW-THERMAL-PASTE",
-      "material_name": "高效能導熱膏",
+      "material_name": "Thermal compound",
       "quantity_per_unit": 1,
       "unit": "TUBE",
       "created_at": "2026-10-30 16:30:21"
@@ -650,7 +650,7 @@
       "version": 1,
       "status": "active",
       "is_active": 1,
-      "notes": "標準生產BOM v1 (每件耗原鋁2件、散熱膏1管)",
+      "notes": "Standard production BOM v1 (two aluminum billets and one tube of thermal compound per unit)",
       "created_at": "2026-10-30 16:30:21"
     }
   ],
@@ -664,6 +664,16 @@
       "current_quantity": 300,
       "status": "available",
       "created_at": "2026-10-30 16:30:21"
+    },
+    {
+      "id": "mes_lot_02_org_go_fixture",
+      "organization_id": "org_go_fixture",
+      "lot_number": "LOT-DEMO-THERMAL",
+      "material_sku": "RAW-THERMAL-PASTE",
+      "initial_quantity": 100,
+      "current_quantity": 0,
+      "status": "available",
+      "created_at": "2026-10-30 16:30:21"
     }
   ],
   "mes_operations": [
@@ -673,7 +683,7 @@
       "work_order_id": "mes_wo_01_org_go_fixture",
       "sequence": 10,
       "work_center_id": "mes_wc_01_org_go_fixture",
-      "name": "精密CNC切削成型",
+      "name": "Precision CNC machining",
       "standard_minutes_per_unit": 1,
       "status": "pending",
       "created_at": "2026-10-30 16:30:21"
@@ -684,7 +694,7 @@
       "work_order_id": "mes_wo_01_org_go_fixture",
       "sequence": 20,
       "work_center_id": "mes_wc_02_org_go_fixture",
-      "name": "陽極硬化處理",
+      "name": "Anodizing",
       "standard_minutes_per_unit": 1,
       "status": "pending",
       "created_at": "2026-10-30 16:30:21"
@@ -695,7 +705,7 @@
       "id": "mes_prd_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "sku": "PRD-AL-HEAT",
-      "name": "鋁合金散熱模組 (Alloy Heat Module A)",
+      "name": "Alloy Heat Module A",
       "unit": "PCS",
       "status": "active",
       "created_at": "2026-10-30 16:30:21"
@@ -706,7 +716,7 @@
       "id": "mes_wc_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "WC-CNC-01",
-      "name": "精密五軸CNC切削中心",
+      "name": "Five-axis CNC machining center",
       "capacity_minutes_per_day": 480,
       "status": "active",
       "created_at": "2026-10-30 16:30:21"
@@ -715,7 +725,7 @@
       "id": "mes_wc_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "WC-ANODIZE-01",
-      "name": "陽極氧化表面處理線",
+      "name": "Anodizing line",
       "capacity_minutes_per_day": 480,
       "status": "active",
       "created_at": "2026-10-30 16:30:21"
@@ -729,8 +739,19 @@
       "material_lot_id": "mes_lot_01_org_go_fixture",
       "material_sku": "RAW-ALUM-6061",
       "issued_quantity": 200,
-      "returned_quantity": 10,
-      "net_quantity": 190,
+      "returned_quantity": 0,
+      "net_quantity": 200,
+      "created_at": "2026-10-30 16:30:21"
+    },
+    {
+      "id": "mes_wom_02_org_go_fixture",
+      "organization_id": "org_go_fixture",
+      "work_order_id": "mes_wo_01_org_go_fixture",
+      "material_lot_id": "mes_lot_02_org_go_fixture",
+      "material_sku": "RAW-THERMAL-PASTE",
+      "issued_quantity": 100,
+      "returned_quantity": 0,
+      "net_quantity": 100,
       "created_at": "2026-10-30 16:30:21"
     }
   ],
@@ -755,7 +776,7 @@
       "id": "pos_item_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "barcode": "4710001001",
-      "name": "精品冷萃美式咖啡 (大杯)",
+      "name": "Cold brew coffee (large)",
       "price": 100,
       "stock_quantity": 100,
       "is_active": 1,
@@ -765,7 +786,7 @@
       "id": "pos_item_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "barcode": "4710001002",
-      "name": "手作黑糖肉桂捲",
+      "name": "Brown sugar cinnamon roll",
       "price": 90,
       "stock_quantity": 50,
       "is_active": 1,
@@ -775,7 +796,7 @@
       "id": "pos_item_03_org_go_fixture",
       "organization_id": "org_go_fixture",
       "barcode": "4710001003",
-      "name": "衣索比亞莊園濾掛禮盒",
+      "name": "Pour-over coffee gift box",
       "price": 350,
       "stock_quantity": 20,
       "is_active": 1,
@@ -788,7 +809,7 @@
       "organization_id": "org_go_fixture",
       "store_id": "pos_store_01_org_go_fixture",
       "register_number": "REG-01",
-      "name": "1號收銀櫃檯",
+      "name": "Register 1",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
     }
@@ -815,8 +836,8 @@
       "id": "pos_store_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "STORE-XY",
-      "name": "示範門市 A（虛構）",
-      "address": "示範地址 A（非實際地址）",
+      "name": "Demo Store A (Fictional)",
+      "address": "Demo Address A (Fictional)",
       "created_at": "2026-10-30 16:30:21"
     }
   ],
@@ -824,14 +845,14 @@
     {
       "id": "shop_cat_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "極簡機能服飾",
+      "name": "Minimal technical apparel",
       "slug": "apparel",
       "created_at": "2026-10-30 16:30:21"
     },
     {
       "id": "shop_cat_02_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "都市生活配件",
+      "name": "Urban accessories",
       "slug": "accessories",
       "created_at": "2026-10-30 16:30:21"
     }
@@ -842,12 +863,12 @@
       "organization_id": "org_go_fixture",
       "order_id": "shop_ord_01_org_go_fixture",
       "variant_id": "shop_var_01_org_go_fixture",
-      "product_name": "極簡防風連帽機能外套",
-      "variant_title": "曜石黑 / M",
+      "product_name": "Minimal windproof hooded jacket",
+      "variant_title": "Obsidian Black / M",
       "sku": "ML-HD-BLK-M",
       "unit_price": 100,
       "quantity": 2,
-      "line_total": 200,
+      "line_total": 180,
       "created_at": "2026-10-30 16:30:21"
     }
   ],
@@ -858,7 +879,7 @@
       "order_number": "ORD-202610-001",
       "user_id": null,
       "customer_email": "buyer@sites.test",
-      "shipping_address_json": "{\"name\":\"示範收件人 A\",\"city\":\"台北市\",\"address\":\"示範路段 A（非實際地址）\",\"phone\":\"DEMO-PHONE-004\"}",
+      "shipping_address_json": "{\"name\":\"Demo Recipient A\",\"city\":\"Taipei\",\"address\":\"Demo Address A (Fictional)\",\"phone\":\"DEMO-PHONE-004\"}",
       "subtotal": 200,
       "discount_amount": 20,
       "shipping_fee": 60,
@@ -874,9 +895,9 @@
     {
       "id": "shop_prd_01_org_go_fixture",
       "organization_id": "org_go_fixture",
-      "name": "極簡防風連帽機能外套",
+      "name": "Minimal windproof hooded jacket",
       "slug": "minimalist-tech-hoodie",
-      "description": "採用防潑水三層透氣微孔科技面料，適合都會通勤與戶外輕機能穿搭。",
+      "description": "A water-resistant, breathable three-layer jacket for daily travel and light outdoor use.",
       "category_id": "shop_cat_01_org_go_fixture",
       "is_active": 1,
       "created_at": "2026-10-30 16:30:21"
@@ -887,7 +908,7 @@
       "id": "shop_promo_01_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "SAVE10",
-      "description": "秋季全站 9 折優惠券",
+      "description": "Autumn 10% discount coupon",
       "discount_type": "percentage",
       "discount_value": 10,
       "min_spend": 0,
@@ -899,7 +920,7 @@
       "id": "shop_promo_02_org_go_fixture",
       "organization_id": "org_go_fixture",
       "code": "EXPIRED50",
-      "description": "已過期優惠券",
+      "description": "Expired coupon",
       "discount_type": "fixed",
       "discount_value": 50,
       "min_spend": 200,
@@ -914,8 +935,8 @@
       "organization_id": "org_go_fixture",
       "product_id": "shop_prd_01_org_go_fixture",
       "sku": "ML-HD-BLK-M",
-      "title": "曜石黑 / M",
-      "color": "曜石黑",
+      "title": "Obsidian Black / M",
+      "color": "Obsidian Black",
       "size": "M",
       "price": 100,
       "stock_quantity": 20,
@@ -928,8 +949,8 @@
       "organization_id": "org_go_fixture",
       "product_id": "shop_prd_01_org_go_fixture",
       "sku": "ML-HD-BLK-L",
-      "title": "曜石黑 / L",
-      "color": "曜石黑",
+      "title": "Obsidian Black / L",
+      "color": "Obsidian Black",
       "size": "L",
       "price": 100,
       "stock_quantity": 1,

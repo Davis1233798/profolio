@@ -7,7 +7,7 @@ import { generateCsv } from "./export-csv";
 // Identity, authorization, audit history and replay caches are intentionally not
 // restorable business data. Audit history survives restoring a snapshot.
 const excluded = new Set(["organizations", "users", "memberships", "audit_events", "idempotency_keys", "outbox_events", "demo_seed_states"]);
-const tables = Object.values(schema).filter(table => "organizationId" in getTableColumns(table) && !excluded.has(getTableName(table)));
+const tables = Object.values(schema).filter(table => "organizationId" in getTableColumns(table) && !excluded.has(getTableName(table)) && !getTableName(table).startsWith("station_"));
 const byName = new Map<string, (typeof tables)[number]>(tables.map(table => [getTableName(table), table]));
 export interface TenantBackup { format: "business-suite/v1"; organizationId: string; exportedAt: string; tables: Record<string, Record<string, any>[]>; }
 
@@ -30,6 +30,13 @@ const referenceTargets: Record<string, string> = {
 export function validateWorkspaceBackup(context: TenantContext, value: unknown): TenantBackup {
   const backup = value as TenantBackup;
   if (!backup || backup.format !== "business-suite/v1" || backup.organizationId !== context.organizationId || !backup.tables || typeof backup.tables !== "object") throw new Error("只能還原同一展示空間匯出的完整 v1 備份");
+  // Older exports could include an empty station_accounts table. Preserve
+  // compatibility only when it contains no authentication records.
+  if (Object.hasOwn(backup.tables, "station_accounts")) {
+    if (!Array.isArray(backup.tables.station_accounts) || backup.tables.station_accounts.length !== 0) throw new Error("備份含身分驗證資料，不能還原；請重新匯出不含帳號資料的備份");
+    const { station_accounts: _ignored, ...businessTables } = backup.tables;
+    return validateWorkspaceBackup(context, { ...backup, tables: businessTables });
+  }
   const names = Object.keys(backup.tables);
   if (names.length !== tables.length || names.some(name => !byName.has(name))) throw new Error("備份資料表清單不完整或含未知資料表");
   let rowCount = 0;

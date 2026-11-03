@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv } from "../../lib/tenant-backup";
+import { readFileSync } from "node:fs";
+import { exportWorkspace, restoreWorkspace, exportWorkspaceCsv, validateWorkspaceBackup } from "../../lib/tenant-backup";
 import { seedOrganization } from "../../lib/seed";
 import { getDb } from "../../db";
 import { posCatalogItems, auditEvents } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, getTableColumns, getTableName } from "drizzle-orm";
+import * as schema from "../../db/schema";
 
 test("Full workspace backup restores every business table atomically; rejects foreign tenant and broken references", async () => {
   const organizationId = `backup_${crypto.randomUUID()}`;
@@ -12,6 +14,31 @@ test("Full workspace backup restores every business table atomically; rejects fo
   const context = { organizationId, userId: "tester", userEmail: "tester@example.test", userDisplayName: "Tester", role: "admin" as const, requestId: crypto.randomUUID() };
   const backup = await exportWorkspace(context);
   assert.ok(Object.keys(backup.tables).length > 60);
+  const goManifest = readFileSync("backend/legacy_backup_manifest.go", "utf8");
+  const manifestTables = [...goManifest.matchAll(/"([a-z][a-z0-9_]+)"/g)].map(match => match[1]).sort();
+  assert.deepEqual(manifestTables, Object.keys(backup.tables).sort(), "Go backup inspection manifest must match exported business tables");
+  const expectedBooleanFields = Object.values(schema).flatMap(table => {
+    const name = getTableName(table);
+    if (!(name in backup.tables)) return [];
+    return Object.entries(getTableColumns(table)).filter(([, column]) => column.dataType === "boolean").map(([field]) => `${name}.${field}`);
+  }).sort();
+  const goBooleanFields = [...readFileSync("backend/legacy_backup_booleans.go", "utf8").matchAll(/"([a-z0-9_]+\.[A-Za-z0-9]+)":\s+true/g)].map(match => match[1]).sort();
+  assert.ok(expectedBooleanFields.length > 10, "Legacy boolean fields were not discovered");
+  assert.deepEqual(goBooleanFields, expectedBooleanFields, "Go backup boolean types must match the legacy schema");
+  const sourceReferences = readFileSync("lib/tenant-backup.ts", "utf8").split("const referenceTargets: Record<string, string> = {")[1].split("};")[0];
+  const goReferences = readFileSync("backend/legacy_backup_references.go", "utf8");
+  const sourcePairs = [...sourceReferences.matchAll(/([a-z]+_[A-Za-z]+): "([a-z_]+)"/g)].map(match => `${match[1]}=${match[2]}`).sort();
+  const goPairs = [...goReferences.matchAll(/"([a-z]+_[A-Za-z]+)":\s+"([a-z_]+)"/g)].map(match => `${match[1]}=${match[2]}`).sort();
+  assert.ok(sourcePairs.length > 30, "Legacy reference map was not discovered");
+  assert.deepEqual(goPairs, sourcePairs, "Go backup inspection relationships must match legacy validation");
+  assert.ok(!Object.keys(backup.tables).some(name => name.startsWith("station_")), "Identity and authentication tables must not be exported");
+  await assert.rejects(exportWorkspaceCsv(context, "station_accounts"), /不支援/);
+  const oldEmptyBackup = structuredClone(backup);
+  oldEmptyBackup.tables.station_accounts = [];
+  assert.ok(!Object.hasOwn(validateWorkspaceBackup(context, oldEmptyBackup).tables, "station_accounts"));
+  const oldSensitiveBackup = structuredClone(backup);
+  oldSensitiveBackup.tables.station_accounts = [{ passwordHash: "must-not-restore" }];
+  await assert.rejects(restoreWorkspace(context, oldSensitiveBackup), /身分驗證資料/);
   const db = getDb();
   const [item] = backup.tables.pos_catalog_items;
   await db.update(posCatalogItems).set({ stockQuantity: 1 }).where(eq(posCatalogItems.id, item.id));

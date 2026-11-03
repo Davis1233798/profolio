@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha256"
@@ -89,11 +90,16 @@ func (i *Identity) grant(site string) *Grant {
 	}
 	return nil
 }
-func openDB(file string) (*sql.DB, error) {
+func openDB(file string) (_ *sql.DB, resultErr error) {
 	db, e := sql.Open("sqlite", file)
 	if e != nil {
 		return nil, e
 	}
+	defer func() {
+		if resultErr != nil {
+			_ = db.Close()
+		}
+	}()
 	db.SetMaxOpenConns(1)
 	if _, e = db.Exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000; PRAGMA journal_mode=WAL;"); e != nil {
 		return nil, e
@@ -132,7 +138,7 @@ func openDB(file string) (*sql.DB, error) {
 	if !hasOrder {
 		files = append(files, "0002_dining_takeout.sql")
 	}
-	files = append(files, "0003_mes_projection.sql", "0004_station_identity.sql", "0005_traffic_lab.sql")
+	files = append(files, "0003_mes_projection.sql", "0004_station_identity.sql", "0005_traffic_lab.sql", "0006_mes_finished_goods.sql", "0007_mes_finished_goods_resolutions.sql", "0008_mes_erp_mapping.sql", "0009_erp_mes_receipts.sql")
 	for _, f := range files {
 		b, err := migrations.ReadFile("migrations/" + f)
 		if err != nil {
@@ -141,6 +147,9 @@ func openDB(file string) (*sql.DB, error) {
 		if _, err = tx.Exec(string(b)); err != nil {
 			return nil, fmt.Errorf("migration %s: %w", f, err)
 		}
+	}
+	if e = upgradeMESFinishedGoodsColumns(tx); e != nil {
+		return nil, e
 	}
 	if e = tx.Commit(); e != nil {
 		return nil, e
@@ -415,7 +424,50 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 	mux.ServeHTTP(w, r)
 }
+func backupDatabase(file, destination string) error {
+	if file == "" {
+		return errors.New("SUITE_DB is required for backup")
+	}
+	if _, err := os.Stat(file); err != nil {
+		return fmt.Errorf("source database unavailable: %w", err)
+	}
+	if _, err := os.Stat(destination); !os.IsNotExist(err) {
+		return errors.New("backup destination already exists or cannot be checked")
+	}
+	db, err := sql.Open("sqlite", file)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if _, err = db.Exec("PRAGMA busy_timeout=10000"); err != nil {
+		return err
+	}
+	_, err = db.Exec("VACUUM INTO ?", destination)
+	return err
+}
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--legacy-import" {
+		if len(os.Args) != 2 {
+			log.Fatal("Invalid legacy import command")
+		}
+		if err := runLegacyImportCommand(context.Background(), os.Getenv("SUITE_DB"), os.Getenv("SUITE_MIGRATION_BACKUP_DIR"), os.Stdin, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "--restore-copy" {
+		if err := restoreCopyCommand(context.Background(), os.Args[2:]); err != nil {
+			log.Fatalf("Restore candidate failed: %v", err)
+		}
+		log.Print("Restore candidate created and checked; running database was not replaced")
+		return
+	}
+	if len(os.Args) == 3 && os.Args[1] == "--backup" {
+		if err := backupDatabase(os.Getenv("SUITE_DB"), os.Args[2]); err != nil {
+			log.Fatalf("Database backup failed: %v", err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "--healthcheck" {
 		client := &http.Client{Timeout: 3 * time.Second}
 		response, err := client.Get("http://127.0.0.1:8095/api/health")
@@ -435,11 +487,15 @@ func main() {
 	if e := os.MkdirAll(filepath.Dir(file), 0700); e != nil {
 		log.Fatal(e)
 	}
-	db, e := openDB(file)
+	db, closeStation, e := openStationDatabase(file)
 	if e != nil {
 		log.Fatal(e)
 	}
-	defer db.Close()
+	defer func() {
+		if err := closeStation(); err != nil {
+			log.Printf("Cannot close station database: %v", err)
+		}
+	}()
 	assets := os.Getenv("SUITE_WEB")
 	if assets == "" {
 		assets = "../web-dist"
@@ -448,7 +504,10 @@ func main() {
 	if addr == "" {
 		addr = "127.0.0.1:8095"
 	}
-	server := &http.Server{Addr: addr, Handler: &App{db: db, assets: assets}, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16384}
+	app := &App{db: db, assets: assets}
+	app.startReservationExpiry()
+	app.startStationCommerceDispatcher()
+	server := &http.Server{Addr: addr, Handler: app, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16384}
 	listener, e := net.Listen("tcp", addr)
 	if e != nil {
 		log.Fatal(e)

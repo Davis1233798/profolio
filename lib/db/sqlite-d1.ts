@@ -134,7 +134,7 @@ export function createSqliteD1(dbPath: string = ":memory:"): any {
 
 export function getLocalSqliteD1(): any {
   if (!defaultD1) {
-    const dbPath = path.resolve(process.cwd(), ".data/portfolio.sqlite");
+    const dbPath = path.resolve(process.env.SUITE_SQLITE_PATH || path.join(process.cwd(), ".data/portfolio.sqlite"));
     defaultD1 = createSqliteD1(dbPath);
   }
   return defaultD1;

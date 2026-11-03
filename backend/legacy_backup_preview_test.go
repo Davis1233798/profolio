@@ -1,0 +1,154 @@
+package main
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
+
+func TestLegacyBackupPreviewIsReadOnlyAndTenantScoped(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	admin := loginSite(t, a, "admin@suite.test", space, "erp")
+	front := loginSite(t, a, "front@suite.test", space, "erp")
+	payload := map[string]any{"format": "business-suite/v1", "organizationId": "org_source", "exportedAt": "2026-01-01T00:00:00Z", "tables": map[string]any{"erp_items": []any{map[string]any{"id": "legacy-item", "organizationId": "org_source"}}}}
+	path := "/api/stations/erp/legacy-backup-preview"
+	if w := request(a, "POST", path, payload, front...); w.Code != 403 {
+		t.Fatalf("front access %d", w.Code)
+	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=0 WHERE user_id=? AND site='mes'", "org_test_"+space+"_admin"); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 403 {
+		t.Fatalf("missing cross-station grant %d", w.Code)
+	}
+	if _, err := a.db.Exec("UPDATE station_grants SET enabled=1 WHERE user_id=? AND site='mes'", "org_test_"+space+"_admin"); err != nil {
+		t.Fatal(err)
+	}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"missingTables"`) || !strings.Contains(w.Body.String(), `"mes_products"`) {
+		t.Fatalf("preview missing table detection %d: %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_items": nil}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || !strings.Contains(w.Body.String(), "must contain arrays") {
+		t.Fatalf("null table accepted: %d %s", w.Code, w.Body.String())
+	}
+	manyTables := map[string]any{}
+	for i := 0; i < 201; i++ {
+		manyTables[fmt.Sprintf("erp_table_%d", i)] = []any{}
+	}
+	payload["tables"] = manyTables
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || !strings.Contains(w.Body.String(), "200 table limit") {
+		t.Fatalf("table limit: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"station_accounts": []any{}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "Empty legacy station_accounts") {
+		t.Fatalf("empty identity table: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"station_accounts": []any{map[string]any{"passwordHash": "secret"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 || strings.Contains(w.Body.String(), "secret") {
+		t.Fatalf("identity records not rejected safely: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_missing": []any{}, "erp_items": []any{map[string]any{"id": "legacy-item", "organizationId": "org_source", "unknownField": true}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "erp_missing") || !strings.Contains(w.Body.String(), "unknownField") || !strings.Contains(w.Body.String(), "missing required field") {
+		t.Fatalf("schema warning: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "item", "organizationId": "org_source", "sku": "SKU", "name": "Name", "isActive": nil}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "null in required field isActive") || !strings.Contains(w.Body.String(), "missing required field unit") {
+		t.Fatalf("null and omitted defaulted fields: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"crm_accounts": []any{map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}, map[string]any{"id": "a", "organizationId": "org_source", "ownerId": "legacy-user"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"crm_accounts":1`) || !strings.Contains(w.Body.String(), `"crm_accounts.ownerId":2`) || !strings.Contains(w.Body.String(), `"legacy-user":2`) {
+		t.Fatalf("identity and duplicate counts: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "unrelated", "organizationId": "org_source", "ownerId": "not-an-account"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || strings.Contains(w.Body.String(), `"not-an-account"`) {
+		t.Fatalf("unrecognized identity field included: %d %s", w.Code, w.Body.String())
+	}
+	if _, err := a.db.Exec("INSERT INTO erp_items(id,organization_id,sku,name) VALUES('conflict-item',?,'conflict-sku','Conflict')", "org_test_"+space); err != nil {
+		t.Fatal(err)
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "conflict-item", "organizationId": "org_source"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"destinationConflicts":{"erp_items":1}`) {
+		t.Fatalf("destination conflict: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_purchase_orders": []any{map[string]any{"id": "po", "organizationId": "org_source", "supplierId": "missing"}}, "erp_suppliers": []any{}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_purchase_orders.supplierId":1`) {
+		t.Fatalf("missing reference: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{
+		"erp_suppliers": []any{map[string]any{"id": "supplier", "organizationId": "org_source"}},
+		"erp_customers": []any{map[string]any{"id": "customer", "organizationId": "org_source"}},
+		"erp_invoices": []any{
+			map[string]any{"id": "valid", "organizationId": "org_source", "invoiceType": "payable", "partnerType": "supplier", "partnerId": "supplier"},
+			map[string]any{"id": "missing", "organizationId": "org_source", "invoiceType": "receivable", "partnerType": "customer", "partnerId": "missing"},
+			map[string]any{"id": "wrong-kind", "organizationId": "org_source", "invoiceType": "payable", "partnerType": "customer", "partnerId": "customer"},
+		},
+	}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_invoices.partnerId":1`) || !strings.Contains(w.Body.String(), `"erp_invoices.partnerMismatch":1`) {
+		t.Fatalf("invoice partner references: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_invoices": []any{map[string]any{"id": "invoice", "organizationId": "org_source", "paidAmount": 101, "totalAmount": 100}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_invoices.payment":1`) {
+		t.Fatalf("invalid payment: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_invoices": []any{map[string]any{"id": "bad-type", "organizationId": "org_source", "paidAmount": "100"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "invalid type for paidAmount") {
+		t.Fatalf("invalid type: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "bool-type", "organizationId": "org_source", "isActive": true, "boxConversionRatio": true}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), "invalid type for boxConversionRatio") || strings.Contains(w.Body.String(), "invalid type for isActive") {
+		t.Fatalf("boolean type distinction: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_stock_ledger": []any{map[string]any{"id": "l1", "organizationId": "org_source", "itemId": "item", "warehouseId": "warehouse", "quantityChange": 5, "balanceAfter": 5}, map[string]any{"id": "l2", "organizationId": "org_source", "itemId": "item", "warehouseId": "warehouse", "quantityChange": -2, "balanceAfter": 4}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_stock_ledger.balance":1`) {
+		t.Fatalf("ledger inconsistency: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"pos_shifts": []any{map[string]any{"id": "s1", "organizationId": "org_source", "status": "open"}, map[string]any{"id": "s2", "organizationId": "org_source", "status": "closed"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"pos_shifts.activeState":1`) {
+		t.Fatalf("active shift: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "o1", "organizationId": "org_source", "paymentStatus": "paid"}}, "shop_inventory_reservations": []any{map[string]any{"id": "r1", "organizationId": "org_source", "cartId": "o1", "status": "active"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.orderState":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.invalidExpiry":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.invalidQuantity":1`) || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.unmatchedItem":1`) {
+		t.Fatalf("reservation state: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"pos_shifts": []any{map[string]any{"id": "s1", "organizationId": "org_source", "status": "open", "registerId": "register"}, map[string]any{"id": "s2", "organizationId": "org_source", "status": "open", "registerId": "register"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"pos_shifts.duplicateOpenRegister":1`) {
+		t.Fatalf("duplicate open shift: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"shop_inventory_reservations": []any{map[string]any{"id": "expired", "organizationId": "org_source", "status": "active", "expiresAt": "2000-01-01T00:00:00Z"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_inventory_reservations.expiredActive":1`) {
+		t.Fatalf("expired active reservation: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "pending", "organizationId": "org_source", "paymentStatus": "failed"}}, "shop_order_items": []any{map[string]any{"id": "line", "organizationId": "org_source", "orderId": "pending"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_orders.incompleteReservations":1`) {
+		t.Fatalf("incomplete reservation: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"shop_orders": []any{map[string]any{"id": "o", "organizationId": "org_source", "paymentStatus": "pending"}}, "shop_order_items": []any{map[string]any{"id": "i1", "organizationId": "org_source", "orderId": "o", "variantId": "v1", "quantity": 1}, map[string]any{"id": "i2", "organizationId": "org_source", "orderId": "o", "variantId": "v2", "quantity": 1}}, "shop_inventory_reservations": []any{map[string]any{"id": "r1", "organizationId": "org_source", "cartId": "o", "variantId": "v1", "quantity": 1, "status": "active"}, map[string]any{"id": "r2", "organizationId": "org_source", "cartId": "o", "variantId": "v1", "quantity": 1, "status": "active"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"shop_orders.reservationItemMismatch":2`) {
+		t.Fatalf("reservation item mismatch: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_purchase_order_lines": []any{map[string]any{"id": "over", "organizationId": "org_source", "quantity": 2, "receivedQuantity": 3}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_purchase_order_lines.fulfillment":1`) {
+		t.Fatalf("over receipt: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"pos_sale_lines": []any{map[string]any{"id": "zero-sale", "organizationId": "org_source", "quantity": 0, "refundedQuantity": 0}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"pos_sale_lines.refund":1`) {
+		t.Fatalf("zero sale quantity: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_journal_entries": []any{map[string]any{"id": "j", "organizationId": "org_source", "status": "posted"}}, "erp_journal_lines": []any{map[string]any{"id": "line", "organizationId": "org_source", "journalId": "j", "debitAmount": 100, "creditAmount": 50}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_journal_entries.invalidJournal":1`) {
+		t.Fatalf("unbalanced journal: %d %s", w.Code, w.Body.String())
+	}
+	payload["tables"] = map[string]any{"erp_journal_entries": []any{map[string]any{"id": "j2", "organizationId": "org_source", "status": "posted"}}, "erp_journal_lines": []any{map[string]any{"id": "line2", "organizationId": "org_source", "journalId": "j2", "debitAmount": 100, "creditAmount": 100}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 200 || !strings.Contains(w.Body.String(), `"erp_journal_entries.invalidJournal":1`) {
+		t.Fatalf("invalid mixed journal line: %d %s", w.Code, w.Body.String())
+	}
+	var count int
+	if err := a.db.QueryRow("SELECT count(*) FROM erp_items WHERE id='legacy-item'").Scan(&count); err != nil || count != 0 {
+		t.Fatalf("preview wrote data: %d %v", count, err)
+	}
+	payload["tables"] = map[string]any{"erp_items": []any{map[string]any{"id": "legacy-item", "organizationId": "org_other"}}}
+	if w := request(a, "POST", path, payload, admin...); w.Code != 400 {
+		t.Fatalf("foreign row %d", w.Code)
+	}
+}

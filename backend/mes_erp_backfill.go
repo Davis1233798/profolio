@@ -69,7 +69,7 @@ func (a *App) backfillMESReceipt(w http.ResponseWriter, r *http.Request, id *Ide
 	}
 	var batch, product string
 	var quantity int64
-	err = tx.QueryRow(`SELECT b.id,wo.product_id,r.quantity FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id JOIN mes_products p ON p.organization_id=wo.organization_id AND p.id=wo.product_id WHERE r.organization_id=? AND r.id=? AND b.status='received' AND r.quantity=b.quantity AND r.quantity BETWEEN 1 AND 1000000`, id.OrganizationID, in.ReceiptID).Scan(&batch, &product, &quantity)
+	err = tx.QueryRow(`SELECT b.id,wo.product_id,r.quantity FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id JOIN mes_products p ON p.organization_id=wo.organization_id AND p.id=wo.product_id JOIN mes_finished_goods_inventory inv ON inv.organization_id=b.organization_id AND inv.batch_id=b.id AND inv.quantity_on_hand=r.quantity WHERE r.organization_id=? AND r.id=? AND b.status='received' AND r.quantity=b.quantity AND r.quantity BETWEEN 1 AND 1000000`, id.OrganizationID, in.ReceiptID).Scan(&batch, &product, &quantity)
 	if errors.Is(err, sql.ErrNoRows) {
 		fail(w, 404, "Eligible MES receipt not found")
 		return
@@ -80,7 +80,7 @@ func (a *App) backfillMESReceipt(w http.ResponseWriter, r *http.Request, id *Ide
 	}
 	eventID := "mes.received:" + in.ReceiptID
 	var exists int
-	if err = tx.QueryRow("SELECT count(*) FROM outbox_events WHERE id=?", eventID).Scan(&exists); err != nil {
+	if err = tx.QueryRow("SELECT count(*) FROM outbox_events WHERE id=? OR (organization_id=? AND event_type='mes.finished_goods.received' AND json_valid(payload) AND json_extract(payload,'$.sourceReceiptId')=?)", eventID, id.OrganizationID, in.ReceiptID).Scan(&exists); err != nil {
 		fail(w, 503, "Cannot inspect existing event")
 		return
 	}

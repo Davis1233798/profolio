@@ -20,7 +20,7 @@ func (a *App) mesERPWorkspace(w http.ResponseWriter, r *http.Request, id *Identi
 		}
 	}
 	queries := map[string]string{
-		"historicalReceipts": `SELECT r.id,r.batch_id,b.batch_number,wo.product_id,r.quantity,r.created_at FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id WHERE r.organization_id=? AND b.status='received' AND NOT EXISTS (SELECT 1 FROM outbox_events e WHERE e.id='mes.received:'||r.id) ORDER BY r.rowid DESC LIMIT 500`,
+		"historicalReceipts": `SELECT r.id,r.batch_id,b.batch_number,wo.product_id,r.quantity,r.created_at FROM mes_finished_goods_receipts r JOIN mes_finished_goods_batches b ON b.organization_id=r.organization_id AND b.id=r.batch_id JOIN mes_work_orders wo ON wo.organization_id=b.organization_id AND wo.id=b.work_order_id WHERE r.organization_id=? AND b.status='received' AND NOT EXISTS (SELECT 1 FROM outbox_events e WHERE e.id='mes.received:'||r.id OR (e.organization_id=r.organization_id AND e.event_type='mes.finished_goods.received' AND json_valid(e.payload) AND json_extract(e.payload,'$.sourceReceiptId')=r.id)) ORDER BY r.rowid DESC LIMIT 500`,
 		"products":           "SELECT id,sku,name,unit,status FROM mes_products WHERE organization_id=? ORDER BY id LIMIT 500",
 		"items":              "SELECT id,sku,name,unit,is_active FROM erp_items WHERE organization_id=? ORDER BY id LIMIT 500",
 		"warehouses":         "SELECT id,name,code,is_active FROM erp_warehouses WHERE organization_id=? ORDER BY id LIMIT 500",

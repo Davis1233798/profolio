@@ -98,4 +98,14 @@ func TestLegacyImportAndRestoreCandidateRehearsal(t *testing.T) {
 	if err = check.QueryRow("SELECT count(*) FROM erp_items WHERE organization_id=? AND id='rehearsal-item'", org).Scan(&currentRows); err != nil || currentRows != 1 {
 		t.Fatalf("duplicate after retry: %d %v", currentRows, err)
 	}
+	var keys int
+	if err = check.QueryRow("SELECT count(*) FROM audit_events WHERE organization_id=? AND action='legacy.import'", org).Scan(&audits); err != nil {
+		t.Fatal(err)
+	}
+	if err = check.QueryRow("SELECT count(*) FROM idempotency_keys WHERE organization_id=? AND key='rehearsal-import-0001'", org).Scan(&keys); err != nil {
+		t.Fatal(err)
+	}
+	if audits != 1 || keys != 1 {
+		t.Fatalf("retry duplicated audit or idempotency: %d %d", audits, keys)
+	}
 }

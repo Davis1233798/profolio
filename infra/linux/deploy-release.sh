@@ -4,6 +4,7 @@ set -Eeuo pipefail
 sha=${1:?commit SHA required}
 expected=${2:?archive checksum required}
 [[ $sha =~ ^[0-9a-f]{40}$ && $expected =~ ^[0-9a-f]{64}$ ]] || exit 2
+export SUITE_RELEASE_SHA="$sha"
 root=/srv/business-suite
 archive="$root/releases/$sha.tgz"
 release="$root/releases/${sha}-$(date -u +%Y%m%d%H%M%S)"

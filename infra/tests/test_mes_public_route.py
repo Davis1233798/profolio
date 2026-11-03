@@ -33,8 +33,14 @@ class MesPublicRouteTests(unittest.TestCase):
     def test_isolated_mode_has_fixed_go_upstream_and_external_network_overlay(self):
         config = route_config('isolated')
         self.assertEqual(config['upstream'], 'mes-station:8095')
-        self.assertEqual(config['overlay'], 'infra/linux/compose.mes-public-route.yaml')
+        self.assertEqual(config['overlay'], 'linux/compose.mes-public-route.yaml')
         self.assertEqual(config['network'], 'business-suite-mes_default')
+
+    def test_unknown_mode_cannot_choose_an_arbitrary_upstream(self):
+        for mode in ('localhost:18095', 'https://other.example', '', 'SHARED'):
+            with self.subTest(mode=mode):
+                with self.assertRaises(RouteConfigError):
+                    route_config(mode)
 
     def test_invalid_or_duplicate_route_is_rejected(self):
         for content in (
@@ -79,13 +85,25 @@ class MesPublicRouteTests(unittest.TestCase):
         compose = (ROOT / 'infra' / 'linux' / 'compose.public-sites.yaml').read_text(encoding='utf-8')
         isolated_overlay = (ROOT / 'infra' / 'linux' / 'compose.mes-public-route.yaml').read_text(encoding='utf-8')
         self.assertIn('reverse_proxy {$MES_PUBLIC_UPSTREAM}', caddy)
-        self.assertIn('MES_PUBLIC_UPSTREAM: ${MES_PUBLIC_UPSTREAM:-web:8080}', compose)
+        self.assertIn('MES_PUBLIC_UPSTREAM: ${MES_PUBLIC_UPSTREAM:?route upstream must come from the allowlisted IaC mode}', compose)
         mes_block = caddy.split('mes.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0]
         self.assertIn('reverse_proxy {$MES_PUBLIC_UPSTREAM}', mes_block)
         self.assertIn('import suite-proxy', caddy.split('erp.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0])
         self.assertIn('external: true', isolated_overlay)
         self.assertIn('name: business-suite-mes_default', isolated_overlay)
         self.assertNotIn('business-suite-mes_default', compose)
+        self.assertNotIn('mes-station:', isolated_overlay)
+        self.assertNotIn('volumes:', isolated_overlay)
+        self.assertNotIn('ports:', isolated_overlay)
+
+    def test_operator_cutover_checks_health_and_has_a_route_only_rollback(self):
+        script = (ROOT / 'infra' / 'linux' / 'cutover-mes-public-route.sh').read_text(encoding='utf-8')
+        self.assertIn('verify_isolated_service', script)
+        self.assertIn('verify_current_edge', script)
+        self.assertIn('check-health', script)
+        self.assertIn('python3 "$route_tool" set "$env_file" "$old_mode"', script)
+        self.assertIn('up -d --no-deps --force-recreate --wait --wait-timeout 180 edge', script)
+        self.assertNotIn('down --volumes', script)
 
 
 if __name__ == '__main__':

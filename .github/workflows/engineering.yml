@@ -55,6 +55,8 @@ jobs:
       - run: pip install -r infra/runtime/requirements.txt
       - run: python -m unittest discover -s tests -v
         working-directory: infra
+      - name: Verify MES public cutover across isolated Docker networks
+        run: python infra/tests/smoke_mes_public_route.py
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up -d --build --wait --wait-timeout 180
       - run: python infra/tests/smoke.py

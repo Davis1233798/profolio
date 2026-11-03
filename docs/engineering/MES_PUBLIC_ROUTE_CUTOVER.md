@@ -10,7 +10,7 @@ Go `GET /api/health` 的成功回應為 HTTP 200 JSON `{ "success": true, "data"
 
 ## 安全邊界
 
-- `MES_PUBLIC_ROUTE` 僅接受 `shared` 或 `isolated`；未設定等同 `shared`。上游只由程式映射為固定值 `web:8080` 或 `mes-station:8095`，不能直接從設定接受任意 host、port 或 URL。
+- `MES_PUBLIC_ROUTE` 僅接受 `shared` 或 `isolated`；未設定等同 `shared`。上游只由程式映射為固定值 `web:8080` 或 `mes-station:8095`，不能直接從設定接受任意 host、port 或 URL。Compose 要求由受控腳本提供 `MES_PUBLIC_UPSTREAM`，不從 `.env` 讀取自選 upstream。
 - 只在 isolated 模式套用 edge network overlay。共享模式不要求 MES external network 存在，也不改變 Caddy 的既有 Docker 網路。
 - 僅 `mes.<BASE_DOMAIN>` 切換 upstream。根網域、其餘分站、`station.<BASE_DOMAIN>` 與其服務維持原配置。
 - Go station 專案的 loopback port、Compose project、SQLite volume、部署目錄與資料均不由中央 IaC 修改。不得掛載、複製、清除或遷移中央 `web-data` 或 `business-suite-mes-station-data`；資料移轉另案規劃及授權。

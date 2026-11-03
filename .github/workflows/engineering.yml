@@ -227,5 +227,7 @@ jobs:
           archive="/srv/business-suite/releases/${GITHUB_SHA}.tgz"
           scp -i ~/.ssh/oci_deploy -o StrictHostKeyChecking=yes outputs/linux-business-suite.tgz "ubuntu@150.230.2.37:$archive"
           sha256sum outputs/linux-business-suite.tgz | awk '{print $1}' > archive.sha256
+          script="/srv/business-suite/releases/${GITHUB_SHA}.deploy.sh"
+          scp -i ~/.ssh/oci_deploy -o StrictHostKeyChecking=yes infra/linux/deploy-release.sh "ubuntu@150.230.2.37:$script"
           ssh -i ~/.ssh/oci_deploy -o StrictHostKeyChecking=yes ubuntu@150.230.2.37 \
-            "bash -s -- $GITHUB_SHA $(cat archive.sha256)" < infra/linux/deploy-release.sh
+            "bash $script $GITHUB_SHA $(cat archive.sha256)" < /dev/null

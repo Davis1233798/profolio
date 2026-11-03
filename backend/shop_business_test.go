@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 )
@@ -139,6 +140,106 @@ func TestShopBusinessCheckoutPaymentShippingConcurrency(t *testing.T) {
 	a.db.QueryRow("SELECT status FROM shop_inventory_reservations WHERE cart_id=? AND organization_id=?", order, org).Scan(&status)
 	if stock != 0 || orders != 1 || events != 1 || payments != 1 || shipments != 1 || audits != 3 || status != "consumed" {
 		t.Fatalf("invalid persisted state stock=%d orders=%d events=%d payments=%d shipments=%d audits=%d status=%s", stock, orders, events, payments, shipments, audits, status)
+	}
+}
+
+func TestShopShippingPaidOnlyRoleTenantIdempotencyAndConcurrency(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	org := "org_test_" + space
+	admin := loginSite(t, a, "admin@suite.test", space, "shop")
+	office := loginSite(t, a, "office@suite.test", space, "shop")
+	viewer := loginSite(t, a, "viewer@suite.test", space, "shop")
+	front := loginSite(t, a, "front@suite.test", space, "shop")
+	other := loginSite(t, a, "admin@suite.test", token(), "shop")
+	var owner string
+	if err := a.db.QueryRow("SELECT id FROM users WHERE organization_id=? AND email='front@suite.test'", org).Scan(&owner); err != nil {
+		t.Fatal(err)
+	}
+	seed := func(suffix, payment string) string {
+		t.Helper()
+		id := "ship_test_" + suffix + "_" + token()
+		_, err := a.db.Exec(`INSERT INTO shop_orders(id,organization_id,order_number,user_id,customer_email,shipping_address_json,subtotal,shipping_fee,total_amount,payment_status,fulfillment_status) VALUES(?,?,?,?,?,'{}',100,60,160,?,'unfulfilled')`, id, org, id, owner, "front@suite.test", payment)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	path := "/api/stations/shop/business"
+	ship := func(orderID, tracking, key string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+		t.Helper()
+		return request(a, http.MethodPost, path, map[string]any{"action": "ship", "orderId": orderID, "tracking": tracking, "idempotencyKey": key}, cookies...)
+	}
+
+	unpaid := seed("unpaid", "pending")
+	if w := ship(unpaid, "TRACK-UNPAID", "ship-unpaid-001", admin...); w.Code != http.StatusConflict {
+		t.Fatalf("unpaid shipment: %d %s", w.Code, w.Body.String())
+	}
+	var fulfillment string
+	var shipments int
+	if err := a.db.QueryRow("SELECT fulfillment_status FROM shop_orders WHERE id=? AND organization_id=?", unpaid, org).Scan(&fulfillment); err != nil || fulfillment != "unfulfilled" {
+		t.Fatalf("unpaid order changed: %s %v", fulfillment, err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM shop_shipments WHERE order_id=? AND organization_id=?", unpaid, org).Scan(&shipments); err != nil || shipments != 0 {
+		t.Fatalf("unpaid shipment persisted: %d %v", shipments, err)
+	}
+	if w := ship(unpaid, "TRACK-UNPAID", "ship-viewer-001", viewer...); w.Code != http.StatusForbidden {
+		t.Fatalf("readonly shipment: %d", w.Code)
+	}
+	if w := ship(unpaid, "TRACK-UNPAID", "ship-front-001", front...); w.Code != http.StatusForbidden {
+		t.Fatalf("front-office shipment: %d", w.Code)
+	}
+	foreign := seed("foreign", "paid")
+	if w := ship(foreign, "TRACK-FOREIGN", "ship-foreign-01", other...); w.Code != http.StatusNotFound {
+		t.Fatalf("cross tenant shipment: %d", w.Code)
+	}
+
+	paid := seed("paid", "paid")
+	key := "ship-retry-0001"
+	first := ship(paid, "TRACK-PAID-001", key, office...)
+	if first.Code != http.StatusOK {
+		t.Fatalf("office shipment: %d %s", first.Code, first.Body.String())
+	}
+	if replay := ship(paid, "TRACK-PAID-001", key, office...); replay.Code != http.StatusOK || replay.Body.String() != first.Body.String() {
+		t.Fatalf("shipment replay: %d %s", replay.Code, replay.Body.String())
+	}
+	if changed := ship(paid, "TRACK-PAID-002", key, office...); changed.Code != http.StatusConflict {
+		t.Fatalf("changed idempotent request: %d %s", changed.Code, changed.Body.String())
+	}
+	if err := a.db.QueryRow("SELECT fulfillment_status FROM shop_orders WHERE id=? AND organization_id=?", paid, org).Scan(&fulfillment); err != nil || fulfillment != "shipped" {
+		t.Fatalf("paid order fulfillment: %s %v", fulfillment, err)
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM shop_shipments WHERE order_id=? AND organization_id=?", paid, org).Scan(&shipments); err != nil || shipments != 1 {
+		t.Fatalf("paid shipment count: %d %v", shipments, err)
+	}
+
+	raced := seed("race", "paid")
+	const requests = 12
+	var wg sync.WaitGroup
+	codes := make(chan int, requests)
+	for i := 0; i < requests; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			w := ship(raced, "TRACK-RACE-001", fmt.Sprintf("ship-race-%05d", i), admin...)
+			codes <- w.Code
+		}(i)
+	}
+	wg.Wait()
+	close(codes)
+	accepted := 0
+	for code := range codes {
+		if code == http.StatusOK {
+			accepted++
+		} else if code != http.StatusConflict {
+			t.Errorf("shipment race returned %d", code)
+		}
+	}
+	if accepted < 1 {
+		t.Fatal("shipment race had no successful or idempotent response")
+	}
+	if err := a.db.QueryRow("SELECT count(*) FROM shop_shipments WHERE order_id=? AND organization_id=?", raced, org).Scan(&shipments); err != nil || shipments != 1 {
+		t.Fatalf("shipment race persisted %d rows: %v", shipments, err)
 	}
 }
 func TestShopExpiredReservationRestoresStockOnce(t *testing.T) {

@@ -281,11 +281,18 @@ func (a *App) shopBusiness(w http.ResponseWriter, r *http.Request, id *Identity,
 			return
 		}
 		tracking := strings.TrimSpace(in.Tracking)
-		if _, e = tx.Exec("UPDATE shop_orders SET fulfillment_status='shipped',tracking_number=? WHERE id=? AND organization_id=?", tracking, orderID, id.OrganizationID); e != nil {
+		updated, updateErr := tx.Exec("UPDATE shop_orders SET fulfillment_status='shipped',tracking_number=? WHERE id=? AND organization_id=? AND payment_status='paid' AND fulfillment_status='unfulfilled'", tracking, orderID, id.OrganizationID)
+		if updateErr != nil {
 			fail(w, 503, "Shipping update failed")
 			return
 		}
-		if _, e = tx.Exec("INSERT INTO shop_shipments(id,organization_id,order_id,tracking_number,carrier,status) VALUES(?,?,?,?,'Demo carrier','shipped')", "shipment_"+token(), id.OrganizationID, orderID, tracking); e != nil {
+		changed, countErr := updated.RowsAffected()
+		if countErr != nil || changed != 1 {
+			fail(w, 409, "Order state changed; refresh and retry")
+			return
+		}
+		shipmentID := "shipment_" + digest(id.OrganizationID + "\x00" + orderID)[:32]
+		if _, e = tx.Exec("INSERT INTO shop_shipments(id,organization_id,order_id,tracking_number,carrier,status) VALUES(?,?,?,?,'Demo carrier','shipped')", shipmentID, id.OrganizationID, orderID, tracking); e != nil {
 			fail(w, 503, "Shipment record failed")
 			return
 		}

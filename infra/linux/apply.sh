@@ -5,6 +5,15 @@ if [[ ! -f .env ]]; then
   echo 'Missing infra/.env; copy .env.example and configure service secrets on this host.' >&2
   exit 1
 fi
+# Serialize manual Compose operations with release deploys and public route changes.
+server_root=/srv/business-suite
+if [[ -d "$server_root/shared" && ! -L "$server_root/shared" ]]; then
+  lock_file="$server_root/shared/deploy.lock"
+else
+  lock_file="${TMPDIR:-/tmp}/business-suite-infra-${UID:-0}.lock"
+fi
+exec 9>"$lock_file"
+flock -n 9 || { echo 'Another release or infrastructure operation is running; apply was not started.' >&2; exit 1; }
 chmod 600 .env
 export COMPOSE_PROJECT_NAME=business-suite
 route_mode=$(python3 linux/mes_public_route.py get .env)

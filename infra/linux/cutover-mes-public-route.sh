@@ -5,6 +5,10 @@ target=${1:?usage: cutover-mes-public-route.sh <shared|isolated>}
 [[ "$target" == shared || "$target" == isolated ]] || { echo 'Route must be shared or isolated' >&2; exit 2; }
 
 root=/srv/business-suite
+[[ -d "$root/shared" && ! -L "$root/shared" ]] || { echo 'Shared release state directory is missing or unsafe' >&2; exit 1; }
+exec 9>"$root/shared/deploy.lock"
+flock -n 9 || { echo 'Another release or infrastructure operation is running; route cutover was not started.' >&2; exit 1; }
+
 current="$root/current"
 release=$(realpath -e -- "$current")
 [[ "$release" == "$root/releases/"* && -d "$release/infra" ]] || { echo 'Current release is outside the managed release root' >&2; exit 1; }

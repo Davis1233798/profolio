@@ -15,11 +15,12 @@ Go `GET /api/health` 的成功回應為 HTTP 200 JSON `{ "success": true, "data"
 - 僅 `mes.<BASE_DOMAIN>` 切換 upstream。根網域、其餘分站、`station.<BASE_DOMAIN>` 與其服務維持原配置。
 - Go station 專案的 loopback port、Compose project、SQLite volume、部署目錄與資料均不由中央 IaC 修改。不得掛載、複製、清除或遷移中央 `web-data` 或 `business-suite-mes-station-data`；資料移轉另案規劃及授權。
 - 不使用 host networking、不新增公網 port、不改 DNS/TLS、不操作正式主機。中央部署回滾只恢復 Caddy route mode，不回復或改寫 MES SQLite。
+- Route cutover、正式 release deploy 和部署主機上的 Linux `apply.sh` 共用 `/srv/business-suite/shared/deploy.lock`。切換程序必須先取得非阻塞鎖，再解析 `current`、讀取 route mode 或檢查服務；若鎖已被佔用，直接失敗且不修改環境或容器。沒有部署目錄的其他 Linux 環境，`apply.sh` 使用自己的暫存鎖。
 - GitHub PR workflow 可驗證配置和隔離測試服務；正式公開 HTTPS 驗收仍需在獨立遠端環境執行，PR CI 不是正式 hostname 可用性的證明。
 
 ## 切換與回滾
 
-1. 讀取並驗證唯一 `MES_PUBLIC_ROUTE` 設定；複數、非法值或無效 Compose 設定立即拒絕，不動容器。
+1. 先取得共用 release lock；再解析 `current` 並讀取、驗證唯一 `MES_PUBLIC_ROUTE` 設定。鎖已佔用、複數、非法值或無效 Compose 設定立即拒絕，不動容器。
 2. 要求 MES external network `business-suite-mes_default` 存在且帶有 `com.docker.compose.project=business-suite-mes` 標籤；確認恰有一個 `mes-station` service container 且狀態 healthy。
 3. 先從主機 loopback 查 `http://127.0.0.1:18095/api/health`，要求 Go health JSON 為 `ready`。驗證切換後的 Caddyfile，再原子更新共享環境檔中的 route mode。
 4. 僅重建中央 `edge`。切換完成後由外部 HTTPS probe 查 `https://mes.<BASE_DOMAIN>/api/health`，要求同一 Go health JSON。其他中央 service 和兩邊資料 volumes 不參與這次操作。

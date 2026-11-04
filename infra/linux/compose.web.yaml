@@ -24,8 +24,11 @@ services:
       INFRA_GATEWAY_TOKEN: ${GATEWAY_TOKEN}
       PLATFORM_CONTROL_URL: http://control:8091
       STATION_PROXY: 'true'
+      WORKSPACE_AUTH_DATABASE: /srv/app/.auth/workspace-auth.sqlite
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
     ports: ["127.0.0.1:8090:8080"]
-    volumes: ["web-data:/srv/app/.data"]
+    volumes: ["web-data:/srv/app/.data", "workspace-auth-data:/srv/app/.auth"]
     depends_on:
       gateway: {condition: service_healthy}
     healthcheck:
@@ -70,4 +73,5 @@ services:
       retries: 20
 volumes:
   web-data:
+  workspace-auth-data:
   control-audit:

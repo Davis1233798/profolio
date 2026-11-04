@@ -41,7 +41,7 @@ export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
     baseURL: config.baseURL,
     basePath: "/api/workspace-auth",
     secret: config.secret,
-    database: kysely,
+    database: { db: kysely, type: 'sqlite', transaction: true },
     emailAndPassword: { enabled: true, minPasswordLength: 12, autoSignIn: false, disableSignUp: true },
     plugins: [admin(), apiKey({ enableSessionForAPIKeys: false, disableKeyHashing: false, enableMetadata: true })],
     advanced: { useSecureCookies: true, defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: true } },

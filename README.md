@@ -1,5 +1,7 @@
 # Business Suite Portfolio
 
+目前開發系統、功能、已合併與尚待部署／驗收項目，見 [Active development](docs/ACTIVE_DEVELOPMENT.md)。程式合併與映像發布不等同正式站已更新。
+
 目前開發系統、功能、階段與遠端驗證狀態請見 [開發狀態](docs/DEVELOPMENT_STATUS.md)；每次變更遵循 [開發順序](docs/engineering/LOOP.md)。
 
 新增主站 `/platform` 基礎設施中心與 `/mes/industrial` 設備量測頁；開發前端依 [站台模板](docs/design/README.md) 的區域樣式。

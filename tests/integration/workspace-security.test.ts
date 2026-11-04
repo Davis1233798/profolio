@@ -52,6 +52,10 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     const exportRequest=(cookieValue:string,keyValue:string,url="/api/workspace/export?workspaceId=workspace-a")=>new Request(new URL(url,"https://portfolio.example.test"),{headers:{cookie:cookieValue,"x-workspace-download-key":keyValue,origin:"https://portfolio.example.test"}});
     const permitted=await authorizeWorkspaceExportForTest(exportRequest(userCookie,key.secret,"/api/workspace/export?workspaceId=workspace-a&table=pos_sales"),"pos_sales",security.runtime,"https://portfolio.example.test");
     assert.equal(permitted.userId,aliceId);
+    const audit = await security.request('/api/workspace-admin/audit', { headers: { cookie: cookieHeader } });
+    const history = JSON.stringify(await audit.json());
+    assert.equal(history.includes(key.id), true, 'audit identifies the issued/redeemed key by non-secret ID');
+    assert.equal(history.includes(key.secret), false, 'audit must not contain the raw key');
     await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie,key.secret),undefined,security.runtime,"https://portfolio.example.test"),{status:403},"CSV keys cannot authorize full JSON export");
     await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(cookieHeader,key.secret,"/api/workspace/export?workspaceId=workspace-a&table=pos_sales"),"pos_sales",security.runtime,"https://portfolio.example.test"),{status:403},"owner cannot redeem another user's key");
     const revoke=await security.request("/api/workspace-admin/keys",{method:"DELETE",headers:{cookie:cookieHeader,origin:"https://portfolio.example.test","content-type":"application/json"},body:JSON.stringify({keyId:key.id})});

@@ -170,8 +170,11 @@ export async function authorizeWorkspaceExportForTest(request:Request,dataset:st
     const membership=db.prepare("SELECT permissions FROM workspace_memberships WHERE user_id=? AND workspace_id=?").get(user.id,workspaceId) as {permissions:string}|undefined;
     const scope=key&&JSON.parse(key.scope);
     if(!key||key.revoked||key.expires_at<=Date.now()||(key.quota!==null&&key.used>=key.quota)||!membership||!JSON.parse(membership.permissions).includes("export")||(!dataset&&scope.kind!=="json")||(dataset&&(scope.kind!=="csv"||!scope.datasets.includes(dataset)))) throw new WorkspaceSecurityError(403,"Workspace export denied");
-    db.prepare("UPDATE workspace_download_keys SET used=used+1 WHERE key_id=?").run(key.key_id); db.exec("COMMIT");
-    return {organizationId:workspaceId,userId:user.id,userEmail:user.email,userDisplayName:user.name,role:"admin" as const,requestId:randomBytes(12).toString("hex")};
+    const requestId = randomBytes(12).toString('hex');
+    db.prepare("UPDATE workspace_download_keys SET used=used+1 WHERE key_id=?").run(key.key_id);
+    runtime.audit(user.id, 'export.authorize', JSON.stringify({ workspaceId, keyId: key.key_id, requestId }));
+    db.exec("COMMIT");
+    return {organizationId:workspaceId,userId:user.id,userEmail:user.email,userDisplayName:user.name,role:"admin" as const,requestId};
   } catch(e) { db.exec("ROLLBACK"); throw e; }
 }
 export async function requireWorkspaceRestoreAccess(request: Request): Promise<TenantContext> {
@@ -202,7 +205,7 @@ export async function confirmWorkspacePassword(request: Request, password: strin
 }
 export async function recordWorkspaceTransfer(context:TenantContext,operation:"export"|"restore",outcome:"success"|"failure",metadata:Record<string,string|number|boolean|null>={}) {
   const runtime=getRuntime(); const safeMetadata=Object.fromEntries(Object.entries(metadata).filter(([key,value])=>!/key|secret|password|token|cookie|body/i.test(key)&&["string","number","boolean"].includes(typeof value)||value===null));
-  runtime.audit(context.userId,`workspace.${operation}.${outcome}`,`${context.organizationId}:${JSON.stringify(safeMetadata).slice(0,512)}`);
+  runtime.audit(context.userId,`workspace.${operation}.${outcome}`,`${context.organizationId}:${context.requestId}:${JSON.stringify(safeMetadata).slice(0,512)}`);
 }
 
 // Synthetic test factory shares the same file-backed SQLite and Better Auth handlers.

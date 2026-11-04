@@ -3,7 +3,7 @@ import { Kysely } from "kysely";
 import { betterAuth } from "better-auth";
 import { NodeSqliteDialect } from "@better-auth/kysely-adapter/node-sqlite-dialect";
 import { admin } from "better-auth/plugins";
-import { apiKey } from "@better-auth/api-key";
+import { apiKey, defaultKeyHasher } from "@better-auth/api-key";
 import { randomBytes } from "node:crypto";
 import type { TenantContext } from "./tenant";
 
@@ -162,6 +162,11 @@ export async function authorizeWorkspaceExportForTest(request:Request,dataset:st
   if(!workspaceId||!secret) throw new WorkspaceSecurityError(401,"Workspace and download key required");
   if(dataset&&!DATASETS.has(dataset)) throw new WorkspaceSecurityError(403,"Dataset is not exportable");
   const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()||"unknown"; consumeLimit(runtime,`export-ip:${ip}`,120,60000); consumeLimit(runtime,`export-user:${user.id}`,40,60000);
+  // Check ownership before the plugin verifies/consumes its key-level quota.
+  const ownedKey = runtime.sqlite.prepare('SELECT k.scope FROM workspace_download_keys k JOIN apikey a ON a.id=k.key_id WHERE a.key=? AND k.user_id=? AND k.workspace_id=? AND k.revoked=0 AND k.expires_at>?').get(await defaultKeyHasher(secret), user.id, workspaceId, Date.now()) as { scope: string } | undefined;
+  if (!ownedKey) throw new WorkspaceSecurityError(403, 'Invalid download key');
+  const requestedScope = JSON.parse(ownedKey.scope) as { kind: string; datasets?: string[] };
+  if ((!dataset && requestedScope.kind !== 'json') || (dataset && (requestedScope.kind !== 'csv' || !requestedScope.datasets?.includes(dataset)))) throw new WorkspaceSecurityError(403, 'Key does not permit this export format');
   const verified:any=await runtime.auth.api.verifyApiKey({body:{key:secret}} as never);
   if(!verified.valid||!verified.key||verified.key.referenceId!==user.id||verified.key.metadata?.workspaceId!==workspaceId) throw new WorkspaceSecurityError(403,"Invalid download key");
   const db=runtime.sqlite; db.exec("BEGIN IMMEDIATE");

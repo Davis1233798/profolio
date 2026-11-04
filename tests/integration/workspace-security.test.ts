@@ -82,6 +82,10 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     security.runtime.sqlite.prepare('UPDATE workspace_download_keys SET expires_at=? WHERE key_id=?').run(Date.now() - 1000, expired.id);
     await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie, expired.secret), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 }, 'expired workspace grant is denied');
     const foreign = await issue(10);
+    const remainingBefore = security.runtime.sqlite.prepare('SELECT remaining FROM apikey WHERE id=?').get(foreign.id) as { remaining: number };
+    await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(cookieHeader, foreign.secret), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 });
+    const remainingAfter = security.runtime.sqlite.prepare('SELECT remaining FROM apikey WHERE id=?').get(foreign.id) as { remaining: number };
+    assert.equal(remainingAfter.remaining, remainingBefore.remaining, 'another account must not consume the key owner download quota');
     await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie, foreign.secret, '/api/workspace/export?workspaceId=workspace-b'), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 }, 'key cannot select another workspace');
     const jsonOnlyResponse = await security.request('/api/workspace-admin/keys', { method: 'POST', headers: { cookie: cookieHeader, origin: 'https://portfolio.example.test', 'content-type': 'application/json' }, body: JSON.stringify({ userId: aliceId, workspaceId: 'workspace-a', scope: { kind: 'json' }, expiresInSeconds: 600, quota: 10 }) });
     assert.equal(jsonOnlyResponse.status, 201);

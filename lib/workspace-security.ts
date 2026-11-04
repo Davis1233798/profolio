@@ -175,8 +175,11 @@ export async function authorizeWorkspaceExportForTest(request:Request,dataset:st
   } catch(e) { db.exec("ROLLBACK"); throw e; }
 }
 export async function requireWorkspaceRestoreAccess(request: Request): Promise<TenantContext> {
-  const runtime=getRuntime(); const user=await runtime.getPrincipal(request); const url=new URL(request.url); const workspaceId=url.searchParams.get("workspaceId");
-  if(request.headers.get("origin")!==new URL(process.env.BETTER_AUTH_URL!).origin) throw new WorkspaceSecurityError(403,"Invalid origin");
+  return authorizeWorkspaceRestore(request, getRuntime(), new URL(process.env.BETTER_AUTH_URL!).origin);
+}
+export async function authorizeWorkspaceRestore(request: Request, runtime: ReturnType<typeof openWorkspaceSecurity>, canonicalOrigin: string): Promise<TenantContext> {
+  const user=await runtime.getPrincipal(request); const url=new URL(request.url); const workspaceId=url.searchParams.get("workspaceId");
+  if(request.headers.get("origin")!==canonicalOrigin) throw new WorkspaceSecurityError(403,"Invalid origin");
   if(user.role!=="admin"||!workspaceId) throw new WorkspaceSecurityError(403,"Owner and workspace required");
   const membership=runtime.sqlite.prepare("SELECT permissions FROM workspace_memberships WHERE user_id=? AND workspace_id=?").get(user.id,workspaceId) as {permissions:string}|undefined;
   if(!membership||!JSON.parse(membership.permissions).includes("restore")) throw new WorkspaceSecurityError(403,"Restore membership required");
@@ -187,8 +190,10 @@ export async function requireWorkspaceRestoreAccess(request: Request): Promise<T
   return {organizationId:workspaceId,userId:user.id,userEmail:user.email,userDisplayName:user.name,role:"admin",requestId:randomBytes(12).toString("hex")};
 }
 export async function verifyWorkspaceRestorePassword(request: Request, password: string): Promise<void> {
+  return confirmWorkspacePassword(request, password, getRuntime());
+}
+export async function confirmWorkspacePassword(request: Request, password: string, runtime: ReturnType<typeof openWorkspaceSecurity>): Promise<void> {
   if(typeof password!=="string"||password.length<12) throw new WorkspaceSecurityError(401,"Credential confirmation failed");
-  const runtime=getRuntime();
   const access=await runtime.getPrincipal(request);
   try { await runtime.auth.api.verifyPassword({ headers: request.headers, body: { password } }); }
   catch { throw new WorkspaceSecurityError(401,"Credential confirmation failed"); }

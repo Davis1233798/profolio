@@ -3,7 +3,6 @@ import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
-import { WorkspaceTools } from "@/components/workspace-tools";
 import { projectRepositories } from "@/lib/project-repositories";
 import { ArrowUpRight, Factory, Database, Calculator, Users, UtensilsCrossed, ShoppingBag, ArrowRight, Code2 } from "lucide-react";
 
@@ -50,6 +49,6 @@ export default function PortfolioPage() {
     </section>
     <section id="about" className="portfolio-about"><div><p className="portfolio-eyebrow">{t("02 / BUILT UNDERNEATH")}</p><h2>{t("Under the surface,")}<br/>{t("every action has context.")}</h2><p>{t("Orders, inventory, payments and production records connect through verifiable workflows.")}</p><Link href="/platform">{t("Explore infrastructure")} <ArrowUpRight size={15}/></Link></div><div className="portfolio-capabilities">{[["01","Interface and interaction","Responsive workspaces, validation and clear feedback."],["02","Data and workflows","APIs, persistent data, domain services and transaction records."],["03","Testing and delivery","Tests verify amounts, inventory and state transitions; external services require integration."]].map(([n,title,description])=><div key={n}><span>{n}</span><div><h3>{t(title)}</h3><p>{t(description)}</p></div></div>)}</div></section>
 
-    <section className="portfolio-tools"><div className="portfolio-section-heading"><div><p className="portfolio-eyebrow">{t("03 / YOUR WORKSPACE")}</p><h2>{t("Keep your work in your own space.")}</h2></div></div><WorkspaceTools/></section>
+    <section className="portfolio-tools"><Link href="/admin/workspace" className="portfolio-secondary">{t("Workspace administration", "資料管理後台")} <ArrowUpRight size={15}/></Link></section>
   </main>;
 }

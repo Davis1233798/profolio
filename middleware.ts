@@ -8,6 +8,9 @@ const seeding = new Map<string, Promise<unknown>>();
 export async function middleware(request: NextRequest) {
   // Container probes must not create a fresh tenant, seed data or Outbox events.
   if (request.nextUrl.pathname === '/api/health') return NextResponse.next();
+  // Real account/key administration never inherits demo roles or seeds visitors.
+  const path = request.nextUrl.pathname;
+  if (path === '/admin/workspace' || path.startsWith('/api/workspace-auth/') || path.startsWith('/api/workspace-admin/') || path === '/api/workspace/backup' || path === '/api/workspace/export') return NextResponse.next();
   const previous = request.cookies.get(SESSION_COOKIE)?.value;
   const session = validSession(previous) ? previous : crypto.randomUUID();
   const org = `org_${session}`;

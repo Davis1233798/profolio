@@ -27,6 +27,20 @@ const env = {DB:getLocalSqliteD1(),ASSETS:{fetch:asset},INFRA_GATEWAY_URL:proces
 const context = {waitUntil(promise){promise.catch(()=>console.error('Background task failed'));},passThroughOnException(){}};
 const server = createServer(async (incoming,outgoing) => {
   try {
+    // Reject an unauthorized restore before buffering the upload at this adapter.
+    if (incoming.method === 'POST' && new URL(incoming.url, 'http://localhost').pathname === '/api/workspace/backup') {
+      const preflightHeaders = new Headers();
+      for (const [key, value] of Object.entries(incoming.headers)) if (value !== undefined && !['content-length', 'transfer-encoding'].includes(key)) preflightHeaders.set(key, Array.isArray(value) ? value.join(',') : value);
+      const protocol = incoming.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      const preflightUrl = new URL(incoming.url, `${protocol}://${incoming.headers.host ?? 'localhost'}`);
+      const preflight = await worker.fetch(new Request(preflightUrl, { method: 'HEAD', headers: preflightHeaders }), env, context);
+      if (!preflight.ok) {
+        outgoing.writeHead(preflight.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        outgoing.end(JSON.stringify({ success: false, error: { message: 'Authenticated restore access required' } }));
+        incoming.resume();
+        return;
+      }
+    }
     const chunks = [];
     let size = 0;
     for await (const chunk of incoming) {

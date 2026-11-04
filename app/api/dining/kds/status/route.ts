@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { resolveTenantContext, checkPermission } from "@/lib/tenant";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { DiningService } from "@/lib/services/dining-service";
 

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { getDb } from "@/db";
 import { diningTables, diningTableSessions, auditEvents } from "@/db/schema";
 import { resolveTenantContext, checkPermission } from "@/lib/tenant";

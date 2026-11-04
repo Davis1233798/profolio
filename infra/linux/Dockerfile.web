@@ -2,6 +2,7 @@ FROM node:24-slim
 WORKDIR /srv/app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=8080
 COPY dist ./dist
+COPY dist/operator ./operator
 COPY drizzle ./drizzle
 COPY lib/db/sqlite-d1.ts ./lib/db/sqlite-d1.ts
 COPY scripts/serve-linux.mjs ./scripts/serve-linux.mjs

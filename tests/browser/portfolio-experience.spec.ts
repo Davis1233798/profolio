@@ -4,6 +4,13 @@ test('language changes real copy, persists and survives page navigation', async 
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', entry => { if (entry.type() === 'error' && /THREE|shader|WebGLProgram/i.test(entry.text())) errors.push(entry.text()); });
+  await page.addInitScript(() => {
+    const original = WebGL2RenderingContext.prototype.drawArrays;
+    WebGL2RenderingContext.prototype.drawArrays = function (this: WebGL2RenderingContext, ...args: Parameters<typeof original>) {
+      document.documentElement.dataset.portfolioDraws = String(Number(document.documentElement.dataset.portfolioDraws || 0) + 1);
+      return Reflect.apply(original, this, args);
+    };
+  });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Make complexity');
@@ -11,7 +18,7 @@ test('language changes real copy, persists and survives page navigation', async 
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('讓複雜業務');
   await expect(page.getByRole('heading', { name: '示範空間資料管理' })).toBeVisible();
-  await expect(page.locator('.portfolio-particle-canvas')).toHaveAttribute('data-active', 'true');
+  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0))).toBeGreaterThan(0);
   await page.screenshot({ path: 'outputs/browser/portfolio-language-zh.png', fullPage: false });
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
@@ -43,11 +50,18 @@ test('WebGL unavailable still gives working language and CSS click feedback', as
       if (type.startsWith('webgl')) return null;
       return Reflect.apply(original, this, [type, ...args]);
     } as typeof original;
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        const wave = node.matches('.portfolio-click-wave') ? node : node.querySelector('.portfolio-click-wave');
+        if (wave) document.documentElement.dataset.portfolioFallbackAnimation = getComputedStyle(wave).animationName;
+      }
+    }).observe(document, { childList: true, subtree: true });
   });
   await page.goto('/');
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
-  await expect(page.locator('.portfolio-click-wave')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-portfolio-fallback-animation', 'portfolio-wave');
 });
 
 test('mobile language controls remain reachable without horizontal overflow', async ({ page }) => {

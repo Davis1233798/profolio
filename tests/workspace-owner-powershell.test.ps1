@@ -1,9 +1,10 @@
 $ErrorActionPreference='Stop'
 $helper=Join-Path $PSScriptRoot '../scripts/bootstrap-workspace-owner.ps1'
-$secret='SyntheticOnly!123456'
+$secret='SyntheticOnly!繁體123456'
 $credential=[pscredential]::new('owner@example.test',(ConvertTo-SecureString $secret -AsPlainText -Force))
 $global:CapturedSshArguments=@();$global:CapturedSshInput='';$global:TransportExit=0;$global:TransportCalls=0
 function global:ssh {
+    if($OutputEncoding.WebName -ne 'utf-8'){throw 'Native SSH stdin must use UTF-8'} 
     $global:CapturedSshArguments=@($args)
     $global:CapturedSshInput=(@($input) -join "`n")
     $global:TransportCalls++

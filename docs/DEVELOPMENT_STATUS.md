@@ -6,9 +6,9 @@
 
 ## 目前開發
 
-- profolio 首頁效能：[PR #22](https://github.com/Davis1233798/profolio/pull/22) 移除導頁等待與整頁模糊，重用 WebGL 資源、停止閒置繪圖與畫面外卡片更新。架構／邊界與遠端測試先於實作；尚待遠端瀏覽器、審核、main 自動部署與正式版本核對。這不代表已測得使用者裝置 FPS。
+- profolio 首頁效能：[PR #22](https://github.com/Davis1233798/profolio/pull/22) 移除導頁等待與整頁模糊，重用 WebGL 資源、停止閒置繪圖與畫面外卡片更新。架構／邊界與遠端測試先於實作；遠端提交 `b08ff69` 的 web、infrastructure、station-delivery、Windows 與 k6 檢查皆通過，瀏覽器案例 7/7；已完成自主審核，尚待 GitHub PR head 同步、main 合併、自動部署與正式版本核對。這不代表已測得使用者裝置 FPS。
 
-- profolio：[PR #20](https://github.com/Davis1233798/profolio/pull/20) 加入 Three.js 點擊／導頁粒子特效與英文／繁中切換。架構與邊界、測試規格先於實作提交；遠端 Chromium 驗收與審核中，尚未合併或部署。
+- profolio：[PR #20](https://github.com/Davis1233798/profolio/pull/20) 加入 Three.js 點擊／導頁粒子特效與英文／繁中切換。架構與邊界、測試規格先於實作提交；已合併至 main，正式 release `3a29cce` 已包含此功能；目前正由 PR #22 修正繪圖與互動效能。
 - OCI 入口：[PR #19](https://github.com/Davis1233798/profolio/pull/19) 提供中央 Caddy 至 rootless MES 的 Unix socket 代理；已完成遠端 CI、審核與合併，主站 release 已包含此入口程式；rootless 主機配置及正式切換尚未完成。
 
 ## 最新主站與分站證據

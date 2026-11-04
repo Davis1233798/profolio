@@ -17,7 +17,8 @@ test('language changes real copy, persists and survives page navigation', async 
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('讓複雜業務');
-  await expect(page.getByRole('heading', { name: '示範空間資料管理' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '資料管理後台' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '下載 JSON 備份' })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0))).toBeGreaterThan(0);
   await page.screenshot({ path: 'outputs/browser/portfolio-language-zh.png', fullPage: false });
   await page.reload();

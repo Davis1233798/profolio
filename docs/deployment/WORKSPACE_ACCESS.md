@@ -10,6 +10,10 @@ Bootstrap the first owner with `scripts/workspace-auth-admin.ts` in the checked-
 
 ## Owner workflow
 
+Google OAuth 2.0 / OpenID Connect is optional until its private credentials are configured. In Google Cloud, create a Web application OAuth client and authorize the exact redirect URI `https://blockchen.duckdns.org/api/workspace-auth/callback/google` (replace the origin only when intentionally changing `BETTER_AUTH_URL`). Configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` privately for the portfolio runtime, alongside its auth secret. Do not enter the client secret in chat, source code or public environment examples. The Google button appears only when the provider is configured. Partial configuration fails closed.
+
+Google sign-in is limited to existing owner-created accounts; it cannot create a public visitor account or grant an administrator role. Matching requires Google to verify the email, and the linked provider subject identifies future sign-ins. The local invitation itself does not pretend an email-verification message was delivered. OAuth login does not replace the per-user workspace grant or download key. A real Google login/consent/callback acceptance still requires the owner's configured client; synthetic CI tests verify only the fixed authorization URL, state/PKCE cookies and rejection boundaries.
+
 1. Visit `/admin/workspace` and sign in with the bootstrapped account.
 2. Create a separate account for each person. Its immutable account ID is the authorization subject; the same account can log in from another device. A shared account cannot identify separate people.
 3. Grant the account access to the intended existing workspace ID. Possessing or typing a workspace UUID alone does not grant access.

@@ -6,6 +6,8 @@
 
 ## 目前開發
 
+- PR #21 另加入 Google OAuth 2.0／OpenID Connect：只允許既有帳號、固定回呼與驗證提供者身分，保留登入與下載金鑰雙重檢查。Google Client ID／Secret、擁有者初始化及真實 Google 回呼驗收尚待配置；不將合成測試等同正式 Google 登入成功。
+
 - profolio 資料管理與身分：[PR #21](https://github.com/Davis1233798/profolio/pull/21) 將公開備份工具移到真正登入的管理後台，加入個別帳號、擁有者簽發的使用者／空間／格式綁定下載金鑰、到期／撤銷／配額、還原獨立授權與限制。架構、程式邊界與測試先於實作提交；真實登入與金鑰的合成資料庫測試已在遠端執行，新版本持續驗證。尚未合併、部署、配置正式 owner 或發出正式金鑰，不以畫面已完成宣稱安全驗收完成。
 
 - profolio：[PR #20](https://github.com/Davis1233798/profolio/pull/20) 加入 Three.js 點擊／導頁粒子特效與英文／繁中切換。架構與邊界、測試規格先於實作提交；遠端 Chromium 驗收與審核中，尚未合併或部署。

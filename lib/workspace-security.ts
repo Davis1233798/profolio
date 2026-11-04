@@ -18,7 +18,7 @@ async function readJson<T>(request:Request):Promise<T> {
   try { return JSON.parse(new TextDecoder().decode(Buffer.concat(chunks))) as T; } catch { throw new WorkspaceSecurityError(400,"Invalid JSON"); }
 }
 
-export type WorkspaceSecurityConfig = { databasePath: string; baseURL: string; secret: string };
+export type WorkspaceSecurityConfig = { databasePath: string; baseURL: string; secret: string; googleClientId?:string; googleClientSecret?:string };
 type SessionUser = { id: string; email: string; name: string; role?: string; banned?: boolean };
 
 function validateConfig(config: WorkspaceSecurityConfig): void {
@@ -34,6 +34,7 @@ function consumeLimit(runtime:ReturnType<typeof openWorkspaceSecurity>,subject:s
 
 export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
   validateConfig(config);
+  if(Boolean(config.googleClientId)!==Boolean(config.googleClientSecret)) throw new WorkspaceSecurityError(503,"Google authentication is partially configured");
   const sqlite = new DatabaseSync(config.databasePath);
   sqlite.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
   const kysely = new Kysely({ dialect: new NodeSqliteDialect({ database: sqlite }) });
@@ -43,6 +44,8 @@ export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
     secret: config.secret,
     database: { db: kysely, type: 'sqlite', transaction: true },
     emailAndPassword: { enabled: true, minPasswordLength: 12, autoSignIn: false, disableSignUp: true },
+    socialProviders: config.googleClientId&&config.googleClientSecret?{google:{clientId:config.googleClientId,clientSecret:config.googleClientSecret,disableImplicitSignUp:true,disableSignUp:true}}:{},
+    account:{accountLinking:{enabled:true,trustedProviders:["google"],allowDifferentEmails:false,requireLocalEmailVerified:true}},
     plugins: [admin(), apiKey({ enableSessionForAPIKeys: false, disableKeyHashing: false, enableMetadata: true, keyExpiration: { minExpiresIn: 60 / 86400, maxExpiresIn: 30 } })],
     advanced: { useSecureCookies: true, defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: true } },
     session: { cookieCache: { enabled: false } },
@@ -65,20 +68,32 @@ export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
     sqlite.prepare("INSERT INTO security_audit(actor,event,target,created_at) VALUES(?,?,?,?)").run(actor,event,target,Date.now());
   }
   return {
-    auth, sqlite, initialize, getPrincipal, audit,
+    auth, sqlite, initialize, getPrincipal, audit, googleConfigured:Boolean(config.googleClientId&&config.googleClientSecret),
     async close() { await kysely.destroy(); },
   };
 }
 
 let production: ReturnType<typeof openWorkspaceSecurity> | undefined;
 function getRuntime() {
-  const config = { databasePath: process.env.WORKSPACE_AUTH_DATABASE ?? "", baseURL: process.env.BETTER_AUTH_URL ?? "", secret: process.env.BETTER_AUTH_SECRET ?? "" };
+  const config = { databasePath: process.env.WORKSPACE_AUTH_DATABASE ?? "", baseURL: process.env.BETTER_AUTH_URL ?? "", secret: process.env.BETTER_AUTH_SECRET ?? "",googleClientId:process.env.GOOGLE_CLIENT_ID,googleClientSecret:process.env.GOOGLE_CLIENT_SECRET };
   validateConfig(config);
   return production ??= openWorkspaceSecurity(config);
 }
 
 async function authHandler(request:Request,runtime:ReturnType<typeof openWorkspaceSecurity>,canonicalOrigin:string):Promise<Response> {
   const url = new URL(request.url);
+  if(request.method==="GET"&&url.pathname==="/api/workspace-auth/providers") return Response.json({google:runtime.googleConfigured},{headers:{"cache-control":"no-store"}});
+  if(request.method==="GET"&&url.pathname==="/api/workspace-auth/callback/google") {
+    if(url.origin!==canonicalOrigin||!runtime.googleConfigured) throw new WorkspaceSecurityError(runtime.googleConfigured?403:503,"Google callback unavailable");
+    await runtime.initialize(); return runtime.auth.handler(request);
+  }
+  if(request.method==="POST"&&url.pathname==="/api/workspace-auth/sign-in/social") {
+    if(!runtime.googleConfigured) throw new WorkspaceSecurityError(503,"Google authentication is not configured");
+    if(request.headers.get("origin")!==canonicalOrigin) throw new WorkspaceSecurityError(403,"Invalid origin");
+    await runtime.initialize();
+    const result=await runtime.auth.api.signInSocial({headers:request.headers,body:{provider:"google",callbackURL:`${canonicalOrigin}/admin/workspace`,requestSignUp:false,disableRedirect:true}});
+    return Response.json(result,{headers:{"cache-control":"no-store"}});
+  }
   const permitted = new Set(["/api/workspace-auth/sign-in/email", "/api/workspace-auth/sign-out", "/api/workspace-auth/change-password"]);
   if (!permitted.has(url.pathname) || (request.method !== "POST")) throw new WorkspaceSecurityError(404, "Not found");
   if (request.headers.get("origin") !== canonicalOrigin) throw new WorkspaceSecurityError(403, "Invalid origin");

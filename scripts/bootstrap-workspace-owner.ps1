@@ -13,6 +13,7 @@ if(-not $Credential){
 if(-not $Credential){throw 'Owner bootstrap cancelled.'}
 $password=$null
 $payload=$null
+$previousOutputEncoding=$OutputEncoding
 try {
     $email=$Credential.UserName
     try {$address=[System.Net.Mail.MailAddress]::new($email)} catch {throw 'A valid owner email is required.'}
@@ -24,11 +25,13 @@ try {
     # Fixed command: neither credential value is interpolated into remote shell text.
     $remoteCommand='cd /srv/business-suite/current/infra && sudo -n docker compose --project-name business-suite --env-file .env -f compose.yaml -f linux/compose.web.yaml exec -T web node /srv/app/operator/workspace-auth-admin.mjs'
     $payload=$email+"`n"+$password
+    $OutputEncoding=[System.Text.UTF8Encoding]::new($false)
     $global:LASTEXITCODE=0
     $null=$payload | & ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -- $HostAlias $remoteCommand 2>&1
     if($LASTEXITCODE -ne 0){throw 'Owner bootstrap failed or an owner already exists. No credentials are shown; inspect the private operator setup.'}
     Write-Output 'Owner bootstrap completed. Sign in at /admin/workspace using the supplied credentials.'
 } finally {
+    $OutputEncoding=$previousOutputEncoding
     $password=$null
     $payload=$null
     $Credential=$null

@@ -43,7 +43,7 @@ export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
     secret: config.secret,
     database: { db: kysely, type: 'sqlite', transaction: true },
     emailAndPassword: { enabled: true, minPasswordLength: 12, autoSignIn: false, disableSignUp: true },
-    plugins: [admin(), apiKey({ enableSessionForAPIKeys: false, disableKeyHashing: false, enableMetadata: true })],
+    plugins: [admin(), apiKey({ enableSessionForAPIKeys: false, disableKeyHashing: false, enableMetadata: true, keyExpiration: { minExpiresIn: 60 / 86400, maxExpiresIn: 30 } })],
     advanced: { useSecureCookies: true, defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: true } },
     session: { cookieCache: { enabled: false } },
     rateLimit: { enabled: true },

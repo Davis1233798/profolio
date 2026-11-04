@@ -13,8 +13,9 @@ export interface TenantBackup { format: "business-suite/v1"; organizationId: str
 
 export async function exportWorkspace(context: TenantContext): Promise<TenantBackup> {
   const db = getDb();
-  const queries = tables.map(table => db.select().from(table).where(eq((getTableColumns(table) as any).organizationId, context.organizationId)).orderBy(sql`rowid`));
+  const queries = tables.map(table => db.select().from(table).where(eq((getTableColumns(table) as any).organizationId, context.organizationId)).orderBy(sql`rowid`).limit(10001));
   const results = await db.batch(queries as any);
+  if ((results as unknown as any[][]).reduce((count, rows) => count + rows.length, 0) > 10000) throw new Error('Export exceeds the 10,000 record limit');
   return { format: "business-suite/v1", organizationId: context.organizationId, exportedAt: new Date().toISOString(), tables: Object.fromEntries(tables.map((table, index) => [getTableName(table), results[index]])) as TenantBackup["tables"] };
 }
 
@@ -92,7 +93,8 @@ export async function exportWorkspaceCsv(context: TenantContext, name: string) {
   const table = byName.get(name);
   if (!table) throw new Error("不支援的報表資料表");
   const columns = getTableColumns(table) as Record<string, any>;
-  const rows = await getDb().select().from(table).where(eq(columns.organizationId, context.organizationId)).orderBy(sql`rowid`);
+  const rows = await getDb().select().from(table).where(eq(columns.organizationId, context.organizationId)).orderBy(sql`rowid`).limit(10001);
+  if (rows.length > 10000) throw new Error('Export exceeds the 10,000 record limit');
   const headers = Object.keys(columns);
   return "\uFEFF" + generateCsv(headers, rows.map(row => headers.map(key => (row as any)[key])));
 }

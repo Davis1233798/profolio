@@ -7,6 +7,13 @@ import { createSqliteD1 } from '../../lib/db/sqlite-d1';
 import { organizations } from '../../db/schema';
 import { GET as download, POST as restore } from '../../app/api/workspace/backup/route';
 import { GET as csv } from '../../app/api/workspace/export/route';
+import { readWorkspaceJson, workspaceDownload } from '../../lib/workspace-http';
+
+test('workspace transfer bounds reject chunked oversized input and oversized downloads', async () => {
+  const request = new Request('https://portfolio.example.test/api/workspace/backup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: 'x'.repeat(100) }) });
+  await assert.rejects(readWorkspaceJson(request, 20), { status: 413 });
+  assert.throws(() => workspaceDownload('x'.repeat(10_000_001), 'backup.json', 'application/json'), { status: 413 });
+});
 
 test('protected workspace/auth requests never create anonymous demo organizations', async () => {
   const binding = createSqliteD1();

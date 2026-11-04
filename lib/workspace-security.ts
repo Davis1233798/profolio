@@ -190,7 +190,7 @@ export async function verifyWorkspaceRestorePassword(request: Request, password:
   if(typeof password!=="string"||password.length<12) throw new WorkspaceSecurityError(401,"Credential confirmation failed");
   const runtime=getRuntime();
   const access=await runtime.getPrincipal(request);
-    try { await runtime.auth.api.signInEmail({body:{email:access.email,password}}); }
+  try { await runtime.auth.api.verifyPassword({ headers: request.headers, body: { password } }); }
   catch { throw new WorkspaceSecurityError(401,"Credential confirmation failed"); }
   const workspaceId=new URL(request.url).searchParams.get("workspaceId")!;
   runtime.audit(access.id,"restore.password_confirmed",workspaceId);

@@ -6,7 +6,7 @@ const canonical = process.env.BETTER_AUTH_URL;
 const email = process.env.WORKSPACE_BOOTSTRAP_EMAIL;
 const password = process.env.WORKSPACE_BOOTSTRAP_PASSWORD;
 assert.ok(canonical?.startsWith('https://'), 'CI must supply a synthetic canonical HTTPS origin');
-assert.ok(email?.endsWith('.example.test') && password?.length >= 12, 'CI-only synthetic owner credentials are required');
+assert.ok(email?.endsWith('@example.test') && password?.length >= 12, 'CI-only synthetic owner credentials are required');
 
 function operator(args, input = '') {
   return spawnSync('docker', ['compose', '-f', 'infra/compose.yaml', '-f', 'infra/linux/compose.web.yaml', 'exec', '-T', ...args], {

@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+test('workspace tools require a real account and public exports reject demo cookies', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Download JSON backup', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Workspace administration', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/workspace$/);
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate key', exact: true })).toHaveCount(0);
+  const denied = await page.request.get('/api/workspace/backup', { headers: { cookie: 'demo_user_role=admin; demo_session_id=12345678-1234-4123-8123-123456789abc' } });
+  expect([401, 503]).toContain(denied.status());
+  expect(denied.headers()['cache-control']).toBe('no-store');
+});
+
 test('language changes real copy, persists and survives page navigation', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

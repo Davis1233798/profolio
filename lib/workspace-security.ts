@@ -97,7 +97,7 @@ async function management(request:Request,runtime:ReturnType<typeof openWorkspac
   const route = url.pathname.slice("/api/workspace-admin/".length);
   const actor = await runtime.getPrincipal(request);
   const isOwner = actor.role === "admin";
-  if (["users", "memberships", "keys", "keys/revoke", "audit"].includes(route) && !isOwner) throw new WorkspaceSecurityError(403, "Owner required");
+  if (route !== 'session' && route !== 'workspaces' && !isOwner) throw new WorkspaceSecurityError(403, "Owner required");
   if (request.method !== "GET" && request.headers.get("origin") !== canonicalOrigin) throw new WorkspaceSecurityError(403, "Invalid origin");
   if (request.method === "POST" && route === "users") {
     const body = await readJson<{ email?: string; password?: string; name?: string }>(request);

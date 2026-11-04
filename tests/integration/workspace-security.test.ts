@@ -55,6 +55,12 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie,key.secret,"/api/workspace/export?workspaceId=workspace-a&table=pos_sales"),"pos_sales",security.runtime,"https://portfolio.example.test"),{status:403},"revoked key is denied immediately");
     const denied = await security.request("/api/workspace-admin/users", { method: "POST", headers: { cookie: userCookie, origin: "https://portfolio.example.test", "content-type": "application/json" }, body: JSON.stringify({ email: "b@example.test", password: "CI-user-B-password-9931", name: "B" }) });
     assert.equal(denied.status, 403, "ordinary users cannot create accounts");
+    for (const action of ['users/suspend', 'users/restore', 'memberships', 'keys']) {
+      const denied = await security.request(`/api/workspace-admin/${action}`, { method: 'POST', headers: { cookie: userCookie, origin: 'https://portfolio.example.test', 'content-type': 'application/json' }, body: JSON.stringify({ userId: sessionBody.user.id }) });
+      assert.equal(denied.status, 403, `ordinary user cannot call ${action}`);
+    }
+    const csrf = await security.request('/api/workspace-admin/users/suspend', { method: 'POST', headers: { cookie: cookieHeader, origin: 'https://attacker.example.test', 'content-type': 'application/json' }, body: JSON.stringify({ userId: aliceId }) });
+    assert.equal(csrf.status, 403);
 
     const fake = await security.request("/api/workspace-admin/session", { headers: { cookie: "demo_user_role=admin; demo_session_id=forged" } });
     assert.equal(fake.status, 401, "demo cookies do not create a Better Auth session");

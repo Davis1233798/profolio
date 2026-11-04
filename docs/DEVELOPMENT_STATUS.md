@@ -2,12 +2,17 @@
 
 此文件以 2026-11-04 已查得的 GitHub 與 OCI 證據為基準，記錄程式合併、CI、正式部署及端到端驗收的不同證據。Web 版在既有 OCI 主機運行；MES、ERP、CRM 桌面 client-server 使用本地 Windows。合併或 CI 通過不代表所有服務已更新、資料已遷移或 UI/主機驗收完成。各項工作仍依 `engineering/LOOP.md` 更新。
 
+## 目前開發
+
+- profolio：[PR #20](https://github.com/Davis1233798/profolio/pull/20) 加入 Three.js 點擊／導頁粒子特效與英文／繁中切換。架構與邊界、測試規格先於實作提交；遠端 Chromium 驗收與審核中，尚未合併或部署。
+- OCI 入口：[PR #19](https://github.com/Davis1233798/profolio/pull/19) 提供中央 Caddy 至 rootless MES 的 Unix socket 代理；遠端 CI 已通過，尚待最終審核、主機配置及正式切換。
+
 ## 最新主站與分站證據
 
 | 系統 | 最新已合併變更 | 遠端證據 | 部署／驗收狀態與剩餘工作 |
 |---|---|---|---|
 | 主站／Web 部署 | [profolio PR #17](https://github.com/Davis1233798/profolio/pull/17) 控制 `mes.<BASE_DOMAIN>` 路由模式。 | 主機唯讀檢查顯示 `/srv/business-suite/current` 指向 release `48039da886a2f5317430cb01d831f1f847af8435-20261103124642`；外部 `GET https://blockchen.duckdns.org/api/health` 回 `success=true`、資料庫 `connected`。 | GitHub Deployments API 無紀錄不會抹除 OCI 主機直接證據。此證據確認主站 release pointer 與 health；各站版本、資料 migration/還原及逐站瀏覽器驗收仍分別核對。 |
-| MES／ForgeFlow | 最新已合併單站 PR：[ #7 權限強化](https://github.com/Davis1233798/business-suite-mes/pull/7)；另有 [#6 migration 合約](https://github.com/Davis1233798/business-suite-mes/pull/6)、[#5 Windows 身分/資料隔離](https://github.com/Davis1233798/business-suite-mes/pull/5)、[#4 隔離部署](https://github.com/Davis1233798/business-suite-mes/pull/4)。 | PR 合併與 CI 僅證明原始碼檢查；本次沒有用舊 workflow run 代替目前 OCI 版本或桌面端驗收。 | Web 版使用既有 OCI。MES 獨立 rootless 部署設定、公開路由、正式資料 migration/備份還原及瀏覽器驗收待完成。桌面 client-server 使用本地 Windows，安裝、啟動、登入、資料隔離與連線驗收待完成。 |
+| MES／ForgeFlow | [#8 成品入庫](https://github.com/Davis1233798/business-suite-mes/pull/8)、[#9 既有 OCI 共存](https://github.com/Davis1233798/business-suite-mes/pull/9)、[#10 執行檔版本識別](https://github.com/Davis1233798/business-suite-mes/pull/10) 均已合併；最新 main `318ccebe5f2ef2b3de27c8e0fb00d1365cd71a10`。 | 各 PR 的 Linux／Windows 檢查通過；合併後發版另行追蹤，不等同已部署。 | Web 版使用既有 OCI。獨立 rootless 執行環境、公開路由、正式資料 migration/備份還原及瀏覽器驗收待完成。桌面 client-server 使用本地 Windows，安裝、啟動、登入、資料隔離與連線驗收待完成。 |
 | ERP | 最新已合併 PR：[ #3 Windows 身分與資料隔離](https://github.com/Davis1233798/business-suite-erp/pull/3)。 | PR 與 workflow 狀態只作為程式證據；正式主機及用戶端仍需獨立驗收。 | Web 版使用既有 OCI；桌面 client-server 使用本地 Windows。OCI 站台路由/版本、資料 migration/還原、正式資料演練、UI/瀏覽器驗收，以及 Windows 安裝與連線驗收待完成。 |
 | CRM | 最新已合併 PR：[ #2 Windows 身分與資料隔離](https://github.com/Davis1233798/business-suite-crm/pull/2)。 | PR 與 workflow 狀態只作為程式證據；正式主機及用戶端仍需獨立驗收。 | Web 版使用既有 OCI；桌面 client-server 使用本地 Windows。OCI 站台路由/版本、資料 migration/還原、正式資料演練、UI/瀏覽器驗收，以及 Windows 安裝與連線驗收待完成。 |
 | Shop／MarketLane | 最新已合併 PR：[ #8 Go 店面接到結帳](https://github.com/Davis1233798/business-suite-shop/pull/8)；此前 #7 優惠券、#6 退貨退款、#5 出貨操作亦已合併。 | PR 與 workflow 只證明程式/CI 狀態。 | Web 版使用既有 OCI。正式發布/路由、資料 migration、瀏覽器與行動裝置端到端驗收待辦；付款與出貨目前依功能設計使用模擬流程，未記為正式第三方串接要求。 |

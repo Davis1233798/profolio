@@ -10,13 +10,14 @@ const secret="synthetic-google-oidc-test-secret-32-bytes-minimum";
 
 test("Google provider is unavailable when either server credential is missing", async()=>{
   const dir=await mkdtemp(join(tmpdir(),"workspace-google-"));
-  const security=await createWorkspaceSecurityForTest({databasePath:join(dir,"auth.sqlite"),baseURL,secret,googleClientId:"synthetic-client-id"});
+  const security=await createWorkspaceSecurityForTest({databasePath:join(dir,"auth.sqlite"),baseURL,secret});
   try {
     const response=await security.request("/api/workspace-auth/providers");
     assert.equal(response.status,200); assert.deepEqual(await response.json(),{google:false});
     const start=await security.request("/api/workspace-auth/sign-in/social",{method:"POST",headers:{origin:baseURL,"content-type":"application/json"},body:JSON.stringify({provider:"google"})});
     assert.equal(start.status,503);
   } finally { await security.close(); await rm(dir,{recursive:true,force:true}); }
+  await assert.rejects(createWorkspaceSecurityForTest({databasePath:":memory:",baseURL,secret,googleClientId:"partial-client-id"}),{status:503});
 });
 
 test("Google social start fixes provider and callback and ignores injected OAuth authority",async()=>{

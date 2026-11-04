@@ -11,6 +11,7 @@ let input: ReturnType<typeof createInterface> | undefined;
 let store: ReturnType<typeof openWorkspaceSecurity> | undefined;
 try {
   store = openWorkspaceSecurity(config);
+  if (stdin.isTTY) throw new Error("Bootstrap password must be piped through private stdin; interactive terminal input is refused to prevent echo.");
   await store.initialize();
   if (stdin.isTTY) throw new Error("Bootstrap password must be piped through private stdin; interactive terminal input is refused to prevent echo.");
   const existing = store.sqlite.prepare("SELECT id FROM user WHERE role='admin' LIMIT 1").get();

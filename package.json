@@ -25,7 +25,7 @@
     "test:infra": "python -m unittest discover -s infra/tests -v",
     "engineering:check": "node scripts/engineering-check.mjs",
     "infra:preview": "node scripts/preview-infrastructure.mjs",
-    "postbuild": "node scripts/verify-navigation-build.mjs"
+    "postbuild": "node scripts/build-workspace-auth-admin.mjs && node scripts/verify-navigation-build.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

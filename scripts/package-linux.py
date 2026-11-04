@@ -10,6 +10,8 @@ if not Path('web-dist/index.html').is_file():
     raise SystemExit('Run npm run web:build before packaging')
 if not Path('dist/server/index.js').is_file():
     raise SystemExit('Run npm run build before packaging')
+if not Path('dist/operator/workspace-auth-admin.mjs').is_file():
+    raise SystemExit('Run npm run build to bundle the private workspace owner operator')
 subprocess.run(['node','scripts/verify-navigation-build.mjs'],check=True)
 
 def clean(info):

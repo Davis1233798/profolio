@@ -43,4 +43,9 @@ assert.equal(JSON.stringify(sessionBody).includes(sessionCookie.split('=')[1]), 
 const repeated = operator(['web', 'node', '/srv/app/operator/workspace-auth-admin.mjs'], input);
 assert.notEqual(repeated.status, 0, 'second bootstrap must refuse an existing owner');
 assert.equal(combined(repeated).includes(password), false, 'refusal output must not expose the password');
+const logs = spawnSync('docker', ['compose', '-f', 'infra/compose.yaml', '-f', 'infra/linux/compose.web.yaml', 'logs', '--no-color', 'web'], {
+  cwd: process.cwd(), encoding: 'utf8', timeout: 30000, env: process.env,
+});
+assert.equal(logs.status, 0, 'web logs must be readable for the secret-leak assertion');
+assert.equal(combined(logs).includes(password), false, 'runtime logs must not contain the bootstrap password');
 process.stdout.write('Workspace owner bootstrap container acceptance passed.\n');

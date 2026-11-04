@@ -39,7 +39,7 @@ test('reduced motion keeps language and links usable without WebGL', async ({ pa
 test('WebGL unavailable still gives working language and CSS click feedback', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
       if (type.startsWith('webgl')) return null;
       return Reflect.apply(original, this, [type, ...args]);
     } as typeof original;

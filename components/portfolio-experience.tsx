@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type MouseEvent } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Globe2 } from 'lucide-react';
 import { readPortfolioLocale, savePortfolioLocale, shouldAnimateInteraction, type PortfolioLocale } from '@/lib/portfolio-experience';
 import './portfolio-experience.css';
@@ -19,10 +19,14 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const content = useRef<HTMLDivElement>(null);
   const sequence = useRef(0);
   const pathname = usePathname();
-  const router = useRouter();
-  const navigation = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (navigation.current) clearTimeout(navigation.current); }, []);
   const initialized = useRef(false);
+  const controller = useRef<{ play(pulse: ParticlePulse): void; dispose(): void } | null>(null);
+  const controllerLoading = useRef(false);
+  const latestPulse = useRef<ParticlePulse | null>(null);
+  const mounted = useRef(true);
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
+  latestPulse.current = pulse;
   const activate = (x: number, y: number, kind: ParticlePulse['kind']) => setPulse({ id: ++sequence.current, x, y, kind });
   useEffect(() => {
     try { setLocale(readPortfolioLocale(window.localStorage)); } catch { /* Storage may be disabled. */ }
@@ -38,19 +42,24 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   }, [pathname]);
   useEffect(() => {
     if (reduced) return;
-    const animation = content.current?.animate([{ opacity: .65, filter: 'blur(3px)', transform: 'translateY(8px)' }, { opacity: 1, filter: 'blur(0)', transform: 'translateY(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    const animation = content.current?.animate([{ opacity: .82, transform: 'translateY(5px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 240, easing: 'cubic-bezier(.2,.7,.2,1)' });
     return () => animation?.cancel();
   }, [pathname, locale, reduced]);
   useEffect(() => {
-    if (!pulse || reduced || !canvas.current) return;
-    let disposed = false;
-    let stop: (() => void) | undefined;
+    if (reduced) { controller.current?.dispose(); controller.current = null; return; }
+    if (!pulse || !canvas.current) return;
+    if (controller.current) { controller.current.play(pulse); return; }
+    if (controllerLoading.current) return;
+    controllerLoading.current = true;
     const surface = canvas.current;
-    import('./portfolio-particles').then(({ playParticles }) => {
-      if (!disposed) stop = playParticles(surface, pulse);
-    }).catch(() => { /* CSS pulse remains available without WebGL. */ });
-    return () => { disposed = true; stop?.(); };
+    import('./portfolio-particles').then(({ createParticleController }) => {
+      controllerLoading.current = false;
+      if (!mounted.current || reducedRef.current || !surface.isConnected) return;
+      controller.current = createParticleController(surface);
+      if (latestPulse.current) controller.current.play(latestPulse.current);
+    }).catch(() => { controllerLoading.current = false; /* CSS pulse remains available without WebGL. */ });
   }, [pulse, reduced]);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.dispose(); controller.current = null; }; }, []);
   useEffect(() => {
     if (!pulse) return;
     const timeout = window.setTimeout(() => setPulse(current => current?.id === pulse.id ? null : current), 1150);
@@ -62,19 +71,6 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     if (!element || element.closest('[data-no-particles]') || !shouldAnimateInteraction({ tag: element.tagName, button: event.button, metaKey: event.metaKey, ctrlKey: event.ctrlKey, altKey: event.altKey, shiftKey: event.shiftKey, download: element.hasAttribute('download'), disabled: element.hasAttribute('disabled') || element.getAttribute('aria-disabled') === 'true' })) return;
     const rect = element.getBoundingClientRect();
     activate(event.detail ? event.clientX : rect.left + rect.width / 2, event.detail ? event.clientY : rect.top + rect.height / 2, 'click');
-    // Give the departure burst a visible first beat; never hold forms, downloads or modified clicks.
-    if (!reduced && element instanceof HTMLAnchorElement && !element.target && !element.hasAttribute('data-no-transition')) {
-      const url = new URL(element.href, window.location.href);
-      if (['http:', 'https:'].includes(url.protocol) && !url.pathname.startsWith('/api/') && (url.origin !== window.location.origin || url.pathname !== window.location.pathname || url.search !== window.location.search)) {
-        event.preventDefault();
-        if (navigation.current) clearTimeout(navigation.current);
-        navigation.current = setTimeout(() => {
-          navigation.current = null;
-          if (url.origin === window.location.origin) router.push(url.pathname + url.search + url.hash);
-          else window.location.assign(url.href);
-        }, 220);
-      }
-    }
   };
   const changeLanguage = (next: PortfolioLocale, target: HTMLButtonElement) => {
     if (next === locale) return;

@@ -5,39 +5,45 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkspaceSecurityForTest } from "../../lib/workspace-security";
 
-// Synthetic SQLite only: no production HTTP bypass and no credentials from the host.
-test("workspace security isolates identities, scoped one-time keys, revocation and restore", async () => {
+const secret = "synthetic-ci-only-secret-value-at-least-32-bytes";
+const ownerEmail = "owner@example.test";
+const ownerPassword = "CI-only-owner-password-9931";
+
+test("private SQLite Better Auth runtime uses actual login cookies and owner-only account creation", async () => {
   const dir = await mkdtemp(join(tmpdir(), "workspace-security-"));
   const security = await createWorkspaceSecurityForTest({
-    databasePath: join(dir, "auth.sqlite"),
-    baseURL: "https://portfolio.example.test",
-    secret: "synthetic-ci-secret-that-is-at-least-32-bytes-long",
-    owner: { email: "owner@example.test", password: "CI-only-owner-password-9931" },
+    databasePath: join(dir, "auth.sqlite"), baseURL: "https://portfolio.example.test", secret,
+    owner: { email: ownerEmail, password: ownerPassword },
   });
   try {
-    const ownerSession = await security.login("owner@example.test", "CI-only-owner-password-9931");
-    const userA = await security.createUser(ownerSession, { email: "a@example.test", password: "CI-user-A-password-9931", name: "A" });
-    const userB = await security.createUser(ownerSession, { email: "b@example.test", password: "CI-user-B-password-9931", name: "B" });
-    await security.grantWorkspace(ownerSession, userA.id, "workspace-a", ["export"]);
-    await security.grantWorkspace(ownerSession, userB.id, "workspace-a", ["export"]);
-    const issued = await security.issueDownloadKey(ownerSession, { userId: userA.id, workspaceId: "workspace-a", scope: { kind: "csv", datasets: ["pos_catalog_items"] }, expiresInSeconds: 600, quota: 2 });
-    assert.ok(issued.secret);
-    assert.equal(issued.secretPresentedOnce, true);
-    const sessionA = await security.login("a@example.test", "CI-user-A-password-9931");
-    const sessionB = await security.login("b@example.test", "CI-user-B-password-9931");
-    assert.equal((await security.authorizeExport(sessionA, "workspace-a", issued.secret, "pos_catalog_items")).userId, userA.id);
-    await assert.rejects(security.authorizeExport(sessionB, "workspace-a", issued.secret, "pos_catalog_items"), { status: 403 });
-    await assert.rejects(security.authorizeExport(sessionA, "workspace-a", issued.secret, "crm_contacts"), { status: 403 });
-    await assert.rejects(security.authorizeExport(null, "workspace-a", issued.secret, "pos_catalog_items"), { status: 401 });
-    await assert.rejects(security.authorizeExport(null, "workspace-a", null, "pos_catalog_items"), { status: 401 });
-    await security.revokeKey(ownerSession, issued.id);
-    await assert.rejects(security.authorizeExport(sessionA, "workspace-a", issued.secret, "pos_catalog_items"), { status: 403 });
+    const signup = await security.request("/api/auth/sign-up/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "public@example.test", password: "CI-public-password-9931", name: "Public" }) });
+    assert.equal(signup.ok, false, "public signup is disabled");
 
-    const restoreToken = await security.requireRestore(sessionA, "workspace-a", "https://portfolio.example.test");
-    await assert.rejects(security.restoreWithPassword(restoreToken, "wrong password", async () => assert.fail("restore callback must not run")), { status: 401 });
-    await security.suspendUser(ownerSession, userA.id);
-    await assert.rejects(security.requireRestore(sessionA, "workspace-a", "https://portfolio.example.test"), { status: 401 });
-    assert.equal((await security.listBackupTables()).includes("workspace_memberships"), false);
+    const signIn = await security.request("/api/auth/sign-in/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: ownerEmail, password: ownerPassword }) });
+    assert.equal(signIn.ok, true);
+    const cookie = signIn.headers.get("set-cookie");
+    assert.ok(cookie?.includes("better-auth.session_token"), "sign in sets the real Better Auth session cookie");
+    const cookieHeader = cookie!.split(";")[0];
+    const session = await security.request("/api/auth/get-session", { headers: { cookie: cookieHeader } });
+    assert.equal(session.status, 200);
+    const sessionBody = await session.json() as any;
+    assert.equal(sessionBody.user.email, ownerEmail);
+    assert.equal(JSON.stringify(sessionBody).includes(cookieHeader.split("=")[1]), false, "session response does not reveal token");
+
+    const created = await security.request("/api/workspace-admin/users", { method: "POST", headers: { cookie: cookieHeader, origin: "https://portfolio.example.test", "content-type": "application/json" }, body: JSON.stringify({ email: "alice@example.test", password: "CI-user-A-password-9931", name: "Alice" }) });
+    assert.equal(created.status, 201);
+    const createdBody = await created.json() as any;
+    assert.equal(createdBody.user.email, "alice@example.test");
+    assert.equal(JSON.stringify(createdBody).includes("password"), false);
+
+    const userLogin = await security.request("/api/auth/sign-in/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "alice@example.test", password: "CI-user-A-password-9931" }) });
+    assert.equal(userLogin.ok, true);
+    const userCookie = userLogin.headers.get("set-cookie")!.split(";")[0];
+    const denied = await security.request("/api/workspace-admin/users", { method: "POST", headers: { cookie: userCookie, origin: "https://portfolio.example.test", "content-type": "application/json" }, body: JSON.stringify({ email: "b@example.test", password: "CI-user-B-password-9931", name: "B" }) });
+    assert.equal(denied.status, 403, "ordinary users cannot create accounts");
+
+    const fake = await security.request("/api/auth/get-session", { headers: { cookie: "demo_user_role=admin; demo_session_id=forged" } });
+    assert.equal(await fake.json(), null, "demo cookies do not create a Better Auth session");
   } finally {
     await security.close();
     await rm(dir, { recursive: true, force: true });

@@ -45,6 +45,10 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     const keyResponse=await security.request("/api/workspace-admin/keys",{method:"POST",headers:{cookie:cookieHeader,origin:"https://portfolio.example.test","content-type":"application/json"},body:JSON.stringify({userId:aliceId,workspaceId:"workspace-a",scope:{kind:"csv",datasets:["pos_sales"]},expiresInSeconds:600,quota:2})});
     assert.equal(keyResponse.status,201);
     const key=await keyResponse.json() as any;
+    const listed = await security.request('/api/workspace-admin/keys', { headers: { cookie: cookieHeader } });
+    assert.equal(JSON.stringify(await listed.json()).includes(key.secret), false, 'raw key is never returned by list');
+    const stored = security.runtime.sqlite.prepare('SELECT key FROM apikey WHERE id=?').get(key.id) as { key: string };
+    assert.notEqual(stored.key, key.secret, 'only a hash of the secret is persisted');
     const exportRequest=(cookieValue:string,keyValue:string,url="/api/workspace/export?workspaceId=workspace-a")=>new Request(new URL(url,"https://portfolio.example.test"),{headers:{cookie:cookieValue,"x-workspace-download-key":keyValue,origin:"https://portfolio.example.test"}});
     const permitted=await authorizeWorkspaceExportForTest(exportRequest(userCookie,key.secret,"/api/workspace/export?workspaceId=workspace-a&table=pos_sales"),"pos_sales",security.runtime,"https://portfolio.example.test");
     assert.equal(permitted.userId,aliceId);
@@ -61,6 +65,22 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     }
     const csrf = await security.request('/api/workspace-admin/users/suspend', { method: 'POST', headers: { cookie: cookieHeader, origin: 'https://attacker.example.test', 'content-type': 'application/json' }, body: JSON.stringify({ userId: aliceId }) });
     assert.equal(csrf.status, 403);
+
+    async function issue(quota: number) {
+      const response = await security.request('/api/workspace-admin/keys', { method: 'POST', headers: { cookie: cookieHeader, origin: 'https://portfolio.example.test', 'content-type': 'application/json' }, body: JSON.stringify({ userId: aliceId, workspaceId: 'workspace-a', scope: { kind: 'csv', datasets: ['pos_sales'] }, expiresInSeconds: 600, quota }) });
+      assert.equal(response.status, 201);
+      return await response.json() as { id: string; secret: string };
+    }
+    const singleUse = await issue(1);
+    await authorizeWorkspaceExportForTest(exportRequest(userCookie, singleUse.secret), 'pos_sales', security.runtime, 'https://portfolio.example.test');
+    await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie, singleUse.secret), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 }, 'download quota cannot be exceeded');
+    const expired = await issue(10);
+    security.runtime.sqlite.prepare('UPDATE workspace_download_keys SET expires_at=? WHERE key_id=?').run(Date.now() - 1000, expired.id);
+    await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie, expired.secret), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 }, 'expired workspace grant is denied');
+    const foreign = await issue(10);
+    await assert.rejects(authorizeWorkspaceExportForTest(exportRequest(userCookie, foreign.secret, '/api/workspace/export?workspaceId=workspace-b'), 'pos_sales', security.runtime, 'https://portfolio.example.test'), { status: 403 }, 'key cannot select another workspace');
+    const keyOnly = await security.request('/api/workspace-admin/session', { headers: { 'x-workspace-download-key': foreign.secret, 'x-api-key': foreign.secret } });
+    assert.equal(keyOnly.status, 401, 'a key cannot create an authenticated session');
 
     const fake = await security.request("/api/workspace-admin/session", { headers: { cookie: "demo_user_role=admin; demo_session_id=forged" } });
     assert.equal(fake.status, 401, "demo cookies do not create a Better Auth session");

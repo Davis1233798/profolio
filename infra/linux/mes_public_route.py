@@ -21,6 +21,11 @@ ROUTES = {
         'overlay': 'linux/compose.mes-public-route.yaml',
         'network': 'business-suite-mes_default',
     },
+    'rootless': {
+        'upstream': 'unix//run/mes-ingress/upstream.sock',
+        'overlay': 'linux/compose.mes-rootless-route.yaml',
+        'network': None,
+    },
 }
 KEY = 'MES_PUBLIC_ROUTE'
 
@@ -47,7 +52,7 @@ def _parse_value(value):
     else:
         value = value.split('#', 1)[0].strip()
     if value not in ROUTES:
-        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared or isolated')
+        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared, isolated or rootless')
     return value
 
 
@@ -66,13 +71,13 @@ def read_route(path):
 
 def route_config(mode):
     if mode not in ROUTES:
-        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared or isolated')
+        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared, isolated or rootless')
     return {'mode': mode, **ROUTES[mode]}
 
 
 def set_route(path, mode):
     if mode not in ROUTES:
-        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared or isolated')
+        raise RouteConfigError('MES_PUBLIC_ROUTE must be shared, isolated or rootless')
     target = _read_target(path)
     original = target.read_bytes()
     try:
@@ -149,6 +154,51 @@ def validate_go_health(payload):
     )
 
 
+def validate_socket_path(path='/run/mes-ingress/upstream.sock', expected_uid=0, *, require_root_path=True):
+    """Validate the fixed root-owned Unix socket boundary without following links."""
+    import stat
+
+    expected = Path('/run/mes-ingress/upstream.sock') if require_root_path else Path(path)
+    candidate = Path(path)
+    if require_root_path and candidate != expected:
+        raise ValueError('MES ingress socket path is fixed')
+    current = Path('/')
+    for part in candidate.parts[1:]:
+        current = current / part
+        info = current.lstat()
+        if stat.S_ISLNK(info.st_mode):
+            raise ValueError('MES ingress path must not contain symlinks')
+        if current in {Path('/'), Path('/run')} and (info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) & 0o022):
+            raise ValueError('MES ingress ancestor ownership or mode is unsafe')
+        if current == candidate.parent:
+            if not stat.S_ISDIR(info.st_mode) or info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) != 0o755:
+                raise ValueError('MES ingress directory ownership or mode is unsafe')
+        elif current == candidate:
+            if not stat.S_ISSOCK(info.st_mode) or info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) != 0o600:
+                raise ValueError('MES ingress socket ownership or mode is unsafe')
+    return candidate
+
+
+def check_unix_health():
+    import http.client
+    import socket
+
+    class UnixHTTPConnection(http.client.HTTPConnection):
+        def connect(self):
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.sock.settimeout(5)
+            self.sock.connect(str(validate_socket_path()))
+
+    connection = UnixHTTPConnection('localhost', timeout=5)
+    connection.request('GET', '/api/health', headers={'Host': 'mes.internal'})
+    response = connection.getresponse()
+    payload = response.read()
+    connection.close()
+    if response.status != 200 or not validate_go_health(payload):
+        raise ValueError('MES Go health through the Unix ingress is not ready')
+    return payload
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -161,6 +211,7 @@ def main():
     config.add_argument('mode', choices=sorted(ROUTES))
     health = commands.add_parser('check-health')
     health.add_argument('--json', action='store_true')
+    commands.add_parser('check-unix-health')
     args = parser.parse_args()
 
     if args.command == 'get':
@@ -178,6 +229,14 @@ def main():
             return 1
         if args.json:
             print(payload.decode('utf-8'))
+    elif args.command == 'check-unix-health':
+        import sys
+        try:
+            payload = check_unix_health()
+        except (OSError, ValueError) as error:
+            print(str(error), file=sys.stderr)
+            return 1
+        print(payload.decode('utf-8'))
     return 0
 
 

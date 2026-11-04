@@ -39,6 +39,9 @@ for option in "$@"; do
         [[ "$mes_state" == running && "$mes_health" == healthy ]] || { echo 'Isolated mes-station must be running and healthy before enabling its public route.' >&2; exit 1; }
         curl --fail --silent --show-error --max-time 5 http://127.0.0.1:18095/api/health | python3 linux/mes_public_route.py check-health >/dev/null
         args+=(-f linux/compose.mes-public-route.yaml)
+      elif [[ "$route_mode" == rootless ]]; then
+        sudo -n python3 linux/mes_public_route.py check-unix-health >/dev/null
+        args+=(-f linux/compose.mes-rootless-route.yaml)
       fi
       ;;
     *) echo 'Usage: bash linux/apply.sh [--https | --web | --public-web | --public-sites]' >&2; exit 1;;

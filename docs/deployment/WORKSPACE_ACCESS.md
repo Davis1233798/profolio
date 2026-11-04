@@ -28,3 +28,16 @@ Restore is separate: it requires an owner account, explicit restore membership, 
 ## Verification and limits
 
 Before enabling production access, remote tests must demonstrate unauthenticated rejection, real login, cross-user key denial, scope enforcement, expiry/revocation/quota and durable limits, CSRF rejection, bounded input/output and transactional restore. Check the real OCI endpoints after deployment. A green build or a rendered login form does not establish that production identity/key issuance is configured. No production owner or download key has been created by adding these files.
+
+## Private Google client JSON import
+
+After creating the Web OAuth client, retain its downloaded JSON outside the repository. The operator-only importer is defined in [the configuration boundary](../engineering/GOOGLE_PRIVATE_CONFIG.md). Once that importer is deployed, PowerShell can send the private file directly over SSH stdin without putting its contents in command arguments:
+
+```powershell
+Get-Content -Raw -LiteralPath 'C:\Private\google-web-client.json' | ssh -o StrictHostKeyChecking=yes oci-jkes-1 'python3 /srv/business-suite/current/infra/linux/configure-google-oauth.py'
+```
+
+Use the actual private path. The script requires the exact configured callback, preserves the existing auth secret, refuses public/symlink targets and existing credentials unless `--replace` explicitly requests rotation. It prints no client values and does not restart services. After import, rerun the latest successful main GitHub Actions deployment so the runtime receives the private values; verify the provider becomes available and then perform real owner Google login. Do not assume import alone creates an owner or proves a successful Google callback. No real client JSON has been imported by adding this documentation.
+## Windows owner initialization
+
+Once the container CLI is deployed, run `./scripts/bootstrap-workspace-owner.ps1` from the reviewed checkout on your Windows computer. The credential prompt collects the owner email and chosen password locally, then sends them over the existing verified `oci-jkes-1` SSH connection into the fixed container CLI. The helper does not store the password or put it in command arguments. It requires existing SSH key access and refuses to replace an existing owner. After success, sign in at `/admin/workspace`. The helper is not an automatic signup route and has not been run against the production owner account by adding these files.

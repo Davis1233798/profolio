@@ -31,6 +31,17 @@ jobs:
       - run: node scripts/smoke-platform-control.mjs http://127.0.0.1:8090
       - run: node scripts/smoke-station-isolation.mjs http://127.0.0.1:8090
       - run: node scripts/smoke-mes-projection-web.mjs http://127.0.0.1:8090
+      - name: Install Chromium for portfolio motion and language acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Verify portfolio language, navigation, WebGL fallback and reduced motion
+        run: npx playwright test --config playwright.portfolio.config.ts
+      - name: Upload portfolio browser acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portfolio-browser-${{ github.sha }}
+          path: outputs/browser/
+          if-no-files-found: warn
       - if: always()
         run: docker compose -f infra/compose.yaml -f infra/linux/compose.web.yaml stop
   infrastructure:

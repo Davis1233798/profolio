@@ -7,7 +7,7 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
   try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' }); }
   catch { return { play() {}, dispose() {} }; }
 
-  const width = Math.max(1, window.innerWidth), height = Math.max(1, window.innerHeight);
+  let width = Math.max(1, window.innerWidth), height = Math.max(1, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
   renderer.setSize(width, height, false);
   renderer.setClearColor(0x000000, 0);
@@ -58,6 +58,10 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
   return {
     play(pulse) {
       if (disposed || lost) return;
+      if (width !== window.innerWidth || height !== window.innerHeight) {
+        width = Math.max(1, window.innerWidth); height = Math.max(1, window.innerHeight);
+        renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix();
+      }
       generation++;
       if (frame) cancelAnimationFrame(frame);
       frame = 0; active = true; started = performance.now();

@@ -24,6 +24,8 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const controllerLoading = useRef(false);
   const latestPulse = useRef<ParticlePulse | null>(null);
   const mounted = useRef(true);
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
   latestPulse.current = pulse;
   const activate = (x: number, y: number, kind: ParticlePulse['kind']) => setPulse({ id: ++sequence.current, x, y, kind });
   useEffect(() => {
@@ -52,12 +54,12 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     const surface = canvas.current;
     import('./portfolio-particles').then(({ createParticleController }) => {
       controllerLoading.current = false;
-      if (!mounted.current || !surface.isConnected) return;
+      if (!mounted.current || reducedRef.current || !surface.isConnected) return;
       controller.current = createParticleController(surface);
       if (latestPulse.current) controller.current.play(latestPulse.current);
     }).catch(() => { controllerLoading.current = false; /* CSS pulse remains available without WebGL. */ });
   }, [pulse, reduced]);
-  useEffect(() => () => { mounted.current = false; controller.current?.dispose(); controller.current = null; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.dispose(); controller.current = null; }; }, []);
   useEffect(() => {
     if (!pulse) return;
     const timeout = window.setTimeout(() => setPulse(current => current?.id === pulse.id ? null : current), 1150);

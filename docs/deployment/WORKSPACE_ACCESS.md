@@ -1,5 +1,7 @@
 # Private workspace access
 
+For the broader MES/ERP/CRM, Windows desktop, and portfolio rollout status, see the dated [active development snapshot](../ACTIVE_DEVELOPMENT.md). Recheck its linked CI and deployment records before relying on it.
+
 This feature uses individual Better Auth accounts and a private authentication database. Demo role cookies do not authorize the administration API. The owner creates accounts, grants access to existing workspace IDs, and issues expiring download keys tied to a particular account/workspace/scope.
 
 ## Configuration

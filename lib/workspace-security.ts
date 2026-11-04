@@ -45,7 +45,7 @@ export function openWorkspaceSecurity(config: WorkspaceSecurityConfig) {
     database: { db: kysely, type: 'sqlite', transaction: true },
     emailAndPassword: { enabled: true, minPasswordLength: 12, autoSignIn: false, disableSignUp: true },
     socialProviders: config.googleClientId&&config.googleClientSecret?{google:{clientId:config.googleClientId,clientSecret:config.googleClientSecret,disableImplicitSignUp:true,disableSignUp:true}}:{},
-    account:{accountLinking:{enabled:true,trustedProviders:["google"],allowDifferentEmails:false,requireLocalEmailVerified:true}},
+    account:{accountLinking:{enabled:true,trustedProviders:[],allowDifferentEmails:false,requireLocalEmailVerified:false}},
     plugins: [admin(), apiKey({ enableSessionForAPIKeys: false, disableKeyHashing: false, enableMetadata: true, keyExpiration: { minExpiresIn: 60 / 86400, maxExpiresIn: 30 } })],
     advanced: { useSecureCookies: true, defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: true } },
     session: { cookieCache: { enabled: false } },
@@ -91,8 +91,13 @@ async function authHandler(request:Request,runtime:ReturnType<typeof openWorkspa
     if(!runtime.googleConfigured) throw new WorkspaceSecurityError(503,"Google authentication is not configured");
     if(request.headers.get("origin")!==canonicalOrigin) throw new WorkspaceSecurityError(403,"Invalid origin");
     await runtime.initialize();
-    const result=await runtime.auth.api.signInSocial({headers:request.headers,body:{provider:"google",callbackURL:`${canonicalOrigin}/admin/workspace`,requestSignUp:false,disableRedirect:true}});
-    return Response.json(result,{headers:{"cache-control":"no-store"}});
+    const headers = new Headers(request.headers);
+    headers.set('content-type', 'application/json'); headers.delete('content-length');
+    const start = new Request(`${canonicalOrigin}/api/workspace-auth/sign-in/social`, { method: 'POST', headers, body: JSON.stringify({ provider: 'google', callbackURL: `${canonicalOrigin}/admin/workspace`, errorCallbackURL: `${canonicalOrigin}/admin/workspace?authentication=failed`, requestSignUp: false, disableRedirect: true }) });
+    // Preserve the library's state/PKCE cookies, not only its JSON payload.
+    const response = await runtime.auth.handler(start);
+    response.headers.set('cache-control', 'no-store');
+    return response;
   }
   const permitted = new Set(["/api/workspace-auth/sign-in/email", "/api/workspace-auth/sign-out", "/api/workspace-auth/change-password"]);
   if (!permitted.has(url.pathname) || (request.method !== "POST")) throw new WorkspaceSecurityError(404, "Not found");

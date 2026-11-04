@@ -32,10 +32,13 @@ test("Google social start fixes provider and callback and ignores injected OAuth
     assert.equal(authorization.searchParams.get("redirect_uri"),`${baseURL}/api/workspace-auth/callback/google`);
     assert.ok(authorization.searchParams.has("state"));
     assert.ok(authorization.searchParams.has("code_challenge"));
+    assert.ok(response.headers.getSetCookie().length > 0, 'state/PKCE cookies must reach the browser');
     assert.equal(data.url.includes("attacker"),false);
 
     const invalid=await security.request("/api/workspace-auth/callback/google?state=forged&code=synthetic");
-    assert.ok(invalid.status>=400);
+    assert.ok(invalid.status >= 400 || (invalid.status >= 300 && invalid.status < 400), 'invalid state must not return a successful login');
+    if (invalid.headers.has('location')) assert.equal(new URL(invalid.headers.get('location')!, baseURL).origin, baseURL);
+    assert.equal(invalid.headers.getSetCookie().some(cookie => cookie.includes('session_token=')), false);
     const fakeSession=await security.request("/api/workspace-admin/session",{headers:{cookie:"demo_user_role=admin; demo_session_id=forged"}});
     assert.equal(fakeSession.status,401);
     const signup=await security.request("/api/workspace-auth/sign-up/email",{method:"POST",headers:{origin:baseURL,"content-type":"application/json"},body:JSON.stringify({email:"attacker@example.test",password:"synthetic-password-123",name:"Attacker"})});

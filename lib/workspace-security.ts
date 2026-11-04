@@ -169,7 +169,7 @@ export async function authorizeWorkspaceExportForTest(request:Request,dataset:st
     const key=db.prepare("SELECT * FROM workspace_download_keys WHERE key_id=? AND user_id=? AND workspace_id=?").get(verified.key.id,user.id,workspaceId) as any;
     const membership=db.prepare("SELECT permissions FROM workspace_memberships WHERE user_id=? AND workspace_id=?").get(user.id,workspaceId) as {permissions:string}|undefined;
     const scope=key&&JSON.parse(key.scope);
-    if(!key||key.revoked||key.expires_at<=Date.now()||(key.quota!==null&&key.used>=key.quota)||!membership||!JSON.parse(membership.permissions).includes("export")||(!dataset&&scope.kind!=="json")||(dataset&&scope.kind!=="json"&&!scope.datasets.includes(dataset))) throw new WorkspaceSecurityError(403,"Workspace export denied");
+    if(!key||key.revoked||key.expires_at<=Date.now()||(key.quota!==null&&key.used>=key.quota)||!membership||!JSON.parse(membership.permissions).includes("export")||(!dataset&&scope.kind!=="json")||(dataset&&(scope.kind!=="csv"||!scope.datasets.includes(dataset)))) throw new WorkspaceSecurityError(403,"Workspace export denied");
     db.prepare("UPDATE workspace_download_keys SET used=used+1 WHERE key_id=?").run(key.key_id); db.exec("COMMIT");
     return {organizationId:workspaceId,userId:user.id,userEmail:user.email,userDisplayName:user.name,role:"admin" as const,requestId:randomBytes(12).toString("hex")};
   } catch(e) { db.exec("ROLLBACK"); throw e; }

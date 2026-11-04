@@ -35,6 +35,7 @@ test('offscreen spotlight cards do not update when the pointer moves', async ({ 
   await page.getByRole('heading', { level: 1 }).waitFor();
   const cards = page.locator('.project-spotlight');
   await expect(cards).toHaveCount(6);
+  await page.waitForTimeout(200); // Let initial observer notifications settle before measuring pointer work.
   const before = await cards.locator('.spotlight-card__light').evaluateAll(elements => elements.map(element => element.getAttribute('style')));
   await page.mouse.move(20, 30); await page.mouse.move(900, 100); await page.mouse.move(400, 200);
   await page.waitForTimeout(400);

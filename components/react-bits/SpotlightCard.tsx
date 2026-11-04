@@ -175,7 +175,7 @@ const SpotlightCard = ({
 
     const tick = (now: number) => {
       raf = 0;
-      if (!alive) return;
+      if (!alive || !state.visible || document.hidden) return;
       const s = settingsRef.current;
       const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
@@ -222,13 +222,18 @@ const SpotlightCard = ({
     };
 
     const wake = () => {
-      if (raf || !alive) return;
+      if (raf || !alive || !state.visible || document.hidden) return;
       last = performance.now();
       raf = requestAnimationFrame(tick);
     };
     wakeRef.current = wake;
 
     const onMove = (event: PointerEvent) => {
+      if (!state.visible || document.hidden || reduce) return;
+      const bounds = root.getBoundingClientRect();
+      const proximity = settingsRef.current.proximity;
+      const near = event.clientX >= bounds.left - proximity && event.clientX <= bounds.right + proximity && event.clientY >= bounds.top - proximity && event.clientY <= bounds.bottom + proximity;
+      if (!near && state.presence === 0 && !focus) { pointer.active = false; return; }
       pointer.x = event.clientX;
       pointer.y = event.clientY;
       pointer.active = true;
@@ -269,6 +274,7 @@ const SpotlightCard = ({
     const observer = new IntersectionObserver(entries => {
       state.visible = entries.some(entry => entry.isIntersecting);
       if (state.visible) wake();
+      else { cancelAnimationFrame(raf); raf = 0; pointer.active = false; state.presence = 0; light.style.opacity = '0'; edge.style.opacity = '0'; }
     });
     observer.observe(root);
     window.addEventListener('pointermove', onMove);

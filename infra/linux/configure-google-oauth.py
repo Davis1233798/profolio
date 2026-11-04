@@ -43,12 +43,16 @@ def configure(path,payload,replace=False):
         raise ConfigurationError('Invalid Google Web client ID')
     if not isinstance(secret,str) or not secret or len(secret)>4096 or any(ord(c)<32 or ord(c)==127 for c in secret):
         raise ConfigurationError('Invalid Google client secret')
-    private_file(path)
+    initial=private_file(path)
     lock_path=path.with_name('.'+path.name+'.oauth.lock')
     lock=os.open(lock_path,os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
     try:
         if not stat.S_ISREG(os.fstat(lock).st_mode) or os.fstat(lock).st_nlink!=1 or stat.S_IMODE(os.fstat(lock).st_mode)!=0o600:
             raise ConfigurationError('Unsafe configuration lock')
+        if os.geteuid()==0:
+            os.fchown(lock,initial.st_uid,initial.st_gid)
+        elif os.fstat(lock).st_uid!=initial.st_uid:
+            raise ConfigurationError('Configuration lock ownership differs from its environment')
         fcntl.flock(lock,fcntl.LOCK_EX)
         original=private_file(path)
         fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
@@ -113,7 +117,7 @@ def main():
     except ConfigurationError as error:
         print(str(error),file=sys.stderr);return 1
     except (OSError,ValueError,TypeError):
-        print('Private configuration import failed; original configuration was not intentionally replaced',file=sys.stderr);return 1
+        print('Private configuration import failed; inspect the private configuration before retrying',file=sys.stderr);return 1
     print('Google client configured privately. Values suppressed. Apply through the reviewed deployment pipeline.')
     return 0
 

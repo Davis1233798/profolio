@@ -143,6 +143,9 @@ jobs:
       - name: Verify Windows migration snapshot transactions
         run: go -C backend test -count=1 -run "Test(Legacy(CandidateSnapshot|SnapshotTransaction|SnapshotReadOnlyURI|OfflineImport|ImportCommand)|RestoreCopy|MaintenanceLock)" ./...
       - run: npm run install:ci
+      - name: Verify private Windows owner bootstrap transport
+        shell: pwsh
+        run: ./tests/workspace-owner-powershell.test.ps1
       - name: Build desktop frontend and Go backend
         run: npm run desktop:prepare
       - name: Package Windows application

@@ -12,10 +12,13 @@ let store: ReturnType<typeof openWorkspaceSecurity> | undefined;
 try {
   store = openWorkspaceSecurity(config);
   await store.initialize();
+  if (stdin.isTTY) throw new Error("Bootstrap password must be piped through private stdin; interactive terminal input is refused to prevent echo.");
   const existing = store.sqlite.prepare("SELECT id FROM user WHERE role='admin' LIMIT 1").get();
   if (existing) throw new Error("An owner administrator already exists; bootstrap refused.");
-  const email = (await input.question("Owner email: ")).trim();
-  const password = await input.question("Owner password (private stdin): ");
+  const values: string[] = [];
+  for await (const line of input) { if (line.length > 512 || values.length >= 2) throw new Error("Expected exactly two bounded input lines"); values.push(line); }
+  const email = (values[0] || "").trim();
+  const password = values[1] || "";
   if (!email || password.length < 12) throw new Error("A valid email and a password of at least 12 characters are required.");
   const created = await store.auth.api.createUser({ body: { email, password, name: "Workspace Owner", role: "admin" } });
   store.audit(created.user.id, "owner.bootstrap", created.user.id);

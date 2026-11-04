@@ -9,5 +9,6 @@
 .portfolio-click-wave.is-language { border-color:#bd91ff; background:radial-gradient(circle,#b9fa6530,#bd91ff30,transparent 70%); }
 @keyframes portfolio-wave { from { opacity:.9; transform:translate(-50%,-50%) scale(.2); } to { opacity:0; transform:translate(-50%,-50%) scale(25); } }
 @media(max-width:640px) { .portfolio-language { top:10px; right:10px; } }
+@media(max-width:640px) { [data-locale=zh-TW] .portfolio-hero h1 { font-size:clamp(30px,10vw,54px); letter-spacing:-.045em; } }
 @media(prefers-reduced-motion:reduce) { .portfolio-click-wave,.portfolio-particle-canvas { display:none; } .portfolio-language button { transition:none; } }
 @media print { .portfolio-language,.portfolio-click-wave,.portfolio-particle-canvas { display:none !important; } }

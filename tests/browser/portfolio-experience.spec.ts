@@ -56,5 +56,6 @@ test('mobile language controls remain reachable without horizontal overflow', as
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  expect(await page.locator('.portfolio-hero h1').evaluate(element => element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight))).toBeLessThan(2.5);
   await page.screenshot({ path: 'outputs/browser/portfolio-mobile-zh.png' });
 });

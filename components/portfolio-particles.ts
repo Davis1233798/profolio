@@ -8,8 +8,16 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
   catch { return { play() {}, dispose() {} }; }
 
   let width = Math.max(1, window.innerWidth), height = Math.max(1, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-  renderer.setSize(width, height, false);
+  const maxPixels = 2_500_000;
+  const resize = () => {
+    width = Math.max(1, window.innerWidth); height = Math.max(1, window.innerHeight);
+    const ratio = Math.min(window.devicePixelRatio || 1, 1.25, Math.sqrt(maxPixels / (width * height)));
+    renderer.setPixelRatio(ratio);
+    renderer.setSize(width, height, false);
+    material.uniforms.ratio.value = ratio;
+    camera.aspect = width / height; camera.updateProjectionMatrix();
+  };
+  renderer.setPixelRatio(1);
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, width / height, .1, 2000);
@@ -25,13 +33,20 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
     vertexShader: 'varying vec3 vColor; uniform float ratio; void main(){vColor=color; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=7.0*ratio*(600.0/-mv.z); gl_Position=projectionMatrix*mv;}',
     fragmentShader: 'varying vec3 vColor; uniform float opacity; void main(){float d=length(gl_PointCoord-0.5)*2.0; float glow=pow(max(0.0,1.0-d),2.0); gl_FragColor=vec4(vColor,glow*opacity);}',
   });
-  scene.add(new THREE.Points(geometry, material));
+  resize();
+  const particles = new THREE.Points(geometry, material);
+  // Positions move on every frame and between pulses; the cached geometry bounds
+  // cannot follow them, so culling could hide later visible pulses. This overlay
+  // is deliberately small and bounded to 520 points.
+  particles.frustumCulled = false;
+  scene.add(particles);
   let frame = 0, disposed = false, lost = false, generation = 0, active = false, started = 0;
   let originX = 0, originY = 0, maxSpread = 250;
 
   const cancelFrame = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
-  const contextLost = (event: Event) => { event.preventDefault(); lost = true; generation++; cancelFrame(); active = false; geometry.dispose(); material.dispose(); renderer.dispose(); };
+  const contextLost = (event: Event) => { event.preventDefault(); lost = true; generation++; cancelFrame(); active = false; window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', visibility); geometry.dispose(); material.dispose(); renderer.dispose(); };
   canvas.addEventListener('webglcontextlost', contextLost);
+  window.addEventListener('resize', resize, { passive: true });
   const draw = (now: number, token: number) => {
     if (disposed || token !== generation || document.hidden) { cancelFrame(); return; }
     const t = Math.min((now - started) / 900, 1), ease = 1 - (1 - t) ** 3;
@@ -58,10 +73,7 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
   return {
     play(pulse) {
       if (disposed || lost) return;
-      if (width !== window.innerWidth || height !== window.innerHeight) {
-        width = Math.max(1, window.innerWidth); height = Math.max(1, window.innerHeight);
-        renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix();
-      }
+      if (width !== window.innerWidth || height !== window.innerHeight) resize();
       generation++;
       if (frame) cancelAnimationFrame(frame);
       frame = 0; active = true; started = performance.now();
@@ -85,8 +97,9 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
       if (disposed) return;
       disposed = true; generation++; cancelFrame();
       document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('resize', resize);
       canvas.removeEventListener('webglcontextlost', contextLost);
-      geometry.dispose(); material.dispose(); renderer.dispose();
+      geometry.dispose(); material.dispose(); renderer.dispose(); renderer.forceContextLoss();
     },
   };
 }

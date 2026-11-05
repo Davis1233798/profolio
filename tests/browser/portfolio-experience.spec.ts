@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+async function warmPortfolioWebGL(page: import('@playwright/test').Page) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    await page.locator('.portfolio-language button[aria-pressed="false"]').evaluate((button: HTMLButtonElement) => button.click());
+    await page.waitForTimeout(250);
+    if (await page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0)) > 0) return;
+  }
+  throw new Error('WebGL did not draw within 15 seconds of bounded UI pulses');
+}
+
 test('workspace tools require a real account and public exports reject demo cookies', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('link', { name: 'Download JSON backup', exact: true })).toHaveCount(0);
@@ -26,12 +36,19 @@ test('language changes real copy, persists and survives page navigation', async 
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Make complexity');
+  await expect(page.locator('.portfolio-experience')).toHaveAttribute('data-motion', 'full');
+  await warmPortfolioWebGL(page);
+  const englishButton = page.locator('.portfolio-language button[lang="en"]');
+  if (await englishButton.getAttribute('aria-pressed') !== 'true') {
+    await englishButton.evaluate((button: HTMLButtonElement) => button.click());
+  }
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('讓複雜業務');
   await expect(page.getByRole('link', { name: '資料管理後台' })).toBeVisible();
   await expect(page.getByRole('link', { name: '下載 JSON 備份' })).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0))).toBeGreaterThan(0);
+  expect(await page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0))).toBeGreaterThan(0);
   await page.screenshot({ path: 'outputs/browser/portfolio-language-zh.png', fullPage: false });
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');

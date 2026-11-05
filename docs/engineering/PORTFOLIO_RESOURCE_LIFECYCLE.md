@@ -18,7 +18,9 @@ node, listener, document, and frame counts, tracks in-flight browser `fetch`
 calls, and watches iframe/canvas/WebGL context lifecycle. It also checks that
 hidden-page and idle disposal release the active renderer, and that returning
 to visible state can still render a fresh pulse. CI uploads the measurement
-samples with the existing browser artifacts.
+samples with the existing browser artifacts. Each batch sample is attached
+before its resource assertions so failing runs preserve the measurements; the
+cumulative heap series is attached before the retention thresholds are checked.
 
 These are regression bounds for one Chromium runner and this repeatable
 interaction workload. The post-GC heap ceiling is 40 MiB above the warmed

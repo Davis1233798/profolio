@@ -135,7 +135,6 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
     }
 
     await page.waitForTimeout(1_300); // Let route/language pulses and their short-lived DOM settle.
-    await expect.poll(async () => (await resourceSnapshot(page)).pending).toBe(0);
     const browser = await cdpSample(cdp);
     const app = await resourceSnapshot(page);
     const liveDom = await page.evaluate(() => ({
@@ -144,7 +143,12 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
       particleCanvases: document.querySelectorAll('.portfolio-particle-canvas').length,
     }));
     samples.push({ ...browser, ...app, ...liveDom } as typeof samples[number] & BrowserResources & typeof liveDom);
+    await test.info().attach(`portfolio-resource-batch-${batch + 1}`, {
+      body: JSON.stringify({ batch: batch + 1, sample: samples.at(-1) }, null, 2),
+      contentType: 'application/json',
+    });
 
+    expect(app.pending).toBe(0);
     expect(liveDom.iframes, 'portfolio routes must not accumulate preview frames').toBe(0);
     expect(liveDom.canvases).toBeLessThanOrEqual(1);
     expect(liveDom.particleCanvases).toBeLessThanOrEqual(1);
@@ -160,6 +164,10 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   // 40 MiB above the warmed baseline leaves room for V8/JIT and route-cache variation.
   const heapAllowance = 40 * 1024 * 1024;
   const heaps = samples.map(sample => sample.jsHeapUsedBytes);
+  await test.info().attach('portfolio-resource-lifecycle-cdp-samples', {
+    body: JSON.stringify({ baseline, samples, heapAllowanceBytes: heapAllowance }, null, 2),
+    contentType: 'application/json',
+  });
   expect(Math.max(...heaps) - heaps[0]).toBeLessThan(heapAllowance);
 
   // Require a meaningful 8 MiB increase across all four final batches, with each
@@ -169,11 +177,6 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   const monotonicMaterialGrowth = tailGrowth > 8 * 1024 * 1024
     && tail.slice(1).every((value, index) => value - tail[index] > 1.5 * 1024 * 1024);
   expect(monotonicMaterialGrowth, `post-GC heap samples show material monotonic growth: ${JSON.stringify(heaps)}`).toBe(false);
-
-  await test.info().attach('portfolio-resource-lifecycle-cdp-samples', {
-    body: JSON.stringify({ baseline, samples, heapAllowanceBytes: heapAllowance }, null, 2),
-    contentType: 'application/json',
-  });
   await cdp.detach();
 });
 

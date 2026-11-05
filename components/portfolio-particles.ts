@@ -34,7 +34,12 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
     fragmentShader: 'varying vec3 vColor; uniform float opacity; void main(){float d=length(gl_PointCoord-0.5)*2.0; float glow=pow(max(0.0,1.0-d),2.0); gl_FragColor=vec4(vColor,glow*opacity);}',
   });
   resize();
-  scene.add(new THREE.Points(geometry, material));
+  const particles = new THREE.Points(geometry, material);
+  // Positions move on every frame and between pulses; the cached geometry bounds
+  // cannot follow them, so culling could hide later visible pulses. This overlay
+  // is deliberately small and bounded to 520 points.
+  particles.frustumCulled = false;
+  scene.add(particles);
   let frame = 0, disposed = false, lost = false, generation = 0, active = false, started = 0;
   let originX = 0, originY = 0, maxSpread = 250;
 

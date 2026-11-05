@@ -107,6 +107,21 @@ jobs:
       - name: Build Linux station server
         working-directory: backend
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../release/station-server .
+      - name: Install Chromium for station dataset acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Verify bounded station datasets against the Go server
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUITE_ADDR=127.0.0.1:18095 SUITE_WEB="$PWD/web-dist" SUITE_DB="$RUNNER_TEMP/pagination-stations.sqlite" ./release/station-server &
+          station_pid=$!
+          trap 'kill "$station_pid"; wait "$station_pid" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18095/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:18095/api/health > /dev/null
+          npx playwright test --config playwright.station.config.ts
       - name: Assemble versioned delivery artifact
         run: |
           cp -R web-dist release/web-dist

@@ -1,5 +1,22 @@
 import { test, expect } from '@playwright/test';
 
+async function pulseUntilWebGLDraws(page: import('@playwright/test').Page, target: { contexts?: number; draws?: number }) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    // The 4K SwiftShader context can initialize after the 1.15s pulse ends. Keep
+    // a pulse live while it warms without coupling the harness to click waits.
+    await page.locator('.project-spotlight button').first().evaluate((button: HTMLButtonElement) => button.click());
+    await page.waitForTimeout(250);
+    const state = await page.evaluate(() => ({
+      contexts: Number(document.documentElement.dataset.webglContexts || 0),
+      draws: Number(document.documentElement.dataset.webglDraws || 0),
+    }));
+    if ((target.contexts === undefined || state.contexts >= target.contexts)
+      && (target.draws === undefined || state.draws > target.draws)) return state;
+  }
+  throw new Error(`WebGL did not reach ${JSON.stringify(target)} within 15 seconds`);
+}
+
 test('repeated effects reuse their WebGL context and stop drawing at rest', async ({ page }) => {
   await page.addInitScript(() => {
     const contexts = new WeakSet<object>();
@@ -34,6 +51,7 @@ test('repeated effects reuse their WebGL context and stop drawing at rest', asyn
 });
 
 test('idle periods release the renderer and a later pulse reinitializes it', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.setViewportSize({ width: 3840, height: 2160 });
   await page.addInitScript(() => {
     const contexts = new WeakSet<object>();
@@ -55,17 +73,27 @@ test('idle periods release the renderer and a later pulse reinitializes it', asy
     };
   });
   await page.goto('/');
-  await page.getByRole('button', { name: '繁中', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0))).toBeGreaterThan(0);
+  await expect(page.locator('.portfolio-experience')).toHaveAttribute('data-motion', 'full');
+  await pulseUntilWebGLDraws(page, { draws: 0 });
   const pixels = await page.locator('.portfolio-particle-canvas').evaluate((element: HTMLCanvasElement) => element.width * element.height);
   expect(pixels).toBeLessThanOrEqual(2_500_000);
   await expect(page.locator('.portfolio-particle-canvas')).toHaveAttribute('data-active', 'false');
+  const warmed = await page.evaluate(() => ({
+    contexts: Number(document.documentElement.dataset.webglContexts || 0),
+    draws: Number(document.documentElement.dataset.webglDraws || 0),
+  }));
+  expect(warmed.contexts).toBe(1);
+  expect(warmed.draws).toBeGreaterThan(0);
   await page.waitForTimeout(10_300); // Idle disposal starts 10 seconds after the short pulse ends.
   await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglContextLosses || 0))).toBe(1);
-  const settledDraws = await page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0));
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglContexts || 0))).toBe(2);
-  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0))).toBeGreaterThan(settledDraws);
+  const idle = await page.evaluate(() => ({
+    contexts: Number(document.documentElement.dataset.webglContexts || 0),
+    draws: Number(document.documentElement.dataset.webglDraws || 0),
+  }));
+  expect(idle.contexts).toBe(warmed.contexts);
+  expect(idle.draws).toBe(warmed.draws);
+  const settledDraws = idle.draws;
+  await pulseUntilWebGLDraws(page, { contexts: 2, draws: settledDraws });
 });
 
 test('offscreen spotlight cards do not update when the pointer moves', async ({ page }) => {

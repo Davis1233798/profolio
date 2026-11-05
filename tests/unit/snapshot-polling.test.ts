@@ -4,7 +4,7 @@ import {startSnapshotPolling, type SnapshotPollingRuntime} from '../../web/src/s
 
 test('snapshot polling aborts on hide, resumes once, and clears its timer on teardown', async () => {
   let hidden=false, calls=0, firstSignal:AbortSignal|undefined;
-  const visibility={listener:(()=>void)|null:null};
+  const visibility:{listener:(()=>void)|null}={listener:null};
   let nextTimer=0;
   const timers=new Map<number,{callback:()=>void;delay:number}>();
   const values:Record<string,number>[]=[];
@@ -18,7 +18,7 @@ test('snapshot polling aborts on hide, resumes once, and clears its timer on tea
     }) as typeof fetch,
     isHidden:()=>hidden,
     onVisibilityChange:listener=>{visibility.listener=listener;return()=>{visibility.listener=null}},
-    schedule:(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay});return id as ReturnType<typeof window.setTimeout>},
+    schedule:(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay});return id},
     cancel:timer=>{timers.delete(timer as unknown as number)},
   };
 

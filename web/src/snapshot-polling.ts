@@ -1,5 +1,5 @@
 export type SnapshotValue = { success: boolean; data: Record<string, number>; error?: { message: string } };
-type Timer = ReturnType<typeof window.setTimeout>;
+type Timer = number;
 export type SnapshotPollingRuntime = {
   fetch: typeof fetch;
   isHidden(): boolean;

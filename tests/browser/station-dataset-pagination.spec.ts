@@ -66,3 +66,35 @@ test('preview toggles preserve the current page and pagination controls localize
  await expect(pager.getByRole('button',{name:'下一頁'})).toBeEnabled();
  await expect(pager.getByRole('button',{name:'第一頁'})).toBeDisabled();
 });
+
+test('server windows and server search remain available and reset only the inner page',async({page})=>{
+ await signIn(page);
+ const panel=page.locator('section.dataset').filter({has:page.getByRole('heading',{name:/Items/})});
+ const pager=panel.getByRole('navigation',{name:'Table pagination'});
+ const requests:string[]=[];
+ await page.route('**/api/stations/erp/data?view=back&dataset=items&**',route=>{
+  const url=new URL(route.request().url());requests.push(url.search);
+  const rows=url.searchParams.get('search')
+   ?[{id:'server-match',name:'Older matching item'}]
+   :items.map((item,index)=>({...item,id:`older-${index+1}`,name:`Older item ${index+1}`}));
+  return route.fulfill({json:{success:true,data:{items:rows}}});
+ });
+ await pager.getByRole('button',{name:'Last page'}).click();
+ await expect(pager).toContainText('Page 10 of 10');
+ expect(requests).toHaveLength(0);
+ await panel.getByRole('button',{name:'Older records',exact:true}).click();
+ await expect(panel.locator('tbody tr').first()).toContainText('older-1');
+ await expect(pager).toContainText('Page 1 of 10');
+ await expect(panel).toContainText('501–1000');
+ expect(new URLSearchParams(requests[0]).get('offset')).toBe('500');
+ await pager.getByRole('button',{name:'Last page'}).click();
+ expect(requests).toHaveLength(1);
+ await panel.getByLabel('Search all available records').fill('Older matching');
+ await panel.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(panel.locator('tbody tr')).toHaveCount(1);
+ await expect(panel.locator('tbody tr')).toContainText('server-match');
+ await expect(pager).toContainText('Page 1 of 1');
+ expect(new URLSearchParams(requests[1]).get('offset')).toBe('0');
+ expect(new URLSearchParams(requests[1]).get('search')).toBe('Older matching');
+ expect(requests).toHaveLength(2);
+});

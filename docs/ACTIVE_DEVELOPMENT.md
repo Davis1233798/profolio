@@ -2,6 +2,20 @@
 
 Evidence snapshot: 2026-11-05, Asia/Taipei. This file is not a live status feed. Recheck the linked commit, workflow and runtime before acting. Passing CI, publishing an image, merging main and deploying a working user flow are separate milestones.
 
+## Active pull-request snapshot
+
+Remote state checked on 2026-11-05, Asia/Taipei. Workflow results below are exact-head evidence where stated; duplicate push and pull-request workflow runs are reported as one status when they agree. Recheck before relying on this snapshot.
+
+| Work | Current remote state | Boundary |
+|---|---|---|
+| [ERP invoice/payment posting PR9](https://github.com/Davis1233798/business-suite-erp/pull/9) | Open draft at `5a732c2`; backend, forms, HTTP path and browser acceptance are present. Both exact-head `erp` checks are pending; earlier RED501 evidence remains a prior result, not stable completion. | Do not call the iteration green until both exact-head checks finish and are reviewed. |
+| [Portfolio dataset pagination PR28](https://github.com/Davis1233798/profolio/pull/28) | Open at `1aef52e`; web, infrastructure, Windows and k6 checks passed. `station-delivery` remains pending. | No deployment or live runtime claim follows from the passed checks. |
+| [Shop pagination PR10](https://github.com/Davis1233798/business-suite-shop/pull/10) | Merged as `6d5cb34`; both exact-head shop checks passed. | Merge/CI evidence does not itself prove a live deployment. |
+| [CRM pagination PR5](https://github.com/Davis1233798/business-suite-crm/pull/5), [POS PR4](https://github.com/Davis1233798/business-suite-pos/pull/4), [Dining PR4](https://github.com/Davis1233798/business-suite-dining/pull/4) | Merged as `ce51c5f`, `842e207` and `c8e730d`, respectively. | Workspace row pagination bounds rendered DOM rows, not total browser process memory. |
+| [MES pagination PR15](https://github.com/Davis1233798/business-suite-mes/pull/15) | Open at `d414150`; exact-head MES and rootless-host-provisioning checks are pending. | Not yet verified as stable or deployed. |
+| [Portfolio resource lifecycle PR29](https://github.com/Davis1233798/profolio/pull/29) | Draft open at `4f4cf3a`. Its exact-head web and station-delivery checks are pending; infrastructure, Windows and k6 have passed. The earlier `364f2ed` web/station RED was a test-only unsupported CDP command and did not reach Chromium. | The long-run heap/resource acceptance has not passed yet. No heap reduction or GPU/process-memory result is claimed. |
+| [Portfolio resource lifecycle PR26](https://github.com/Davis1233798/profolio/pull/26), [MES cutover documentation PR14](https://github.com/Davis1233798/business-suite-mes/pull/14) | PR26 is merged as `5b97344` and the live runtime was separately verified at that revision. MES PR14 is merged as `e4ba765`. | PR26 runtime evidence does not measure heap reduction. MES data conversion and live cutover remain pending despite the documentation merge. |
+
 ## Current work
 
 | System / feature | Verified delivery | Still required |

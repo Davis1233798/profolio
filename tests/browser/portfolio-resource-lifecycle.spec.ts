@@ -177,7 +177,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   await cdp.detach();
 });
 
-test('hidden and idle pages release the WebGL context and later pulses still render', async ({ page, context }) => {
+test('a backgrounded Chromium page and idle pages release WebGL; later pulses still render', async ({ page, context }) => {
   test.setTimeout(60_000);
   const cdp = await context.newCDPSession(page);
   await instrumentPage(page);
@@ -186,14 +186,19 @@ test('hidden and idle pages release the WebGL context and later pulses still ren
   await waitForDraw(page);
   expect((await resourceSnapshot(page)).webglLive).toBe(1);
 
-  await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
+  const foreground = await context.newPage();
+  await foreground.goto('about:blank');
+  await foreground.bringToFront();
+  await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
   await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
   const hiddenDraws = (await resourceSnapshot(page)).webglDraws;
   await page.waitForTimeout(400);
   expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
 
-  await cdp.send('Page.setWebLifecycleState', { state: 'active' });
+  await page.bringToFront();
+  await foreground.close();
+  await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('visible');
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(false);
   await page.locator('.portfolio-language button[lang="en"]').click();
   await waitForDraw(page, hiddenDraws);

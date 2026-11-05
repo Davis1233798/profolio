@@ -47,9 +47,12 @@ polling benchmark.
   documented absolute allowance over the warmed baseline and reject a
   practically monotonic increase across the final batches. Preserve all raw
   samples as a CI artifact for threshold review.
-- While the particle renderer is active, transition the page to hidden and
-  verify context loss and draw quiescence; restore visibility and verify a later
-  pulse renders. Also verify the normal idle timeout releases the renderer.
+- While the particle renderer is active, foreground a second real Chromium
+  page and assert the portfolio tab reports `document.visibilityState ===
+  'hidden'` and `document.hidden === true`; verify context loss and draw
+  quiescence. Bring the portfolio tab forward again and assert it reports
+  `visible` before verifying a later pulse renders. Also verify the normal idle
+  timeout releases the renderer.
 - Delay a platform status response, confirm the submit control stays busy and
   prevents duplicate status requests, then navigate away and verify requests
   settle with no periodic status traffic after the page is idle.

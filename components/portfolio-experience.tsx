@@ -15,6 +15,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<PortfolioLocale>('en');
   const [pulse, setPulse] = useState<ParticlePulse | null>(null);
   const [reduced, setReduced] = useState(true);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
   const canvas = useRef<HTMLCanvasElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const sequence = useRef(0);
@@ -24,6 +25,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const controllerLoading = useRef(false);
   const latestPulse = useRef<ParticlePulse | null>(null);
   const mounted = useRef(true);
+  const idleRelease = useRef<number | null>(null);
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
   latestPulse.current = pulse;
@@ -46,7 +48,11 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     return () => animation?.cancel();
   }, [pathname, locale, reduced]);
   useEffect(() => {
-    if (reduced) { controller.current?.dispose(); controller.current = null; return; }
+    if (idleRelease.current !== null) { window.clearTimeout(idleRelease.current); idleRelease.current = null; }
+    if (reduced) {
+      if (controller.current) { controller.current.dispose(); controller.current = null; setCanvasGeneration(value => value + 1); }
+      return;
+    }
     if (!pulse || !canvas.current) return;
     if (controller.current) { controller.current.play(pulse); return; }
     if (controllerLoading.current) return;
@@ -54,12 +60,33 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     const surface = canvas.current;
     import('./portfolio-particles').then(({ createParticleController }) => {
       controllerLoading.current = false;
-      if (!mounted.current || reducedRef.current || !surface.isConnected) return;
+      if (!mounted.current || reducedRef.current || document.hidden || !surface.isConnected || !latestPulse.current) return;
       controller.current = createParticleController(surface);
       if (latestPulse.current) controller.current.play(latestPulse.current);
     }).catch(() => { controllerLoading.current = false; /* CSS pulse remains available without WebGL. */ });
   }, [pulse, reduced]);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.dispose(); controller.current = null; }; }, []);
+  useEffect(() => {
+    if (pulse || reduced || !controller.current) return;
+    idleRelease.current = window.setTimeout(() => {
+      idleRelease.current = null;
+      controller.current?.dispose();
+      controller.current = null;
+      setCanvasGeneration(value => value + 1);
+    }, 10_000);
+    return () => { if (idleRelease.current !== null) { window.clearTimeout(idleRelease.current); idleRelease.current = null; } };
+  }, [pulse, reduced]);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; if (idleRelease.current !== null) window.clearTimeout(idleRelease.current); controller.current?.dispose(); controller.current = null; }; }, []);
+  useEffect(() => {
+    const releaseWhenHidden = () => {
+      if (!document.hidden || !controller.current) return;
+      if (idleRelease.current !== null) { window.clearTimeout(idleRelease.current); idleRelease.current = null; }
+      controller.current.dispose(); controller.current = null;
+      setPulse(null);
+      setCanvasGeneration(value => value + 1);
+    };
+    document.addEventListener('visibilitychange', releaseWhenHidden);
+    return () => document.removeEventListener('visibilitychange', releaseWhenHidden);
+  }, []);
   useEffect(() => {
     if (!pulse) return;
     const timeout = window.setTimeout(() => setPulse(current => current?.id === pulse.id ? null : current), 1150);
@@ -87,7 +114,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
       <button type="button" lang="zh-TW" aria-pressed={locale === 'zh-TW'} onClick={event => changeLanguage('zh-TW', event.currentTarget)}>繁中</button>
     </nav>
     <div ref={content} className="portfolio-experience-content">{children}</div>
-    <canvas ref={canvas} className="portfolio-particle-canvas" aria-hidden="true" data-active={Boolean(pulse && !reduced)}/>
+    <canvas key={canvasGeneration} ref={canvas} className="portfolio-particle-canvas" aria-hidden="true" data-active={Boolean(pulse && !reduced)}/>
     {pulse && !reduced && <div key={pulse.id} className={`portfolio-click-wave ${pulse.kind === 'language' ? 'is-language' : ''}`} style={{ left: pulse.x, top: pulse.y }} aria-hidden="true"/>}
     <span className="sr-only" role="status" aria-live="polite">{context.t('Language: English', '語言：繁體中文')}</span>
   </div></LocaleContext.Provider>;

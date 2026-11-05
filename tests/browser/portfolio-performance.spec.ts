@@ -47,6 +47,11 @@ test('idle periods release the renderer and a later pulse reinitializes it', asy
       }
       return context;
     } as typeof getContext;
+    const draw = WebGL2RenderingContext.prototype.drawArrays;
+    WebGL2RenderingContext.prototype.drawArrays = function (this: WebGL2RenderingContext, ...args: Parameters<typeof draw>) {
+      document.documentElement.dataset.webglDraws = String(Number(document.documentElement.dataset.webglDraws || 0) + 1);
+      return Reflect.apply(draw, this, args);
+    };
   });
   await page.goto('/');
   await page.getByRole('button', { name: '繁中', exact: true }).click();

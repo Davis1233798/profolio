@@ -186,14 +186,14 @@ test('hidden and idle pages release the WebGL context and later pulses still ren
   await waitForDraw(page);
   expect((await resourceSnapshot(page)).webglLive).toBe(1);
 
-  await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'hidden' });
+  await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
   await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
   const hiddenDraws = (await resourceSnapshot(page)).webglDraws;
   await page.waitForTimeout(400);
   expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
 
-  await cdp.send('Emulation.setPageVisibilityState', { visibilityState: 'visible' });
+  await cdp.send('Page.setWebLifecycleState', { state: 'active' });
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(false);
   await page.locator('.portfolio-language button[lang="en"]').click();
   await waitForDraw(page, hiddenDraws);

@@ -434,6 +434,13 @@ const traditionalChinese:Record<string,string> = {
   "Quality disposition recorded.": "品質處置已記錄。",
   "Finished goods received into MES inventory.": "成品已入庫至 MES 庫存。",
   "Work order closed.": "工單已結案。",
-  "Saved, but the display could not be refreshed. Reload before submitting another operation.": "已儲存，但畫面無法重新整理。請重新載入後再提交其他操作。"
+  "Saved, but the display could not be refreshed. Reload before submitting another operation.": "已儲存，但畫面無法重新整理。請重新載入後再提交其他操作。",
+  "Table pagination": "表格分頁",
+  "First page": "第一頁",
+  "Previous page": "上一頁",
+  "Next page": "下一頁",
+  "Last page": "最後一頁",
+  "Page": "第",
+  "of": "頁，共",
 };
 export function tr(text:string):string { return currentLanguage()==='zh-TW'?(traditionalChinese[text]??text):text; }

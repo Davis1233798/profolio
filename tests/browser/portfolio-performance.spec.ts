@@ -34,6 +34,7 @@ test('repeated effects reuse their WebGL context and stop drawing at rest', asyn
 });
 
 test('idle periods release the renderer and a later pulse reinitializes it', async ({ page }) => {
+  await page.setViewportSize({ width: 3840, height: 2160 });
   await page.addInitScript(() => {
     const contexts = new WeakSet<object>();
     const getContext = HTMLCanvasElement.prototype.getContext;
@@ -55,12 +56,16 @@ test('idle periods release the renderer and a later pulse reinitializes it', asy
   });
   await page.goto('/');
   await page.getByRole('button', { name: '繁中', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0))).toBeGreaterThan(0);
+  const pixels = await page.locator('.portfolio-particle-canvas').evaluate((element: HTMLCanvasElement) => element.width * element.height);
+  expect(pixels).toBeLessThanOrEqual(2_500_000);
   await expect(page.locator('.portfolio-particle-canvas')).toHaveAttribute('data-active', 'false');
   await page.waitForTimeout(10_300); // Idle disposal starts 10 seconds after the short pulse ends.
   await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglContextLosses || 0))).toBe(1);
+  const settledDraws = await page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0));
   await page.getByRole('button', { name: 'EN', exact: true }).click();
   await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglContexts || 0))).toBe(2);
-  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0))).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0))).toBeGreaterThan(settledDraws);
 });
 
 test('offscreen spotlight cards do not update when the pointer moves', async ({ page }) => {

@@ -39,7 +39,7 @@ jobs:
       - run: node scripts/smoke-mes-projection-web.mjs http://127.0.0.1:8090
       - name: Install Chromium for portfolio motion and language acceptance
         run: npx playwright install --with-deps chromium
-      - name: Verify portfolio language, navigation, WebGL fallback and reduced motion
+      - name: Verify portfolio locale, motion and long-run resource lifecycle in Chromium
         run: npx playwright test --config playwright.portfolio.config.ts
       - name: Upload portfolio browser acceptance evidence
         if: always()

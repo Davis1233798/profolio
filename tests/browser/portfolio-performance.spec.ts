@@ -5,7 +5,7 @@ async function pulseUntilWebGLDraws(page: import('@playwright/test').Page, targe
   while (Date.now() < deadline) {
     // The 4K SwiftShader context can initialize after the 1.15s pulse ends. Keep
     // a pulse live while it warms without coupling the harness to click waits.
-    await page.locator('.project-spotlight button').first().evaluate((button: HTMLButtonElement) => button.click());
+    await page.locator('.portfolio-language button[aria-pressed="false"]').evaluate((button: HTMLButtonElement) => button.click());
     await page.waitForTimeout(250);
     const state = await page.evaluate(() => ({
       contexts: Number(document.documentElement.dataset.webglContexts || 0),
@@ -94,6 +94,46 @@ test('idle periods release the renderer and a later pulse reinitializes it', asy
   expect(idle.draws).toBe(warmed.draws);
   const settledDraws = idle.draws;
   await pulseUntilWebGLDraws(page, { contexts: 2, draws: settledDraws });
+});
+
+test('a visible pulse draws after a pulse originates below the viewport', async ({ page }) => {
+  await page.addInitScript(() => {
+    const contexts = new WeakSet<object>();
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof getContext>) {
+      const context = Reflect.apply(getContext, this, args);
+      if (String(args[0]).startsWith('webgl') && context && !contexts.has(context)) {
+        contexts.add(context);
+        document.documentElement.dataset.webglContexts = String(Number(document.documentElement.dataset.webglContexts || 0) + 1);
+      }
+      return context;
+    } as typeof getContext;
+    const draw = WebGL2RenderingContext.prototype.drawArrays;
+    WebGL2RenderingContext.prototype.drawArrays = function (this: WebGL2RenderingContext, ...args: Parameters<typeof draw>) {
+      document.documentElement.dataset.webglDraws = String(Number(document.documentElement.dataset.webglDraws || 0) + 1);
+      return Reflect.apply(draw, this, args);
+    };
+  });
+  await page.goto('/');
+  await expect(page.locator('.portfolio-experience')).toHaveAttribute('data-motion', 'full');
+  const offscreenButton = page.locator('.project-spotlight button').first();
+  const viewportHeight = await page.evaluate(() => window.innerHeight);
+  const pulseY = await offscreenButton.evaluate(button => button.getBoundingClientRect().top + button.getBoundingClientRect().height / 2);
+  expect(pulseY).toBeGreaterThan(viewportHeight);
+
+  const contextDeadline = Date.now() + 15_000;
+  while (Date.now() < contextDeadline) {
+    await offscreenButton.evaluate((button: HTMLButtonElement) => button.click());
+    await page.waitForTimeout(250);
+    if (await page.evaluate(() => Number(document.documentElement.dataset.webglContexts || 0)) > 0) break;
+  }
+  expect(await page.evaluate(() => Number(document.documentElement.dataset.webglContexts || 0))).toBe(1);
+  await expect(page.locator('.portfolio-particle-canvas')).toHaveAttribute('data-active', 'false');
+  const offscreenDraws = await page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0));
+
+  await page.locator('.portfolio-language button[aria-pressed="false"]').evaluate((button: HTMLButtonElement) => button.click());
+  await expect.poll(() => page.evaluate(() => Number(document.documentElement.dataset.webglDraws || 0)), { timeout: 15_000 }).toBeGreaterThan(offscreenDraws);
+  expect(await page.evaluate(() => Number(document.documentElement.dataset.webglContexts || 0))).toBe(1);
 });
 
 test('offscreen spotlight cards do not update when the pointer moves', async ({ page }) => {

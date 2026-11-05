@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 async function warmPortfolioWebGL(page: import('@playwright/test').Page) {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
-    await page.locator('.project-spotlight button').first().evaluate((button: HTMLButtonElement) => button.click());
+    await page.locator('.portfolio-language button[aria-pressed="false"]').evaluate((button: HTMLButtonElement) => button.click());
     await page.waitForTimeout(250);
     if (await page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0)) > 0) return;
   }
@@ -38,6 +38,11 @@ test('language changes real copy, persists and survives page navigation', async 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Make complexity');
   await expect(page.locator('.portfolio-experience')).toHaveAttribute('data-motion', 'full');
   await warmPortfolioWebGL(page);
+  const englishButton = page.locator('.portfolio-language button[lang="en"]');
+  if (await englishButton.getAttribute('aria-pressed') !== 'true') {
+    await englishButton.evaluate((button: HTMLButtonElement) => button.click());
+  }
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('讓複雜業務');

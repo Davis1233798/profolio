@@ -104,7 +104,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   await waitForDraw(page);
   await page.locator('.portfolio-facts a[href="/platform"]').click();
   await expect(page).toHaveURL(/\/platform$/);
-  await page.getByRole('link', { name: /Back to portfolio/ }).click();
+  await page.locator('footer a[href="/"]').click();
   await expect(page).toHaveURL(/\/$/);
   await page.waitForTimeout(1_300);
   const baseline = await cdpSample(cdp);
@@ -130,7 +130,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
       await page.getByRole('button', { name: 'All systems', exact: true }).click();
       await page.locator('.portfolio-facts a[href="/platform"]').click();
       await expect(page).toHaveURL(/\/platform$/);
-      await page.getByRole('link', { name: /Back to portfolio/ }).click();
+      await page.locator('footer a[href="/"]').click();
       await expect(page).toHaveURL(/\/$/);
     }
 
@@ -180,7 +180,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   await cdp.detach();
 });
 
-test('a backgrounded Chromium page and idle pages release WebGL; later pulses still render', async ({ page, context }) => {
+test('a minimized Chromium window and idle pages release WebGL; later pulses still render', async ({ page, context }) => {
   test.setTimeout(60_000);
   const cdp = await context.newCDPSession(page);
   await instrumentPage(page);
@@ -189,18 +189,21 @@ test('a backgrounded Chromium page and idle pages release WebGL; later pulses st
   await waitForDraw(page);
   expect((await resourceSnapshot(page)).webglLive).toBe(1);
 
-  const foreground = await context.newPage();
-  await foreground.goto('about:blank');
-  await foreground.bringToFront();
-  await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
-  await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
-  await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
-  const hiddenDraws = (await resourceSnapshot(page)).webglDraws;
-  await page.waitForTimeout(400);
-  expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
-
+  const {windowId} = await cdp.send('Browser.getWindowForTarget');
+  let hiddenDraws = 0;
+  try {
+    await cdp.send('Browser.setWindowBounds', {windowId,bounds:{windowState:'minimized'}});
+    await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId})).bounds.windowState).toBe('minimized');
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
+    await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
+    await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
+    hiddenDraws = (await resourceSnapshot(page)).webglDraws;
+    await page.waitForTimeout(400);
+    expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
+  } finally {
+    await cdp.send('Browser.setWindowBounds', {windowId,bounds:{windowState:'normal'}});
+  }
   await page.bringToFront();
-  await foreground.close();
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('visible');
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(false);
   await page.locator('.portfolio-language button[lang="en"]').click();

@@ -49,10 +49,10 @@ polling benchmark.
   documented absolute allowance over the warmed baseline and reject a
   practically monotonic increase across the final batches. Preserve all raw
   samples as a CI artifact for threshold review.
-- While the particle renderer is active, foreground a second real Chromium
-  page and assert the portfolio tab reports `document.visibilityState ===
+- While the particle renderer is active, minimize its real Chromium window
+  under Xvfb/Openbox, verify its window state, and assert the tab reports `document.visibilityState ===
   'hidden'` and `document.hidden === true`; verify context loss and draw
-  quiescence. Bring the portfolio tab forward again and assert it reports
+  quiescence. Restore the window and bring the tab forward again; assert it reports
   `visible` before verifying a later pulse renders. Also verify the normal idle
   timeout releases the renderer.
 - Delay a platform status response, confirm the submit control stays busy and

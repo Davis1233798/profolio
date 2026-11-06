@@ -102,7 +102,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   // Warm route chunks, application state, and the renderer before collecting the baseline.
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await waitForDraw(page);
-  await page.getByRole('link', { name: /Infrastructure center/ }).click();
+  await page.locator('.portfolio-facts a[href="/platform"]').click();
   await expect(page).toHaveURL(/\/platform$/);
   await page.getByRole('link', { name: /Back to portfolio/ }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -128,7 +128,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
 
       await page.getByRole('button', { name: 'Sales and service', exact: true }).click();
       await page.getByRole('button', { name: 'All systems', exact: true }).click();
-      await page.getByRole('link', { name: /Infrastructure center/ }).click();
+      await page.locator('.portfolio-facts a[href="/platform"]').click();
       await expect(page).toHaveURL(/\/platform$/);
       await page.getByRole('link', { name: /Back to portfolio/ }).click();
       await expect(page).toHaveURL(/\/$/);

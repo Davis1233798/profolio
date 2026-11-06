@@ -40,7 +40,7 @@ jobs:
       - name: Install Chromium for portfolio motion and language acceptance
         run: npx playwright install --with-deps chromium
       - name: Verify portfolio locale, motion and long-run resource lifecycle in Chromium
-        run: npx playwright test --config playwright.portfolio.config.ts
+        run: xvfb-run --auto-servernum npx playwright test --config playwright.portfolio.config.ts
       - name: Upload portfolio browser acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4

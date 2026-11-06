@@ -4,6 +4,13 @@ Evidence snapshot: 2026-11-05, Asia/Taipei. This file is not a live status feed.
 
 ## Current work
 
+Current priority (2026-11-06): public portfolio presentation and visitor access
+to every system's front office, back office and demo roles. The public demo
+entry iteration provides explicit front/back project links and one-click demo
+role sign-in through the existing authenticated station API. Google OAuth and
+private workspace-owner setup are deferred at the user's request; public demo
+access must not depend on them or expose private backup/key operations.
+
 | System / feature | Verified delivery | Still required |
 |---|---|---|
 | Long-running page resource lifecycle | [PR26](https://github.com/Davis1233798/profolio/pull/26) merged as `5b97344` after both exact-head CI runs passed, each with ten first-attempt Chromium cases. Includes idle/background WebGL disposal, a 2.5-million-pixel buffer cap, moving-particle bounds fix, abortable sequential snapshot polling and print-preview cleanup. | Main automatic OCI deployment and live revision verification are separate. No long-duration browser heap reduction is claimed. Independent-system print cleanup is merged in ERP, CRM, Shop, POS and Dining; [MES PR12](https://github.com/Davis1233798/business-suite-mes/pull/12) awaits its updated exact-head checks. |

@@ -40,6 +40,14 @@ browser interaction with a deliberately delayed stub response to deterministical
 check the UI's pending/busy behavior; it is not an API latency or production
 polling benchmark.
 
+Existing motion/locale checks retain their headless browser configuration. The
+resource project uses real headful Chromium under Xvfb/Openbox without video or
+trace screencasting: active capture can affect Chromium's visibility lifecycle
+and adds recording overhead to the repeated workload. DOM/source traces, raw
+post-GC metrics and failure screenshots remain available. Real minimized-window
+and `document.hidden` assertions remain mandatory; disabling capture is not a
+substitute for observing them pass.
+
 ## Acceptance coverage
 
 - Repeat language changes, project detail previews, filter changes, and

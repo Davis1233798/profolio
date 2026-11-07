@@ -34,11 +34,9 @@ app.whenReady().then(async()=>{try{const origin=await startBackend();session.def
    const options=await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.system-switch option')).map(o=>o.value).filter(Boolean).sort()");
    if(JSON.stringify(options)!==JSON.stringify(['crm','erp','mes']))throw new Error('Unexpected desktop system switch for '+site);
    for(const role of ['front','admin']){
-    if(role==='admin'){await window.loadURL(origin+'/'+site+'/login');await waitFor("document.querySelector('form') !== null")}
-    await waitFor("Array.from(document.querySelectorAll('.account-card')).some(b=>b.textContent.includes('"+role+"@suite.test'))");
-    await window.webContents.executeJavaScript("Array.from(document.querySelectorAll('.account-card')).find(b=>b.textContent.includes('"+role+"@suite.test')).click()");
-    await waitFor("document.querySelector('input[type=email]')?.value === '"+role+"@suite.test'");
-    await window.webContents.executeJavaScript("document.querySelector('form').requestSubmit()");
+    await window.loadURL(origin+'/'+site+'/login?view='+(role==='front'?'front':'back'));
+    await waitFor("document.querySelector('.demo-role-card[data-demo-role=\""+role+"\"]') !== null");
+    await window.webContents.executeJavaScript("document.querySelector('.demo-role-card[data-demo-role=\""+role+"\"]').click()");
     await waitFor("document.querySelector('.station-sidebar') !== null");
     const current=await window.webContents.executeJavaScript("location.pathname");
     if(current!=='/'+site+(role==='admin'?'/back':'/front'))throw new Error('Unexpected '+site+' '+role+' workspace: '+current);

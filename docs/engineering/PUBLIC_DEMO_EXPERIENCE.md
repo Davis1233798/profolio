@@ -31,3 +31,13 @@ Capture screenshots for public UX review in CI. No local tests/builds run.
 
 This improves discovery and public demo entry. It does not prove independent
 OCI cutover or complete private OAuth setup.
+
+## Back-office dataset navigation
+
+Remote screenshots revealed internal dataset keys in the MES and Dining
+navigation. The CRM sales stages entry uses the same fallback. The station UI
+must map the dataset keys published by the Go station to English and
+Traditional Chinese display labels. Preserve the keys in URLs, API requests
+and stored records. Use the same labels for sidebar links and table headings.
+Remote browser acceptance verifies both languages on all three affected
+workspaces after signing in through the public role chooser.

@@ -130,6 +130,16 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:18095/api/health > /dev/null
           npx playwright test --config playwright.station.config.ts
+      - name: Upload public system demo screenshots and browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-system-demo-${{ github.sha }}
+          path: |
+            outputs/browser/station-demo/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Assemble versioned delivery artifact
         run: |
           cp -R web-dist release/web-dist

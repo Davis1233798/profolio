@@ -13,7 +13,8 @@ async function warmPortfolioWebGL(page: import('@playwright/test').Page) {
 test('workspace tools require a real account and public exports reject demo cookies', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('link', { name: 'Download JSON backup', exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Workspace administration', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Workspace administration', exact: true })).toHaveCount(0);
+  await page.goto('/admin/workspace');
   await expect(page).toHaveURL(/\/admin\/workspace$/);
   await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Generate key', exact: true })).toHaveCount(0);
@@ -46,7 +47,7 @@ test('language changes real copy, persists and survives page navigation', async 
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('讓複雜業務');
-  await expect(page.getByRole('link', { name: '資料管理後台' })).toBeVisible();
+  await expect(page.locator('.portfolio-cards a[data-demo-view="back"]')).toHaveCount(6);
   await expect(page.getByRole('link', { name: '下載 JSON 備份' })).toHaveCount(0);
   expect(await page.evaluate(() => Number(document.documentElement.dataset.portfolioDraws || 0))).toBeGreaterThan(0);
   await page.screenshot({ path: 'outputs/browser/portfolio-language-zh.png', fullPage: false });
@@ -60,6 +61,18 @@ test('language changes real copy, persists and survives page navigation', async 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('One place to manage');
   expect(errors).toEqual([]);
+});
+
+test('each portfolio project has distinct public front-office and back-office entries',async({page})=>{
+ await page.goto('/');
+ for(const view of ['front','back']){
+  const links=page.locator(`.portfolio-cards a[data-demo-view="${view}"]`);
+  await expect(links).toHaveCount(6);
+  for(const site of ['mes','erp','pos','crm','dining','shop']){
+   await expect(page.locator(`.portfolio-cards a[data-demo-view="${view}"][href$="/${site}/login?view=${view}"]`)).toHaveCount(1);
+  }
+ }
+ await expect(page.locator('.portfolio-tools a[href="/admin/workspace"]')).toHaveCount(0);
 });
 
 test('reduced motion keeps language and links usable without WebGL', async ({ page }) => {

@@ -21,7 +21,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const sequence = useRef(0);
   const pathname = usePathname();
   const initialized = useRef(false);
-  const controller = useRef<{ play(pulse: ParticlePulse): void; dispose(): void } | null>(null);
+  const controller = useRef<{ play(pulse: ParticlePulse): void; stop(): void; dispose(): void } | null>(null);
   const controllerLoading = useRef(false);
   const latestPulse = useRef<ParticlePulse | null>(null);
   const mounted = useRef(true);
@@ -89,7 +89,11 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     if (!pulse) return;
-    const timeout = window.setTimeout(() => setPulse(current => current?.id === pulse.id ? null : current), 1150);
+    const timeout = window.setTimeout(() => {
+      if (latestPulse.current?.id !== pulse.id) return;
+      controller.current?.stop();
+      setPulse(current => current?.id === pulse.id ? null : current);
+    }, 1150);
     return () => window.clearTimeout(timeout);
   }, [pulse]);
   const context = useMemo(() => ({ locale, t: (english: string, chinese?: string) => locale === 'zh-TW' ? chinese ?? portfolioChinese[english] ?? english : english }), [locale]);

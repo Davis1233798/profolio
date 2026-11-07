@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import type { ParticlePulse } from './portfolio-experience';
 
 /** A mounted canvas owns one renderer and reuses its bounded GPU resources. */
-export function createParticleController(canvas: HTMLCanvasElement): { play(pulse: ParticlePulse): void; dispose(): void } {
+export function createParticleController(canvas: HTMLCanvasElement): { play(pulse: ParticlePulse): void; stop(): void; dispose(): void } {
   let renderer: THREE.WebGLRenderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' }); }
-  catch { return { play() {}, dispose() {} }; }
+  catch { return { play() {}, stop() {}, dispose() {} }; }
 
   let width = Math.max(1, window.innerWidth), height = Math.max(1, window.innerHeight);
   const maxPixels = 2_500_000;
@@ -92,6 +92,12 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
       }
       geometry.attributes.color.needsUpdate = true;
       resume();
+    },
+    stop() {
+      generation++; cancelFrame(); active = false;
+      if (disposed || lost) return;
+      material.uniforms.opacity.value = 0;
+      renderer.clear();
     },
     dispose() {
       if (disposed) return;

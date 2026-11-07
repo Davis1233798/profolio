@@ -2,6 +2,10 @@ export type Language = 'en' | 'zh-TW';
 export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
 export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
 const traditionalChinese:Record<string,string> = {
+  "Fiscal periods": "會計期間",
+  "MES product mappings": "MES 品項對應",
+  "Payments": "核銷紀錄",
+
   "● Stopped": "● 已停止",
   "Isolated transaction lab: this does not execute actual MES reports or shop orders.": "隔離交易實驗室：不會執行實際 MES 報工或電商訂單。",
   "Stopped before sending all requests.": "已停止，尚未送出全部請求。",

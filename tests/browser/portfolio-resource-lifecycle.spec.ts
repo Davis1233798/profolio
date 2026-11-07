@@ -94,9 +94,9 @@ async function waitForDraw(page: import('@playwright/test').Page, after = 0) {
 
 async function clickAnimatedControl(locator: import('@playwright/test').Locator) {
   await locator.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
-  await expect(locator).toBeInViewport();
   // Keep the real pointer event while bypassing Playwright's stability gate for
-  // cards with continuously updating decorative spotlight layers.
+  // animated presentation layers. The assertion after each click verifies the
+  // intended control received and handled the interaction.
   await locator.click({ force: true });
 }
 
@@ -140,8 +140,12 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
         await expect(preview).toHaveAttribute('aria-expanded', 'false');
       }
 
-      await clickAnimatedControl(page.getByRole('button', { name: 'Sales and service', exact: true }));
-      await clickAnimatedControl(page.getByRole('button', { name: 'All systems', exact: true }));
+      const salesFilter = page.getByRole('button', { name: 'Sales and service', exact: true });
+      await clickAnimatedControl(salesFilter);
+      await expect(salesFilter).toHaveAttribute('aria-pressed', 'true');
+      const allSystemsFilter = page.getByRole('button', { name: 'All systems', exact: true });
+      await clickAnimatedControl(allSystemsFilter);
+      await expect(allSystemsFilter).toHaveAttribute('aria-pressed', 'true');
       await clickAnimatedControl(page.locator('.portfolio-facts a[href="/platform"]'));
       await expect(page).toHaveURL(/\/platform$/);
       await clickAnimatedControl(page.locator('footer a[href="/"]'));

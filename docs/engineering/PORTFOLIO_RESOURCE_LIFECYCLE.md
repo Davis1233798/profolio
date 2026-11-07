@@ -46,9 +46,11 @@ trace screencasting: active capture can affect Chromium's visibility lifecycle
 and adds recording overhead to the repeated workload. It uses the window
 manager to hide the measured Chromium window while a second real page is
 foregrounded, then requires the page's actual `document.hidden` signals and
-renderer release. DOM/source traces, raw post-GC metrics and failure screenshots
-remain available. Disabling capture is not a substitute for observing the
-visibility assertions pass.
+renderer release. That project omits Chromium's default
+`--disable-backgrounding-occluded-windows` and `--disable-renderer-backgrounding`
+switches so its real visibility lifecycle remains observable. DOM/source traces,
+raw post-GC metrics and failure screenshots remain available. Disabling capture
+is not a substitute for observing the visibility assertions pass.
 
 ## Acceptance coverage
 

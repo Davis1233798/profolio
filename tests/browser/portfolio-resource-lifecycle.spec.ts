@@ -98,6 +98,9 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   await cdp.send('HeapProfiler.enable');
   await instrumentPage(page);
   await page.goto('/');
+  // Playwright's scroll-into-view action otherwise inherits the site's smooth
+  // scrolling and can wait forever for stability during the repeated workload.
+  await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
 
   // Warm route chunks, application state, and the renderer before collecting the baseline.
   await page.getByRole('button', { name: '繁中', exact: true }).click();
@@ -191,11 +194,17 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
   await waitForDraw(page);
   expect((await resourceSnapshot(page)).webglLive).toBe(1);
 
+  // Keep another real Chromium window available so minimizing the measured
+  // window causes an actual focus/visibility transition under Xvfb/Openbox.
+  const foreground = await context.newPage();
+  await foreground.goto('about:blank');
+  await page.bringToFront();
   const {windowId} = await cdp.send('Browser.getWindowForTarget');
   let hiddenDraws = 0;
   try {
     await cdp.send('Browser.setWindowBounds', {windowId,bounds:{windowState:'minimized'}});
     await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId})).bounds.windowState).toBe('minimized');
+    await foreground.bringToFront();
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
     await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
     await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
@@ -218,6 +227,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
   expect(idle.webglMaxLive).toBe(1);
   expect(idle.webglLosses).toBeGreaterThanOrEqual(2);
   await test.info().attach('portfolio-hidden-idle-renderer', { body: JSON.stringify(idle), contentType: 'application/json' });
+  await foreground.close();
   await cdp.detach();
 });
 

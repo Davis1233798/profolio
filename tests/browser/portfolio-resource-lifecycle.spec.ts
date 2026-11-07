@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 
 type BrowserResources = {
   pending: number;
@@ -91,6 +92,14 @@ async function waitForDraw(page: import('@playwright/test').Page, after = 0) {
   await expect.poll(async () => (await resourceSnapshot(page)).webglDraws, { timeout: 15_000 }).toBeGreaterThan(after);
 }
 
+async function clickAnimatedControl(locator: import('@playwright/test').Locator) {
+  await locator.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
+  await expect(locator).toBeInViewport();
+  // Keep the real pointer event while bypassing Playwright's stability gate for
+  // cards with continuously updating decorative spotlight layers.
+  await locator.click({ force: true });
+}
+
 test('repeated portfolio interactions keep post-GC browser resources bounded', async ({ page, context }) => {
   test.setTimeout(180_000);
   const cdp = await context.newCDPSession(page);
@@ -125,10 +134,10 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
       await expect(previews).toHaveCount(6);
       for (let index = 0; index < 6; index++) {
         const preview = previews.nth(index);
-        await preview.scrollIntoViewIfNeeded();
-        await preview.click();
+        await clickAnimatedControl(preview);
         await expect(preview).toHaveAttribute('aria-expanded', 'true');
-        await preview.click();
+        await clickAnimatedControl(preview);
+        await expect(preview).toHaveAttribute('aria-expanded', 'false');
       }
 
       await page.getByRole('button', { name: 'Sales and service', exact: true }).click();
@@ -198,13 +207,21 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
   // window causes an actual focus/visibility transition under Xvfb/Openbox.
   const foreground = await context.newPage();
   await foreground.goto('about:blank');
+  await foreground.evaluate(() => { document.title = 'Portfolio lifecycle foreground'; });
   await page.bringToFront();
-  const {windowId} = await cdp.send('Browser.getWindowForTarget');
+  const measuredTitle = await page.title();
+  const {windowId: browserWindowId} = await cdp.send('Browser.getWindowForTarget');
   let hiddenDraws = 0;
   try {
-    await cdp.send('Browser.setWindowBounds', {windowId,bounds:{windowState:'minimized'}});
-    await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId})).bounds.windowState).toBe('minimized');
+    await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'minimized'}});
+    await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId:browserWindowId})).bounds.windowState).toBe('minimized');
     await foreground.bringToFront();
+    execFileSync('wmctrl', ['-a', 'Portfolio lifecycle foreground']);
+    const measuredWindow = execFileSync('wmctrl', ['-l'], { encoding: 'utf8' })
+      .split(/\r?\n/).find(line => line.includes(measuredTitle));
+    if (!measuredWindow) throw new Error(`Could not find Chromium window titled ${measuredTitle}`);
+    const x11WindowId = measuredWindow.split(/\s+/, 1)[0];
+    execFileSync('xdotool', ['windowminimize', x11WindowId]);
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
     await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
     await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
@@ -212,7 +229,10 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await page.waitForTimeout(400);
     expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
   } finally {
-    await cdp.send('Browser.setWindowBounds', {windowId,bounds:{windowState:'normal'}});
+    const measuredWindow = execFileSync('wmctrl', ['-l'], { encoding: 'utf8' })
+      .split(/\r?\n/).find(line => line.includes(measuredTitle));
+    if (measuredWindow) execFileSync('xdotool', ['windowmap', measuredWindow.split(/\s+/, 1)[0]]);
+    await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'normal'}});
   }
   await page.bringToFront();
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('visible');

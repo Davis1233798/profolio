@@ -43,10 +43,12 @@ polling benchmark.
 Existing motion/locale checks retain their headless browser configuration. The
 resource project uses real headful Chromium under Xvfb/Openbox without video or
 trace screencasting: active capture can affect Chromium's visibility lifecycle
-and adds recording overhead to the repeated workload. DOM/source traces, raw
-post-GC metrics and failure screenshots remain available. Real minimized-window
-and `document.hidden` assertions remain mandatory; disabling capture is not a
-substitute for observing them pass.
+and adds recording overhead to the repeated workload. It uses the window
+manager to hide the measured Chromium window while a second real page is
+foregrounded, then requires the page's actual `document.hidden` signals and
+renderer release. DOM/source traces, raw post-GC metrics and failure screenshots
+remain available. Disabling capture is not a substitute for observing the
+visibility assertions pass.
 
 ## Acceptance coverage
 

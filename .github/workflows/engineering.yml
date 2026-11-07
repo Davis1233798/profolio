@@ -40,7 +40,7 @@ jobs:
       - name: Install Chromium for portfolio motion and language acceptance
         run: npx playwright install --with-deps chromium
       - name: Install the window manager for real minimized-window acceptance
-        run: sudo apt-get update && sudo apt-get install -y openbox
+        run: sudo apt-get update && sudo apt-get install -y openbox wmctrl xdotool
       - name: Verify portfolio locale, motion and long-run resource lifecycle in Chromium
         run: |
           xvfb-run --auto-servernum bash -c '

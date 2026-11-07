@@ -221,7 +221,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId:browserWindowId})).bounds.windowState).toBe('minimized');
     await foreground.bringToFront();
     execFileSync('xdotool', ['windowminimize', measuredX11WindowId]);
-    await cdp.send('Emulation.setVisibilityState', { visibilityState: 'hidden' });
+    await (cdp.send as any)('Emulation.setVisibilityState', { visibilityState: 'hidden' });
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
     await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
     await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
@@ -229,7 +229,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await page.waitForTimeout(400);
     expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
   } finally {
-    await cdp.send('Emulation.setVisibilityState', { visibilityState: 'visible' }).catch(() => {});
+    await (cdp.send as any)('Emulation.setVisibilityState', { visibilityState: 'visible' }).catch(() => {});
     execFileSync('xdotool', ['windowmap', measuredX11WindowId]);
     await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'normal'}});
   }

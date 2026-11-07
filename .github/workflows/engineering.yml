@@ -39,8 +39,16 @@ jobs:
       - run: node scripts/smoke-mes-projection-web.mjs http://127.0.0.1:8090
       - name: Install Chromium for portfolio motion and language acceptance
         run: npx playwright install --with-deps chromium
-      - name: Verify portfolio language, navigation, WebGL fallback and reduced motion
-        run: npx playwright test --config playwright.portfolio.config.ts
+      - name: Install the window manager for real minimized-window acceptance
+        run: sudo apt-get update && sudo apt-get install -y openbox xdotool
+      - name: Verify portfolio locale, motion and long-run resource lifecycle in Chromium
+        run: |
+          xvfb-run --auto-servernum bash -c '
+            openbox --sm-disable > "$RUNNER_TEMP/portfolio-openbox.log" 2>&1 &
+            manager=$!
+            trap "kill $manager 2>/dev/null || true" EXIT
+            npx playwright test --config playwright.portfolio.config.ts
+          '
       - name: Upload portfolio browser acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -245,13 +245,6 @@ func (a *App) initializeDemo(space string) error {
 		return errors.New("Invalid demo workspace")
 	}
 	org := "org_test_" + space
-	var n int
-	if e := a.db.QueryRow("SELECT count(*) FROM station_accounts WHERE organization_id=?", org).Scan(&n); e != nil {
-		return e
-	}
-	if n == 4 {
-		return nil
-	}
 	hash, e := passwordHash(testPassword, "")
 	if e != nil {
 		return e
@@ -261,7 +254,12 @@ func (a *App) initializeDemo(space string) error {
 		return e
 	}
 	defer tx.Rollback()
-	if _, e = tx.Exec("INSERT OR IGNORE INTO organizations(id,name,slug) VALUES(?,?,?)", org, "Isolated demo organization", org); e != nil {
+	created, e := tx.Exec("INSERT OR IGNORE INTO organizations(id,name,slug) VALUES(?,?,?)", org, "Isolated demo organization", org)
+	if e != nil {
+		return e
+	}
+	inserted, e := created.RowsAffected()
+	if e != nil || inserted == 0 {
 		return e
 	}
 	for _, p := range demoPeople {
@@ -342,27 +340,42 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 		space = token()
 	}
 	org := "org_test_" + space
-	// Shared database rate limits cannot be reset with a fresh process or cookie.
-	limitKey := digest(strings.Split(r.RemoteAddr, ":")[0] + "|" + strings.ToLower(input.Email))
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	address := stationLoginAddress(r)
 	now := time.Now().UnixMilli()
-	_, e := a.db.Exec(`INSERT INTO station_login_limits(key,attempts,reset_at) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET attempts=CASE WHEN reset_at<? THEN 1 ELSE attempts+1 END,reset_at=CASE WHEN reset_at<? THEN ? ELSE reset_at END`, limitKey, now+900000, now, now, now+900000)
-	if e != nil {
+	// Enforce an address budget before allocating account-specific rate-limit rows.
+	for _, bucket := range []struct {
+		key   string
+		limit int
+	}{{"station-ip|" + address, 60}, {address + "|" + email, 20}} {
+		allowed, e := a.stationLoginAllowed(r.Context(), bucket.key, bucket.limit, now)
+		if e != nil {
+			fail(w, 503, "Sign-in service is temporarily unavailable")
+			return
+		}
+		if !allowed {
+			fail(w, 429, "Too many sign-in attempts. Try again later")
+			return
+		}
+	}
+	var exists bool
+	if e := a.db.QueryRowContext(r.Context(), "SELECT EXISTS(SELECT 1 FROM organizations WHERE id=?)", org).Scan(&exists); e != nil {
 		fail(w, 503, "Sign-in service is temporarily unavailable")
 		return
 	}
-	var attempts int
-	if a.db.QueryRow("SELECT attempts FROM station_login_limits WHERE key=?", limitKey).Scan(&attempts) != nil || attempts > 20 {
-		fail(w, 429, "Too many sign-in attempts. Try again later")
-		return
+	if !exists {
+		if !publishedDemoCredentials(email, input.Password) {
+			fail(w, 401, "Invalid credentials or workspace access")
+			return
+		}
+		if e := a.initializeDemo(space); e != nil {
+			log.Print(e)
+			fail(w, 500, "Unable to create demo workspace")
+			return
+		}
 	}
-	if e = a.initializeDemo(space); e != nil {
-		log.Print(e)
-		fail(w, 500, "Unable to create demo workspace")
-		return
-	}
-	cookie(w, r, demoCookie, space, 604800)
 	var user, hash string
-	e = a.db.QueryRow(`SELECT a.user_id,a.password_hash FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND a.email=? AND a.disabled=0 AND g.site=? AND g.enabled=1`, org, strings.ToLower(strings.TrimSpace(input.Email)), input.Site).Scan(&user, &hash)
+	e := a.db.QueryRow(`SELECT a.user_id,a.password_hash FROM station_accounts a JOIN station_grants g ON g.user_id=a.user_id WHERE a.organization_id=? AND a.email=? AND a.disabled=0 AND g.site=? AND g.enabled=1`, org, email, input.Site).Scan(&user, &hash)
 	if e != nil || !passwordOK(input.Password, hash) {
 		fail(w, 401, "Invalid credentials or workspace access")
 		return
@@ -371,6 +384,7 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, "Unable to create session")
 		return
 	}
+	cookie(w, r, demoCookie, space, 604800)
 	ok(w, map[string]bool{"signedIn": true})
 }
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {

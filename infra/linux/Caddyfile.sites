@@ -60,5 +60,7 @@ station.{$BASE_DOMAIN} {
         Referrer-Policy strict-origin-when-cross-origin
         -Server
     }
-    reverse_proxy station:8095
+    reverse_proxy station:8095 {
+        header_up X-Suite-Station-Client-IP {remote_host}
+    }
 }

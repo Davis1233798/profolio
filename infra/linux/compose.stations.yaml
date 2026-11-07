@@ -10,6 +10,7 @@ services:
       SUITE_WEB: /srv/station/web-dist
       SUITE_DB: /srv/station/data/stations.sqlite
       SUITE_ADDR: 0.0.0.0:8095
+      SUITE_STATION_TRUSTED_EDGE_HOST: edge
       INFRA_GATEWAY_URL: http://gateway:8080
       INFRA_GATEWAY_TOKEN: ${GATEWAY_TOKEN:?set GATEWAY_TOKEN}
     volumes:

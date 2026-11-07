@@ -37,3 +37,44 @@ test('read-only demo stays restricted and the demo chooser localizes',async({pag
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  await page.screenshot({path:'outputs/browser/station-demo/erp-login-mobile-zh.png',fullPage:false});
 });
+
+const localizedDatasets = {
+ mes: [
+  ['finishedGoodsBatches', 'Finished goods batches', '成品批次'],
+  ['finishedGoodsQualityDispositions', 'Finished goods quality dispositions', '成品品質處置'],
+  ['finishedGoodsResolutions', 'Finished goods resolutions', '成品處理結果'],
+  ['finishedGoodsInventory', 'Finished goods inventory', '成品庫存'],
+  ['finishedGoodsReceipts', 'Finished goods receipts', '成品入庫紀錄'],
+ ],
+ crm: [['stages', 'Sales stages', '銷售階段']],
+ dining: [
+  ['modifierGroups', 'Modifier groups', '餐點選項群組'],
+  ['modifierOptions', 'Modifier options', '餐點選項'],
+  ['locations', 'Locations', '營業據點'],
+  ['sessions', 'Table sessions', '用餐場次'],
+  ['kitchenTickets', 'Kitchen tickets', '廚房出餐單'],
+  ['billSummaries', 'Bill summaries', '帳單摘要'],
+ ],
+};
+
+for (const [site, datasets] of Object.entries(localizedDatasets)) {
+ test(`${site} renders dataset navigation in both languages`, async ({page}) => {
+  test.setTimeout(60_000);
+  for (const locale of ['en', 'zh-TW']) {
+   await page.goto(`/${site}/login?view=back`);
+   if (locale === 'zh-TW') {
+    await page.getByLabel('Language', {exact: true}).selectOption(locale);
+   }
+   await page.getByRole('button', {
+    name: locale === 'en' ? 'Enter demo as Administrator' : '以管理員體驗',
+    exact: true,
+   }).click();
+   await expect(page).toHaveURL(new RegExp(`/${site}/back$`));
+   for (const [key, english, chinese] of datasets) {
+    const label = locale === 'en' ? english : chinese;
+    await expect(page.locator(`.station-sidebar a[href="/${site}/back?dataset=${key}"]`)).toHaveText(label);
+    await expect(page.locator('.dataset').getByRole('heading', {name: label, exact: true})).toBeVisible();
+   }
+  }
+ });
+}

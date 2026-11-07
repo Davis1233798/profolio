@@ -115,6 +115,8 @@ jobs:
       - name: Build Linux station server
         working-directory: backend
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../release/station-server .
+      - name: Verify separate station login budgets through Caddy
+        run: python3 infra/tests/smoke_station_login_edge.py
       - name: Install Chromium for station dataset acceptance
         run: npx playwright install --with-deps chromium
       - name: Verify bounded station datasets against the Go server

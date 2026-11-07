@@ -114,9 +114,9 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
   // Warm route chunks, application state, and the renderer before collecting the baseline.
   await page.getByRole('button', { name: '繁中', exact: true }).click();
   await waitForDraw(page);
-  await page.locator('.portfolio-facts a[href="/platform"]').click();
+  await clickAnimatedControl(page.locator('.portfolio-facts a[href="/platform"]'));
   await expect(page).toHaveURL(/\/platform$/);
-  await page.locator('footer a[href="/"]').click();
+  await clickAnimatedControl(page.locator('footer a[href="/"]'));
   await expect(page).toHaveURL(/\/$/);
   await page.waitForTimeout(1_300);
   const baseline = await cdpSample(cdp);
@@ -140,11 +140,11 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
         await expect(preview).toHaveAttribute('aria-expanded', 'false');
       }
 
-      await page.getByRole('button', { name: 'Sales and service', exact: true }).click();
-      await page.getByRole('button', { name: 'All systems', exact: true }).click();
-      await page.locator('.portfolio-facts a[href="/platform"]').click();
+      await clickAnimatedControl(page.getByRole('button', { name: 'Sales and service', exact: true }));
+      await clickAnimatedControl(page.getByRole('button', { name: 'All systems', exact: true }));
+      await clickAnimatedControl(page.locator('.portfolio-facts a[href="/platform"]'));
       await expect(page).toHaveURL(/\/platform$/);
-      await page.locator('footer a[href="/"]').click();
+      await clickAnimatedControl(page.locator('footer a[href="/"]'));
       await expect(page).toHaveURL(/\/$/);
     }
 
@@ -207,21 +207,16 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
   // window causes an actual focus/visibility transition under Xvfb/Openbox.
   const foreground = await context.newPage();
   await foreground.goto('about:blank');
-  await foreground.evaluate(() => { document.title = 'Portfolio lifecycle foreground'; });
   await page.bringToFront();
-  const measuredTitle = await page.title();
+  const measuredX11WindowId = execFileSync('xdotool', ['getactivewindow'], { encoding: 'utf8' }).trim();
+  if (!measuredX11WindowId) throw new Error('Could not identify the active Chromium X11 window');
   const {windowId: browserWindowId} = await cdp.send('Browser.getWindowForTarget');
   let hiddenDraws = 0;
   try {
     await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'minimized'}});
     await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId:browserWindowId})).bounds.windowState).toBe('minimized');
     await foreground.bringToFront();
-    execFileSync('wmctrl', ['-a', 'Portfolio lifecycle foreground']);
-    const measuredWindow = execFileSync('wmctrl', ['-l'], { encoding: 'utf8' })
-      .split(/\r?\n/).find(line => line.includes(measuredTitle));
-    if (!measuredWindow) throw new Error(`Could not find Chromium window titled ${measuredTitle}`);
-    const x11WindowId = measuredWindow.split(/\s+/, 1)[0];
-    execFileSync('xdotool', ['windowminimize', x11WindowId]);
+    execFileSync('xdotool', ['windowminimize', measuredX11WindowId]);
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
     await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
     await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
@@ -229,9 +224,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await page.waitForTimeout(400);
     expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
   } finally {
-    const measuredWindow = execFileSync('wmctrl', ['-l'], { encoding: 'utf8' })
-      .split(/\r?\n/).find(line => line.includes(measuredTitle));
-    if (measuredWindow) execFileSync('xdotool', ['windowmap', measuredWindow.split(/\s+/, 1)[0]]);
+    execFileSync('xdotool', ['windowmap', measuredX11WindowId]);
     await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'normal'}});
   }
   await page.bringToFront();

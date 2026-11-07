@@ -61,8 +61,9 @@ func TestPublicDemoTrustedEdgeDoesNotShareOneLoginBudget(t *testing.T) {
 			t.Fatalf("client A attempt %d returned %d", i+1, status)
 		}
 	}
-	if status := loginFrom("192.0.2.2"); status != http.StatusTooManyRequests {
-		t.Fatalf("exhausted client A returned %d", status)
+	retry := publicDemoSignIn(a, "127.0.0.1:2345", " VIEWER@suite.test ", testPassword, token(), "192.0.2.2")
+	if retry.Code != http.StatusTooManyRequests {
+		t.Fatalf("exhausted client A returned %d after rotating cookie and email case", retry.Code)
 	}
 	if status := loginFrom("2001:db8::2"); status != http.StatusOK {
 		t.Fatalf("different client behind the same edge returned %d", status)
@@ -83,4 +84,36 @@ func TestPublicDemoUntrustedPeerCannotRotateClientHeader(t *testing.T) {
 	if w.Code != http.StatusTooManyRequests {
 		t.Fatalf("spoofed client address returned %d", w.Code)
 	}
+}
+
+func TestPublicDemoExistingAccountRequiresStoredCredentialAndGrant(t *testing.T) {
+	a := appForTest(t)
+	space := token()
+	const peer = "192.0.2.5:1234"
+	const email = "viewer@suite.test"
+	const newPassword = "ci-fixture-changed-password"
+	signIn := func(password string, expected int) {
+		t.Helper()
+		w := publicDemoSignIn(a, peer, email, password, space)
+		if w.Code != expected {
+			t.Fatalf("sign-in returned %d, expected %d", w.Code, expected)
+		}
+		if expected != http.StatusOK && len(w.Result().Cookies()) != 0 {
+			t.Fatal("failed sign-in issued a cookie")
+		}
+	}
+	signIn(testPassword, http.StatusOK)
+	hash, err := passwordHash(newPassword, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("UPDATE station_accounts SET password_hash=? WHERE organization_id=? AND email=?", hash, "org_test_"+space, email); err != nil {
+		t.Fatal(err)
+	}
+	signIn(testPassword, http.StatusUnauthorized)
+	signIn(newPassword, http.StatusOK)
+	if _, err := a.db.Exec("UPDATE station_accounts SET disabled=1 WHERE organization_id=? AND email=?", "org_test_"+space, email); err != nil {
+		t.Fatal(err)
+	}
+	signIn(newPassword, http.StatusUnauthorized)
 }

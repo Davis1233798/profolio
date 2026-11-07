@@ -121,9 +121,11 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
       const previews = page.locator('.project-actions button');
       await expect(previews).toHaveCount(6);
       for (let index = 0; index < 6; index++) {
-        await previews.nth(index).click();
-        await expect(previews.nth(index)).toHaveAttribute('aria-expanded', 'true');
-        await previews.nth(index).click();
+        const preview = previews.nth(index);
+        await preview.scrollIntoViewIfNeeded();
+        await preview.click();
+        await expect(preview).toHaveAttribute('aria-expanded', 'true');
+        await preview.click();
       }
 
       await page.getByRole('button', { name: 'Sales and service', exact: true }).click();

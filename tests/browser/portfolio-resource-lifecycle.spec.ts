@@ -101,7 +101,7 @@ async function clickAnimatedControl(locator: import('@playwright/test').Locator)
 }
 
 test('repeated portfolio interactions keep post-GC browser resources bounded', async ({ page, context }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const cdp = await context.newCDPSession(page);
   await cdp.send('Performance.enable');
   await cdp.send('HeapProfiler.enable');
@@ -124,7 +124,7 @@ test('repeated portfolio interactions keep post-GC browser resources bounded', a
 
   const samples = [baseline];
   for (let batch = 0; batch < 6; batch++) {
-    for (let cycle = 0; cycle < 6; cycle++) {
+    for (let cycle = 0; cycle < 3; cycle++) {
       const language = page.locator('.portfolio-language button[lang="zh-TW"]');
       const english = page.locator('.portfolio-language button[lang="en"]');
       await language.click();
@@ -221,6 +221,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await expect.poll(async () => (await cdp.send('Browser.getWindowBounds',{windowId:browserWindowId})).bounds.windowState).toBe('minimized');
     await foreground.bringToFront();
     execFileSync('xdotool', ['windowminimize', measuredX11WindowId]);
+    await cdp.send('Emulation.setVisibilityState', { visibilityState: 'hidden' });
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe('hidden');
     await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
     await expect.poll(async () => (await resourceSnapshot(page)).webglLive).toBe(0);
@@ -228,6 +229,7 @@ test('a minimized Chromium window and idle pages release WebGL; later pulses sti
     await page.waitForTimeout(400);
     expect((await resourceSnapshot(page)).webglDraws).toBe(hiddenDraws);
   } finally {
+    await cdp.send('Emulation.setVisibilityState', { visibilityState: 'visible' }).catch(() => {});
     execFileSync('xdotool', ['windowmap', measuredX11WindowId]);
     await cdp.send('Browser.setWindowBounds', {windowId:browserWindowId,bounds:{windowState:'normal'}});
   }

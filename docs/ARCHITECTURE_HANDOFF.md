@@ -45,7 +45,7 @@ flowchart LR
   示範角色選擇。中央工作站提供行動、工作區、列印與標籤預覽。MES 與電商
   有受限併發展示。私人備份與金鑰工具有受保護路由。
   瀏覽器長時間資源生命週期與記憶體回歸測試（[#29](https://github.com/Davis1233798/profolio/pull/29) 已合併）。
-  Windows 原生 Rust 桌面端進程監督者整合與獨立應用程式視窗啟動（[#34](https://github.com/Davis1233798/profolio/pull/34) 已合併；支援 Edge/Chrome 獨立 App 模式視窗、無控制台黑框生命週期管理與自動進程結束）。
+  Windows 原生 Rust 桌面端進程監督者整合與獨立應用程式視窗啟動（[#34](https://github.com/Davis1233798/profolio/pull/34) 與 [#36](https://github.com/Davis1233798/profolio/pull/36) 已合併；支援 Edge/Chrome 獨立 App 模式視窗、無控制台黑框生命週期管理與自動進程結束）。
 - **功能邊界**：首頁負責展示及導航。交易由工作站處理。中央 Go 服務與
   既有 Web 各自使用資料庫；同一公開網域下的不同入口也可能走不同服務。
   併發展示驗證的是固定工作量下的交易結果。

@@ -373,13 +373,17 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
     }
     let browser_exe = find_browser_app_executable()?;
     let profile_dir = user_data_dir.join("webview-profile");
+    let _ = fs::create_dir_all(&profile_dir);
     let app_url = format!("http://{endpoint}/");
 
     let mut cmd = Command::new(browser_exe);
     cmd.arg(format!("--app={app_url}"))
-        .arg(format!("--user-data-dir={}", profile_dir.display()))
+        .arg("--user-data-dir")
+        .arg(&profile_dir)
         .arg("--window-size=1280,800")
-        .arg("--app-id=business-suite-desktop");
+        .arg("--app-id=business-suite-desktop")
+        .arg("--no-first-run")
+        .arg("--no-default-browser-check");
 
     match cmd.spawn() {
         Ok(child) => Some(child),

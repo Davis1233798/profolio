@@ -43,7 +43,31 @@ export type Identity = {
   grants: { site: string; role: string; scope: string; enabled: boolean }[];
 };
 
-export type PortalTab = 'modules' | 'sso' | 'audit' | 'license';
+export type SyncStatusResponse = {
+  syncMode: string;
+  pendingOutbox: number;
+  syncedCount: number;
+  activeConflicts: number;
+  lastSyncTimestamp: number;
+  lastSyncFormatted: string;
+  health: string;
+};
+
+export type SyncConflictEntry = {
+  id: string;
+  organizationId: string;
+  entityType: string;
+  entityId: string;
+  localPayload: string;
+  remotePayload: string;
+  conflictReason: string;
+  resolutionStatus: string;
+  createdAt: number;
+  resolvedAt?: number;
+  resolvedBy?: string;
+};
+
+export type PortalTab = 'modules' | 'sso' | 'audit' | 'license' | 'sync';
 
 const stationModules = [
   {
@@ -174,6 +198,9 @@ export function PortalDashboard({
   const [loginError, setLoginError] = useState('');
   const [newLicenseKey, setNewLicenseKey] = useState('');
   const [licenseMsg, setLicenseMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
+  const [syncConflicts, setSyncConflicts] = useState<SyncConflictEntry[]>([]);
+  const [syncMsg, setSyncMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
 
   // Load license status
@@ -202,16 +229,141 @@ export function PortalDashboard({
     }
   };
 
+  // Load sync status
+  const loadSyncStatus = async () => {
+    try {
+      const res = await fetch('/api/sync/status', { credentials: 'same-origin' });
+      const json = (await res.json()) as any;
+      if (json.success && json.data) {
+        setSyncStatus(json.data);
+      }
+    } catch (e) {
+      console.error('Failed to load sync status', e);
+    }
+  };
+
+  // Load sync conflicts
+  const loadSyncConflicts = async () => {
+    try {
+      const res = await fetch('/api/sync/conflicts', { credentials: 'same-origin' });
+      const json = (await res.json()) as any;
+      if (json.success && json.data?.conflicts) {
+        setSyncConflicts(json.data.conflicts);
+      }
+    } catch (e) {
+      console.error('Failed to load sync conflicts', e);
+    }
+  };
+
   useEffect(() => {
     void loadLicense();
     void loadAuditLogs();
+    void loadSyncStatus();
+    void loadSyncConflicts();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'audit') {
       void loadAuditLogs();
     }
+    if (activeTab === 'sync') {
+      void loadSyncStatus();
+      void loadSyncConflicts();
+    }
   }, [activeTab]);
+
+  // Trigger manual sync roundtrip
+  const handleTriggerSync = async () => {
+    setBusy(true);
+    setSyncMsg(null);
+    try {
+      // 1. Push pending batch
+      const pushRes = await fetch('/api/sync/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      });
+      const pushData = (await pushRes.json()) as any;
+      if (!pushRes.ok || !pushData.success) {
+        throw new Error(pushData.error?.message || '推送變更批次失敗');
+      }
+
+      const pushedItems = pushData.data?.batch || [];
+      const ids = pushedItems.map((it: any) => it.id);
+
+      // 2. Acknowledge pushed items
+      if (ids.length > 0) {
+        const ackRes = await fetch('/api/sync/ack', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ ids }),
+        });
+        const ackData = (await ackRes.json()) as any;
+        if (!ackRes.ok || !ackData.success) {
+          throw new Error(ackData.error?.message || '確認同步狀態失敗');
+        }
+      }
+
+      setSyncMsg({
+        text: `雲地同步完成！已成功推送 ${ids.length} 筆邊緣異動事件至中央同步節點。`,
+        ok: true,
+      });
+      await loadSyncStatus();
+      await loadAuditLogs();
+    } catch (err: any) {
+      setSyncMsg({ text: err.message || '同步執行失敗', ok: false });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Simulate concurrent conflict to demonstrate quarantine mechanism
+  const handleSimulateConflict = async () => {
+    setBusy(true);
+    setSyncMsg(null);
+    try {
+      // Send a simulated concurrent remote update
+      const res = await fetch('/api/sync/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          items: [
+            {
+              id: `sim_rem_${Date.now()}`,
+              organizationId: identity?.organizationId || 'org_test_default',
+              entityType: 'erp.customer_profile',
+              entityId: 'cust-simulated-conflict-01',
+              operation: 'UPDATE',
+              payload: JSON.stringify({
+                companyName: '雲端總部異動之客戶名稱',
+                creditLimit: 5000000,
+                updatedAt: new Date().toISOString(),
+              }),
+              idempotencyKey: `idemp_sim_${Date.now()}`,
+            },
+          ],
+        }),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || '模擬衝突失敗');
+      }
+
+      setSyncMsg({
+        text: `已完成模擬攝入！系統成功處理並寫入日誌（套用: ${data.data.ingested}, 冪等去重: ${data.data.deduplicated}, 衝突隔離: ${data.data.conflicts}）。`,
+        ok: true,
+      });
+      await loadSyncStatus();
+      await loadSyncConflicts();
+      await loadAuditLogs();
+    } catch (err: any) {
+      setSyncMsg({ text: err.message || '模擬失敗', ok: false });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // SSO Login action
   const handleSSOLogin = async (email: string, pass: string, targetRedirect?: string) => {
@@ -341,6 +493,19 @@ export function PortalDashboard({
         </div>
 
         <div className="portal-topbar-actions">
+          <button
+            type="button"
+            className="portal-sync-pill-btn"
+            onClick={() => setActiveTab('sync')}
+            title="檢視雲端與地端資料同步狀態與佇列"
+          >
+            <span className="sync-pulse-dot" />
+            <span className="sync-pill-text">雲地同步</span>
+            <span className="sync-pill-count">
+              {syncStatus ? `${syncStatus.pendingOutbox} 待傳` : '連線中'}
+            </span>
+          </button>
+
           {identity ? (
             <div className="portal-operator-badge">
               <div className="operator-avatar">
@@ -427,6 +592,24 @@ export function PortalDashboard({
             <span className="tab-label">企業授權中心</span>
             <span className="tab-pill">
               {licenseInfo ? `剩餘 ${licenseInfo.remainingDays} 天` : '授權資訊'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'sync'}
+            className={`portal-tab-btn ${activeTab === 'sync' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('sync');
+              void loadSyncStatus();
+              void loadSyncConflicts();
+            }}
+          >
+            <span className="tab-icon">🔄</span>
+            <span className="tab-label">雲地資料同步</span>
+            <span className="tab-pill">
+              {syncStatus ? `${syncStatus.pendingOutbox} 筆待同步` : '混合架構'}
             </span>
           </button>
         </nav>
@@ -934,6 +1117,253 @@ export function PortalDashboard({
                   >
                     3. 載入過期授權 (測試資料鎖定)
                   </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* =========================================================================
+            TAB 5: 雲地資料同步 (HYBRID CLOUD-EDGE SYNC)
+           ========================================================================= */}
+        {activeTab === 'sync' && (
+          <section className="portal-tab-pane portal-sync-pane">
+            {/* Sync Hero Banner */}
+            <div className="sync-hero-banner">
+              <div className="sync-hero-content">
+                <div className="sync-mode-tag">
+                  <span className="sync-live-pulse" />
+                  <span>雲地混合架構 (Hybrid Cloud-Edge Architecture) · 邊緣離線優先 & 雙向協同</span>
+                </div>
+                <h2>雲地即時資料同步與衝突仲裁中心</h2>
+                <p>
+                  地端門市 (POS) 與現場工廠 (MES) 具備離線自主權限，採用 UUIDv7 分散式唯一鍵與 Transactional Outbox 交易寄件匣模式。
+                  即便遭遇實體網路斷線，現場作業 100% 照常運作；連線恢復後自動透過批次冪等去重與數值 Delta 增量完成雙向收斂，重大併發歧異自動進入衝突隔離審核台帳。
+                </p>
+              </div>
+              <div className="sync-hero-stats">
+                <div className="sync-stat-pill">
+                  <span className="stat-num">{syncStatus?.pendingOutbox ?? 0}</span>
+                  <span className="stat-label">待同步寄件匣</span>
+                </div>
+                <div className="sync-stat-pill success">
+                  <span className="stat-num">{syncStatus?.syncedCount ?? 0}</span>
+                  <span className="stat-label">累計已同步筆數</span>
+                </div>
+                <div className="sync-stat-pill danger">
+                  <span className="stat-num">{syncStatus?.activeConflicts ?? 0}</span>
+                  <span className="stat-label">隔離衝突待審核</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sync Metric Cards */}
+            <div className="sync-metrics-grid">
+              <div className="sync-metric-card">
+                <div className="metric-header">
+                  <span className="metric-icon">🌐</span>
+                  <span className="metric-title">運作模式</span>
+                </div>
+                <div className="metric-value">離線自主 · 混合並行</div>
+                <div className="metric-desc">現場邊緣節點離線運作，網路可用時階梯同步</div>
+              </div>
+
+              <div className="sync-metric-card">
+                <div className="metric-header">
+                  <span className="metric-icon">📤</span>
+                  <span className="metric-title">本地寄件匣 (Outbox)</span>
+                </div>
+                <div className="metric-value highlight">{syncStatus?.pendingOutbox ?? 0} 筆</div>
+                <div className="metric-desc">本地交易 ACID 原子寫入，保障異動零遺失</div>
+              </div>
+
+              <div className="sync-metric-card">
+                <div className="metric-header">
+                  <span className="metric-icon">📥</span>
+                  <span className="metric-title">收件匣去重 (Inbox)</span>
+                </div>
+                <div className="metric-value success">{syncStatus?.syncedCount ?? 0} 筆</div>
+                <div className="metric-desc">Idempotency Key 冪等去重，精確一次 (Exactly-Once)</div>
+              </div>
+
+              <div className="sync-metric-card">
+                <div className="metric-header">
+                  <span className="metric-icon">🛡️</span>
+                  <span className="metric-title">衝突隔離區 (Quarantine)</span>
+                </div>
+                <div className={`metric-value ${(syncStatus?.activeConflicts ?? 0) > 0 ? 'danger' : 'safe'}`}>
+                  {syncStatus?.activeConflicts ?? 0} 筆衝突
+                </div>
+                <div className="metric-desc">並發衝突安全隔離，絕不阻塞正常資料同步流水線</div>
+              </div>
+            </div>
+
+            {/* Operations Control Bar */}
+            <div className="sync-ops-card">
+              <div className="ops-card-header">
+                <div>
+                  <h3>同步流水線控制與模擬測試</h3>
+                  <p>手動觸發雙向推播與接收，或模擬雲端併發寫入以檢驗衝突隔離機制：</p>
+                </div>
+                <div className="ops-card-actions">
+                  <button
+                    type="button"
+                    className="btn-sync-action primary"
+                    disabled={busy}
+                    onClick={() => void handleTriggerSync()}
+                  >
+                    {busy ? '同步處理中…' : '⚡ 立即執行雙向同步 (Push & Ack)'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-sync-action secondary"
+                    disabled={busy}
+                    onClick={() => void handleSimulateConflict()}
+                  >
+                    {busy ? '模擬中…' : '🧪 模擬雲地併發衝突 (Simulate Conflict)'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-sync-action ghost"
+                    disabled={busy}
+                    onClick={() => {
+                      void loadSyncStatus();
+                      void loadSyncConflicts();
+                    }}
+                  >
+                    🔄 刷新即時狀態
+                  </button>
+                </div>
+              </div>
+
+              {syncMsg && (
+                <div className={`portal-alert ${syncMsg.ok ? 'portal-alert-success' : 'portal-alert-error'}`}>
+                  {syncMsg.text}
+                </div>
+              )}
+            </div>
+
+            {/* Quarantine Review Table */}
+            <div className="sync-conflicts-card">
+              <div className="conflicts-card-header">
+                <h3>⚠️ 衝突隔離審核台帳 (Quarantined Conflict Records)</h3>
+                <span className="conflicts-count-badge">
+                  共 {syncConflicts.length} 筆待審核 / 隔離紀錄
+                </span>
+              </div>
+              <p className="conflicts-desc">
+                當雲端與地端發生不可自動合併的並發修改時，系統自動將遠端變更扣押於隔離區，保留完整現場與遠端版本資料以供稽核員或主管判定：
+              </p>
+
+              {syncConflicts.length === 0 ? (
+                <div className="conflicts-empty-state">
+                  <span className="empty-icon">✅</span>
+                  <div>
+                    <strong>目前無未解衝突事件</strong>
+                    <p>所有雲地異動皆透過 Delta 增量合併或冪等去重順暢收斂，或點擊上方「模擬雲地併發衝突」進行驗證。</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="conflicts-table-wrap">
+                  <table className="conflicts-table">
+                    <thead>
+                      <tr>
+                        <th>衝突 ID</th>
+                        <th>所屬模組 / 實體</th>
+                        <th>實體識別碼</th>
+                        <th>衝突原因</th>
+                        <th>隔離時間</th>
+                        <th>狀態</th>
+                        <th>版本對照 Payload</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {syncConflicts.map((c) => (
+                        <tr key={c.id}>
+                          <td><code>{c.id}</code></td>
+                          <td><span className="entity-tag">{c.entityType}</span></td>
+                          <td><code>{c.entityId}</code></td>
+                          <td className="conflict-reason-cell">{c.conflictReason}</td>
+                          <td>{new Date(c.createdAt).toLocaleString()}</td>
+                          <td>
+                            <span className={`status-badge ${c.resolutionStatus}`}>
+                              {c.resolutionStatus === 'quarantined' ? '⚠️ 已隔離扣押' : c.resolutionStatus}
+                            </span>
+                          </td>
+                          <td className="payload-inspect-cell">
+                            <details className="payload-dropdown">
+                              <summary>檢視 Payload 對照</summary>
+                              <div className="payload-compare-view">
+                                <div className="payload-col">
+                                  <h6>地端本地現有資料 (Local Payload)：</h6>
+                                  <pre>{c.localPayload || '(未提供或本地無現存資料)'}</pre>
+                                </div>
+                                <div className="payload-col">
+                                  <h6>雲端遠端傳入資料 (Remote Payload)：</h6>
+                                  <pre>{c.remotePayload || '(無)'}</pre>
+                                </div>
+                              </div>
+                            </details>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Architecture Highlights: 6 Pillars */}
+            <div className="sync-architecture-section">
+              <h3 className="section-title">🏛️ 雲地混合架構 6 大核心資料同步策略 (Hybrid Sync Architecture Pillars)</h3>
+              <div className="sync-architecture-grid">
+                <div className="sync-arch-card">
+                  <div className="arch-num">01</div>
+                  <h4>權威源領域劃分 (Authority Partitioning)</h4>
+                  <p>
+                    <strong>雲端權威：</strong> 組織主檔、產品型錄與標準價格表。<br />
+                    <strong>地端權威：</strong> MES 工單報工進度、POS 現場結帳發票 (斷網亦具 100% 營業能力)。
+                  </p>
+                </div>
+
+                <div className="sync-arch-card">
+                  <div className="arch-num">02</div>
+                  <h4>分散式時間唯一鍵 (UUIDv7 Primary Keys)</h4>
+                  <p>
+                    全域拋棄傳統 Auto-Increment 自增整數 ID，採用 UUIDv7 具備毫秒級時間戳排序與隨機熵，徹底根除離線新增資料上傳時的 ID 踩踏問題。
+                  </p>
+                </div>
+
+                <div className="sync-arch-card">
+                  <div className="arch-num">03</div>
+                  <h4>交易式寄件匣 (Transactional Outbox)</h4>
+                  <p>
+                    所有業務異動（如工單狀態變更、銷貨單成立）與 Outbox 紀錄均在同一個本地 SQLite ACID Transaction 提交，杜絕雙寫不一致。
+                  </p>
+                </div>
+
+                <div className="sync-arch-card">
+                  <div className="arch-num">04</div>
+                  <h4>冪等去重與精確一次 (Idempotency Ingestion)</h4>
+                  <p>
+                    每筆變更帶有唯一 <code>idempotency_key</code>。接收端 Inbox 自動攔截重複批次，面對不穩定弱網重傳時確保 Exactly-Once 處理語義。
+                  </p>
+                </div>
+
+                <div className="sync-arch-card">
+                  <div className="arch-num">05</div>
+                  <h4>數值增量合併 (Delta-Merge) 與隔離暫存</h4>
+                  <p>
+                    庫存與流水餘額採用 <code>+Delta / -Delta</code> 相對增量合併，嚴禁粗暴覆寫 (LWW)。無法自動仲裁的並發衝突扣押至 Quarantine 表待審。
+                  </p>
+                </div>
+
+                <div className="sync-arch-card">
+                  <div className="arch-num">06</div>
+                  <h4>斷線回壓與階梯重試 (Exponential Backoff)</h4>
+                  <p>
+                    網路故障時自動掛起並以指數退避演算法搭配隨機抖動 (Jitter) 重試；連線恢復後批次分頁推播，兼具零信任裝置權杖安全隔離。
+                  </p>
                 </div>
               </div>
             </div>

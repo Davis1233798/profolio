@@ -1001,3 +1001,507 @@
   color: #fff !important;
   border-color: #2563eb;
 }
+
+/* ==========================================================================
+   Portal Tab Navigation (按鈕切換分頁)
+   ========================================================================== */
+.portal-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.portal-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid transparent;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
+.portal-tab-btn.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(37, 99, 235, 0.2) 100%);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+}
+
+.portal-tab-btn .tab-icon {
+  font-size: 17px;
+}
+
+.portal-tab-btn .tab-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.portal-tab-btn.active .tab-pill {
+  background: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+.portal-tab-pane {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Category Filter Bar */
+.portal-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.filter-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-filter {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-filter:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.btn-filter.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Current Session Info */
+.portal-current-session-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 14px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.session-icon {
+  font-size: 24px;
+}
+
+.session-info strong {
+  color: #6ee7b7;
+  font-size: 15px;
+}
+
+.session-info p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Audit Tab Full Page View */
+.audit-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.audit-section-header h2 {
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: #f8fafc;
+}
+
+.audit-section-header p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.audit-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.audit-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-filter-item label {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.audit-filter-item select,
+.audit-filter-item input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.audit-filter-item.search {
+  flex: 1;
+  min-width: 260px;
+}
+
+.audit-filter-item.search input {
+  width: 100%;
+}
+
+.audit-table-wrap {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* License Center Full Page View */
+.license-tab-header {
+  margin-bottom: 24px;
+}
+
+.license-tab-header h2 {
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: #f8fafc;
+}
+
+.license-tab-header p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.license-info-card-expanded {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 30px 34px;
+  margin-bottom: 30px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.license-card-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+}
+
+.license-company-pill {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.license-company-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 8px;
+}
+
+.license-id-sub {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.license-tier-box {
+  text-align: right;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 20px;
+  border-radius: 12px;
+}
+
+.license-tier-box .tier-tag {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.license-tier-box .tier-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #d8b4fe;
+}
+
+.license-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.stat-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 20px;
+  border-radius: 12px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.stat-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.stat-val.stat-active {
+  color: #34d399;
+}
+
+.stat-val.stat-expired {
+  color: #f87171;
+}
+
+.stat-val.highlight {
+  color: #60a5fa;
+  font-size: 20px;
+}
+
+.stat-val.code {
+  font-family: monospace;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+.license-modules-matrix h4 {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin: 0 0 14px;
+}
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.matrix-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.matrix-item.enabled {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.matrix-item.disabled {
+  opacity: 0.6;
+}
+
+.matrix-icon {
+  font-size: 18px;
+}
+
+.matrix-item strong {
+  display: block;
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.matrix-item small {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.matrix-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.matrix-badge.ok {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.matrix-badge.locked {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* License Update Card */
+.license-update-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 28px 32px;
+}
+
+.license-update-card h3 {
+  font-size: 18px;
+  margin: 0 0 6px;
+  color: #f8fafc;
+}
+
+.license-update-card p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+
+.license-key-textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 14px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  resize: vertical;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.license-key-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.license-quick-presets {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 20px;
+}
+
+.presets-title {
+  display: block;
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.presets-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-preset {
+  background: rgba(255, 255, 255, 0.08);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preset:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #fff;
+}
+
+.btn-preset.warning {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-preset.warning:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fee2e2;
+}

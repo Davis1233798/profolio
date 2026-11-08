@@ -158,6 +158,9 @@ func openDB(file string) (_ *sql.DB, resultErr error) {
 	if err := ensureAuditTable(db); err != nil {
 		return nil, err
 	}
+	if err := ensureSyncTables(db); err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -516,6 +519,11 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.HandleFunc("GET /api/license/status", a.licenseStatusAPI)
 	mux.HandleFunc("POST /api/license/update", a.licenseUpdateAPI)
 	mux.HandleFunc("GET /api/audit/logs", a.auditLogsAPI)
+	mux.HandleFunc("GET /api/sync/status", a.syncStatusAPI)
+	mux.HandleFunc("POST /api/sync/push", a.syncPushAPI)
+	mux.HandleFunc("POST /api/sync/ack", a.syncAckAPI)
+	mux.HandleFunc("POST /api/sync/ingest", a.syncIngestAPI)
+	mux.HandleFunc("GET /api/sync/conflicts", a.syncConflictsAPI)
 	mux.HandleFunc("/api/auth/{action}", a.auth)
 	mux.HandleFunc("/api/stations/{site}/traffic", a.trafficAPI)
 	mux.HandleFunc("/api/stations/{site}/{action}", a.stationAPI)

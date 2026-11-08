@@ -15,7 +15,9 @@ use windows_sys::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
 use windows_sys::Win32::Security::Cryptography::{
     CryptProtectData, CryptUnprotectData, CRYPT_INTEGER_BLOB,
 };
+use windows_sys::Win32::System::Console::GetConsoleWindow;
 use windows_sys::Win32::System::Threading::CreateMutexW;
+use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
@@ -336,7 +338,60 @@ fn acquire_single_instance(name: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Main Entry Point
+// 7. Standalone Desktop Window Launcher (Edge/Chrome App Mode)
+// ---------------------------------------------------------------------------
+
+fn find_browser_app_executable() -> Option<PathBuf> {
+    let candidates = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ];
+    for path in &candidates {
+        let p = PathBuf::from(path);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+    if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+        let edge_user = PathBuf::from(&local_appdata).join(r"Microsoft\Edge\Application\msedge.exe");
+        if edge_user.exists() {
+            return Some(edge_user);
+        }
+        let chrome_user = PathBuf::from(&local_appdata).join(r"Google\Chrome\Application\chrome.exe");
+        if chrome_user.exists() {
+            return Some(chrome_user);
+        }
+    }
+    None
+}
+
+fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> {
+    if std::env::var("SUITE_DESKTOP_NO_GUI").as_deref() == Ok("1") {
+        return None;
+    }
+    let browser_exe = find_browser_app_executable()?;
+    let profile_dir = user_data_dir.join("webview-profile");
+    let app_url = format!("http://{endpoint}/");
+
+    let mut cmd = Command::new(browser_exe);
+    cmd.arg(format!("--app={app_url}"))
+        .arg(format!("--user-data-dir={}", profile_dir.display()))
+        .arg("--window-size=1280,800")
+        .arg("--app-id=business-suite-desktop");
+
+    match cmd.spawn() {
+        Ok(child) => Some(child),
+        Err(e) => {
+            eprintln!("無法啟動桌面視窗: {e}");
+            None
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 8. Main Entry Point
 // ---------------------------------------------------------------------------
 
 fn main() {
@@ -438,10 +493,29 @@ fn main() {
         std::process::exit(0);
     }
 
-    // Normal GUI Mode: Launch WebView2 or notify user
+    // Normal GUI Mode: Launch dedicated Desktop App Window
     println!("Business Suite 桌面版已於 http://{} 啟動。", supervisor.endpoint);
-    
-    // In GUI mode, keep supervisor alive until process termination
+
+    // Hide console window if not in smoke/debug mode
+    if std::env::var("SUITE_DESKTOP_CONSOLE").is_err() {
+        let console_hwnd = unsafe { GetConsoleWindow() };
+        if console_hwnd != ptr::null_mut() {
+            unsafe { ShowWindow(console_hwnd, SW_HIDE) };
+        }
+    }
+
+    // Launch standalone application window
+    let window_proc = launch_desktop_window(&supervisor.endpoint, &user_data);
+
+    if let Some(mut child) = window_proc {
+        // Wait for the desktop application window to close
+        let _ = child.wait();
+        // User closed window -> clean shutdown
+        supervisor.shutdown();
+        std::process::exit(0);
+    }
+
+    // Fallback if no window process was spawned
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
     ctrlc_like_wait(r);

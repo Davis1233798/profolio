@@ -378,7 +378,12 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
         return None;
     }
     let browser_exe = find_browser_app_executable()?;
-    let profile_dir = user_data_dir.join("webview-profile");
+    let mut profile_dir = user_data_dir.join("webview-profile");
+    let lock_file = profile_dir.join("SingletonLock");
+    if lock_file.exists() && fs::remove_file(&lock_file).is_err() {
+        profile_dir = user_data_dir.join(format!("webview-profile-{}", std::process::id()));
+        let _ = fs::create_dir_all(&profile_dir);
+    }
     let _ = fs::create_dir_all(&profile_dir);
     let _ = fs::remove_file(profile_dir.join("SingletonLock"));
     let _ = fs::remove_file(profile_dir.join("SingletonCookie"));
@@ -582,11 +587,13 @@ fn main() {
     let window_proc = launch_desktop_window(&supervisor.endpoint, &user_data);
 
     if let Some(mut child) = window_proc {
-        // Wait for the desktop application window to close
+        let launch_time = Instant::now();
         let _ = child.wait();
-        // User closed window -> clean shutdown
-        supervisor.shutdown();
-        std::process::exit(0);
+        // If window ran for more than 3 seconds before exiting, user genuinely closed it
+        if launch_time.elapsed() >= Duration::from_secs(3) {
+            supervisor.shutdown();
+            std::process::exit(0);
+        }
     }
 
     // Fallback if no window process was spawned

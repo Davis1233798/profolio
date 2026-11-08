@@ -163,7 +163,7 @@ export function PortalDashboard({
   const loadLicense = async () => {
     try {
       const res = await fetch('/api/license/status', { credentials: 'same-origin' });
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (json.success && json.data) {
         setLicenseInfo(json.data);
       }
@@ -176,7 +176,7 @@ export function PortalDashboard({
   const loadAuditLogs = async () => {
     try {
       const res = await fetch('/api/audit/logs?limit=50', { credentials: 'same-origin' });
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (json.success && json.data?.logs) {
         setAuditLogs(json.data.logs);
       }
@@ -206,7 +206,7 @@ export function PortalDashboard({
         credentials: 'same-origin',
         body: JSON.stringify({ email, password: pass }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!res.ok || !data.success) {
         throw new Error(data.error?.message || '登入失敗，請確認帳號與密碼');
       }
@@ -249,7 +249,7 @@ export function PortalDashboard({
         credentials: 'same-origin',
         body: JSON.stringify({ key: newLicenseKey.trim() }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (!res.ok || !data.success) {
         throw new Error(data.error?.message || '金鑰更新失敗');
       }

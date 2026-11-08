@@ -6,18 +6,27 @@ use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use windows_sys::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
+use windows_sys::Win32::Foundation::{
+    GetLastError, ERROR_ALREADY_EXISTS, BOOL, HANDLE, HWND, LPARAM,
+};
 use windows_sys::Win32::Security::Cryptography::{
     CryptProtectData, CryptUnprotectData, CRYPT_INTEGER_BLOB,
 };
 use windows_sys::Win32::System::Console::GetConsoleWindow;
+use windows_sys::Win32::System::JobObjects::{
+    AssignProcessToJobObject, CreateJobObjectW, SetInformationJobObject,
+    JobObjectExtendedLimitInformation, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+};
 use windows_sys::Win32::System::Threading::CreateMutexW;
-use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE, MessageBoxW, MB_ICONERROR, MB_OK};
+use windows_sys::Win32::UI::WindowsAndMessaging::{
+    EnumWindows, GetWindowTextW, IsWindow, IsWindowVisible, MessageBoxW, ShowWindow, MB_ICONERROR,
+    MB_OK, SW_HIDE,
+};
 
 mod license;
 
@@ -152,6 +161,7 @@ impl ChildSupervisor {
         db_path: &Path,
         database_key: &str,
         license_key: &str,
+        job_handle: Option<HANDLE>,
     ) -> Result<Self, String> {
         if !binary_path.exists() {
             return Err(format!("找不到 Go 後端二進位檔: {}", binary_path.display()));
@@ -183,6 +193,13 @@ impl ChildSupervisor {
         }
 
         let mut child = cmd.spawn().map_err(|e| format!("啟動 Go 後端進程失敗: {e}"))?;
+
+        if let Some(job) = job_handle {
+            unsafe {
+                use std::os::windows::io::AsRawHandle;
+                AssignProcessToJobObject(job, child.as_raw_handle() as _);
+            }
+        }
 
         // Pipe the 256-bit database key via stdin followed by \n
         if let Some(mut stdin) = child.stdin.take() {
@@ -259,6 +276,14 @@ impl ChildSupervisor {
             endpoint: ep,
             secret: backend_secret,
         })
+    }
+
+    pub fn is_dead(&mut self) -> bool {
+        if let Some(ref mut child) = self.child {
+            matches!(child.try_wait(), Ok(Some(_)) | Err(_))
+        } else {
+            true
+        }
     }
 
     pub fn shutdown(&mut self) {
@@ -398,7 +423,12 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
         .arg("--window-size=1280,800")
         .arg("--app-id=business-suite-desktop")
         .arg("--no-first-run")
-        .arg("--no-default-browser-check");
+        .arg("--no-default-browser-check")
+        .arg("--disable-background-mode")
+        .arg("--disable-features=msEdgeStartupBoost")
+        .arg("--disable-extensions")
+        .arg("--disable-component-update")
+        .arg("--disable-background-networking");
 
     match cmd.spawn() {
         Ok(child) => Some(child),
@@ -407,6 +437,51 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
             None
         }
     }
+}
+
+fn setup_process_job() -> Option<HANDLE> {
+    unsafe {
+        let job = CreateJobObjectW(ptr::null(), ptr::null());
+        if job.is_null() {
+            return None;
+        }
+        let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let res = SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &info as *const _ as *const std::ffi::c_void,
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        );
+        if res == 0 {
+            return None;
+        }
+        Some(job)
+    }
+}
+
+unsafe extern "system" fn enum_windows_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    let target = &mut *(lparam as *mut Option<HWND>);
+    if IsWindowVisible(hwnd) != 0 {
+        let mut buf = [0u16; 512];
+        let len = GetWindowTextW(hwnd, buf.as_mut_ptr(), buf.len() as i32);
+        if len > 0 {
+            let title = String::from_utf16_lossy(&buf[..len as usize]);
+            if title.contains("Business Suite") || title.contains("BUSINESS SUITE") {
+                *target = Some(hwnd);
+                return 0; // stop enumerating
+            }
+        }
+    }
+    1 // continue
+}
+
+fn find_app_window() -> Option<HWND> {
+    let mut found: Option<HWND> = None;
+    unsafe {
+        EnumWindows(Some(enum_windows_callback), &mut found as *mut _ as LPARAM);
+    }
+    found
 }
 
 // ---------------------------------------------------------------------------
@@ -521,8 +596,11 @@ fn main() {
         }
     }
 
+    // Setup Windows Job Object with KILL_ON_JOB_CLOSE for kernel-enforced child cleanup
+    let job_handle = setup_process_job();
+
     // Launch Process Supervisor
-    let mut supervisor = match ChildSupervisor::spawn(&binary, &web_assets, &db_path, &db_key, &license_key) {
+    let mut supervisor = match ChildSupervisor::spawn(&binary, &web_assets, &db_path, &db_key, &license_key, job_handle) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("進程監督者啟動失敗: {e}");
@@ -584,27 +662,78 @@ fn main() {
     }
 
     // Launch standalone application window
-    let window_proc = launch_desktop_window(&supervisor.endpoint, &user_data);
-
-    if let Some(mut child) = window_proc {
-        let launch_time = Instant::now();
-        let _ = child.wait();
-        // If window ran for more than 3 seconds before exiting, user genuinely closed it
-        if launch_time.elapsed() >= Duration::from_secs(3) {
-            supervisor.shutdown();
-            std::process::exit(0);
+    let mut window_proc = launch_desktop_window(&supervisor.endpoint, &user_data);
+    if let (Some(job), Some(ref wchild)) = (job_handle, &window_proc) {
+        unsafe {
+            use std::os::windows::io::AsRawHandle;
+            AssignProcessToJobObject(job, wchild.as_raw_handle() as _);
         }
     }
 
-    // Fallback if no window process was spawned
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
-    ctrlc_like_wait(r);
-    supervisor.shutdown();
-}
-
-fn ctrlc_like_wait(running: Arc<AtomicBool>) {
-    while running.load(Ordering::SeqCst) {
-        thread::sleep(Duration::from_millis(500));
+    // Wait for the window to appear (up to 15s) and capture its HWND
+    let start_search = Instant::now();
+    let mut app_hwnd: Option<HWND> = None;
+    while start_search.elapsed() < Duration::from_secs(15) {
+        if let Some(hwnd) = find_app_window() {
+            app_hwnd = Some(hwnd);
+            break;
+        }
+        if supervisor.is_dead() {
+            break;
+        }
+        if let Some(ref mut child) = window_proc {
+            if let Ok(Some(_)) = child.try_wait() {
+                break;
+            }
+        }
+        thread::sleep(Duration::from_millis(200));
     }
+
+    // Active lifecycle monitoring:
+    // Follow the exe/window lifecycle: as soon as the user closes the window, or browser process exits,
+    // or Go backend exits, immediately release all resources and terminate!
+    loop {
+        // Check window visibility / existence
+        if let Some(hwnd) = app_hwnd {
+            unsafe {
+                if IsWindow(hwnd) == 0 || IsWindowVisible(hwnd) == 0 {
+                    break;
+                }
+            }
+        } else if let Some(ref mut child) = window_proc {
+            if let Ok(Some(_)) = child.try_wait() {
+                break;
+            }
+        }
+
+        // Check if Go backend exited (e.g. from /api/desktop/shutdown beacon)
+        if supervisor.is_dead() {
+            break;
+        }
+
+        // Check if browser launcher child exited
+        if let Some(ref mut child) = window_proc {
+            if let Ok(Some(_)) = child.try_wait() {
+                if let Some(hwnd) = app_hwnd {
+                    unsafe {
+                        if IsWindow(hwnd) == 0 || IsWindowVisible(hwnd) == 0 {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        thread::sleep(Duration::from_millis(300));
+    }
+
+    // Cleanup: kill window process if still running, shutdown supervisor, and exit!
+    if let Some(mut child) = window_proc {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    supervisor.shutdown();
+    std::process::exit(0);
 }

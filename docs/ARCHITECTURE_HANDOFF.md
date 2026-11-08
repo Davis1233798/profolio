@@ -48,7 +48,8 @@ flowchart LR
   Windows 原生 Rust 桌面端進程監督者整合與獨立應用程式視窗啟動（[#34](https://github.com/Davis1233798/profolio/pull/34) 與 [#36](https://github.com/Davis1233798/profolio/pull/36) 已合併；支援 Edge/Chrome 獨立 App 模式視窗、無控制台黑框生命週期管理與自動進程結束）。
   企業級單一簽入 (SSO) 中央門戶、即時操作稽核日誌 (audit_logs)、HMAC-SHA256 企業授權金鑰系統 (包含 license-keygen 產生器、已購模組動態存取管制、金鑰到期本機資料自動上鎖封存與應用程式捷徑清除)、全新現代化 Enterprise 100/100 UI/UX 儀表板設計、以及 Windows 企業安裝精靈套件 (Setup.bat / Install-BusinessSuite.ps1)（[#38](https://github.com/Davis1233798/profolio/pull/38) 已合併，commit `4e0d09c`）。
   企業門戶分頁導航重構（Tab Navigation: 企業子系統門戶、SSO 身分快速登入、系統操作稽核軌跡、企業授權中心、雲地資料同步）、模組分類篩選、以及 Rust 監督者多實例/鎖定 profile 容錯機制（[#40](https://github.com/Davis1233798/profolio/pull/40) 已合併，commit `0a5d99f`）。
-  雲地混合架構資料同步引擎（[HYBRID_SYNC_ARCHITECTURE.md](file:///docs/engineering/HYBRID_SYNC_ARCHITECTURE.md)；支援權威源領域劃分、UUIDv7 分散式唯一鍵、Transactional Outbox 交易寄件匣模式、Idempotency Key 冪等去重精確一次語義、數值 Delta 增量合併、不可判定並發衝突隔離審核暫存 `sync_conflicts`、指數退避重試回壓、以及門戶 Tab 5 雲地同步監控與模擬衝突測試台帳）。
+  雲地混合架構資料同步引擎（[HYBRID_SYNC_ARCHITECTURE.md](file:///docs/engineering/HYBRID_SYNC_ARCHITECTURE.md)；支援權威源領域劃分、UUIDv7 分散式唯一鍵、Transactional Outbox 交易寄件匣模式、Idempotency Key 冪等去重精確一次語義、數值 Delta 增量合併、不可判定並發衝突隔離審核暫存 `sync_conflicts`、指數退避重試回壓、以及門戶 Tab 5 雲地同步監控與模擬衝突測試台帳，[#41](https://github.com/Davis1233798/profolio/pull/41) 已合併，commit `260ab7d`）。
+  Windows 原生桌面應用程式嚴格視窗生命週期追蹤與核心自動資源釋放（Win32 Job Object `KILL_ON_JOB_CLOSE`、EnumWindows / IsWindow 視窗 HWND 主動偵測關閉、Web `pagehide`/`beforeunload` 關閉通知 Beacon `/api/desktop/shutdown`；使用者關閉視窗或結束工作時，自動 100% 釋放 Rust 監督者、Go 後端與瀏覽器進程及本機通訊埠，絕不留殘留背景進程）。
 - **功能邊界**：首頁負責展示及導航。交易由工作站處理。中央 Go 服務與
   既有 Web 各自使用資料庫；同一公開網域下的不同入口也可能走不同服務。
   併發展示驗證的是固定工作量下的交易結果。

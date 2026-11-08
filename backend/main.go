@@ -524,6 +524,13 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.HandleFunc("POST /api/sync/ack", a.syncAckAPI)
 	mux.HandleFunc("POST /api/sync/ingest", a.syncIngestAPI)
 	mux.HandleFunc("GET /api/sync/conflicts", a.syncConflictsAPI)
+	mux.HandleFunc("POST /api/desktop/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "shutting down desktop session"})
+		go func() {
+			time.Sleep(150 * time.Millisecond)
+			os.Exit(0)
+		}()
+	})
 	mux.HandleFunc("/api/auth/{action}", a.auth)
 	mux.HandleFunc("/api/stations/{site}/traffic", a.trafficAPI)
 	mux.HandleFunc("/api/stations/{site}/{action}", a.stationAPI)

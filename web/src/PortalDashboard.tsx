@@ -260,6 +260,24 @@ export function PortalDashboard({
     void loadAuditLogs();
     void loadSyncStatus();
     void loadSyncConflicts();
+
+    const handleShutdown = () => {
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/desktop/shutdown');
+        } else {
+          fetch('/api/desktop/shutdown', { method: 'POST', keepalive: true }).catch(() => {});
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('beforeunload', handleShutdown);
+    window.addEventListener('pagehide', handleShutdown);
+    return () => {
+      window.removeEventListener('beforeunload', handleShutdown);
+      window.removeEventListener('pagehide', handleShutdown);
+    };
   }, []);
 
   useEffect(() => {

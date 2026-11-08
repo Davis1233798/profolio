@@ -17,7 +17,9 @@ use windows_sys::Win32::Security::Cryptography::{
 };
 use windows_sys::Win32::System::Console::GetConsoleWindow;
 use windows_sys::Win32::System::Threading::CreateMutexW;
-use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE, MessageBoxW, MB_ICONERROR, MB_OK};
+
+mod license;
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
@@ -149,6 +151,7 @@ impl ChildSupervisor {
         web_assets_path: &Path,
         db_path: &Path,
         database_key: &str,
+        license_key: &str,
     ) -> Result<Self, String> {
         if !binary_path.exists() {
             return Err(format!("找不到 Go 後端二進位檔: {}", binary_path.display()));
@@ -164,8 +167,11 @@ impl ChildSupervisor {
             .env("SUITE_DESKTOP_SECRET", &backend_secret)
             .env("SUITE_ADDR", "127.0.0.1:0")
             .env("SUITE_DB", db_path.to_string_lossy().as_ref())
-            .env("SUITE_WEB", web_assets_path.to_string_lossy().as_ref())
-            .stdin(Stdio::piped())
+            .env("SUITE_WEB", web_assets_path.to_string_lossy().as_ref());
+        if !license_key.is_empty() {
+            cmd.env("SUITE_LICENSE_KEY", license_key);
+        }
+        cmd.stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
@@ -374,6 +380,10 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
     let browser_exe = find_browser_app_executable()?;
     let profile_dir = user_data_dir.join("webview-profile");
     let _ = fs::create_dir_all(&profile_dir);
+    let _ = fs::remove_file(profile_dir.join("SingletonLock"));
+    let _ = fs::remove_file(profile_dir.join("SingletonCookie"));
+    let _ = fs::remove_file(profile_dir.join("SingletonSocket"));
+    let _ = fs::remove_file(profile_dir.join("lockfile"));
     let app_url = format!("http://{endpoint}/");
 
     let mut cmd = Command::new(browser_exe);
@@ -401,7 +411,7 @@ fn launch_desktop_window(endpoint: &str, user_data_dir: &Path) -> Option<Child> 
 fn main() {
     let is_smoke = std::env::var("SUITE_DESKTOP_SMOKE").as_deref() == Ok("1");
 
-    if !is_smoke && !acquire_single_instance("Global\\BusinessSuiteDesktopSingleton") {
+    if !is_smoke && !acquire_single_instance("Local\\BusinessSuiteDesktopSingleton") {
         eprintln!("Business Suite 已在執行中。");
         std::process::exit(0);
     }
@@ -435,6 +445,8 @@ fn main() {
         "outputs/go/business-suite.exe",
         "../outputs/go/business-suite.exe",
         "../../outputs/go/business-suite.exe",
+        "../../../outputs/go/business-suite.exe",
+        "../../../../outputs/go/business-suite.exe",
     ]).unwrap_or_else(|| PathBuf::from("outputs/go/business-suite.exe"));
 
     // Locate web assets
@@ -444,10 +456,68 @@ fn main() {
         "web-dist",
         "../web-dist",
         "../../web-dist",
+        "../../../web-dist",
+        "../../../../web-dist",
     ]).unwrap_or_else(|| PathBuf::from("web-dist"));
 
+    // Resolve license key
+    let license_path = user_data.join("license.dat");
+    let license_key = if let Ok(env_key) = std::env::var("SUITE_LICENSE_KEY") {
+        env_key
+    } else if license_path.exists() {
+        fs::read_to_string(&license_path).unwrap_or_default().trim().to_string()
+    } else {
+        String::new()
+    };
+
+    if !license_key.is_empty() {
+        if let Ok(payload) = license::verify_license(&license_key, license::DEFAULT_MASTER_SECRET) {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            if payload.is_expired(now) {
+                // 1. Data lock: touch maintenance lock
+                let lock_file = user_data.join("suite.sqlite.maintenance.lock");
+                let _ = fs::write(&lock_file, format!("LOCKED_LICENSE_EXPIRED_AT_{now}\n"));
+
+                // 2. Clear Shortcuts
+                if let Ok(userprofile) = std::env::var("USERPROFILE") {
+                    let _ = fs::remove_file(PathBuf::from(&userprofile).join(r"Desktop\Business Suite.lnk"));
+                }
+                if let Ok(appdata) = std::env::var("APPDATA") {
+                    let _ = fs::remove_file(PathBuf::from(&appdata).join(r"Microsoft\Windows\Start Menu\Programs\Business Suite.lnk"));
+                }
+
+                // 3. Uninstall program directory if running from installation folder
+                if let Ok(current_exe) = std::env::current_exe() {
+                    if let Some(install_dir) = current_exe.parent() {
+                        let dir_str = install_dir.to_string_lossy();
+                        if dir_str.contains("Business Suite") {
+                            let _ = Command::new("cmd.exe")
+                                .args(&["/C", "ping", "127.0.0.1", "-n", "3", ">", "nul", "&", "rmdir", "/S", "/Q", &format!("\"{}\"", dir_str)])
+                                .spawn();
+                        }
+                    }
+                }
+
+                // 4. Alert user via Win32 MessageBox
+                let alert_msg: Vec<u16> = OsStr::new(
+                    "【Business Suite 授權到期警告】\n\n您的企業授權金鑰已於有效期限屆滿。\n依照企業安全協議，系統資料已進入安全上鎖封存狀態，本機應用程式捷徑已自動清除解除安裝。\n\n如需續約或解鎖資料，請聯繫您的系統管理員或授權中心。"
+                ).encode_wide().chain(Some(0)).collect();
+                let alert_title: Vec<u16> = OsStr::new("Business Suite 企業授權已到期").encode_wide().chain(Some(0)).collect();
+                unsafe {
+                    MessageBoxW(ptr::null_mut(), alert_msg.as_ptr(), alert_title.as_ptr(), MB_OK | MB_ICONERROR);
+                }
+
+                eprintln!("【授權過期】企業授權金鑰已過期，系統已自動鎖定並解除安裝。");
+                std::process::exit(403);
+            }
+        }
+    }
+
     // Launch Process Supervisor
-    let mut supervisor = match ChildSupervisor::spawn(&binary, &web_assets, &db_path, &db_key) {
+    let mut supervisor = match ChildSupervisor::spawn(&binary, &web_assets, &db_path, &db_key, &license_key) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("進程監督者啟動失敗: {e}");

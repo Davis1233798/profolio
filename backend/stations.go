@@ -71,6 +71,17 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "Workspace not found")
 		return
 	}
+	lic := a.resolveCurrentLicense()
+	if lic.IsExpired() {
+		a.recordAudit("", "", "", "access_denied", site, "forbidden", "授權金鑰已過期", r)
+		fail(w, 403, "授權已到期，系統已鎖定，請聯繫系統管理員更新授權")
+		return
+	}
+	if !lic.AllowsModule(site) {
+		a.recordAudit("", "", "", "access_denied", site, "forbidden", fmt.Sprintf("模組未授權: %s", strings.ToUpper(site)), r)
+		fail(w, 403, fmt.Sprintf("模組【%s】未在目前授權方案中購買，無法訪問", strings.ToUpper(site)))
+		return
+	}
 	id, e := a.identity(r)
 	if e != nil {
 		fail(w, 401, e.Error())
@@ -78,6 +89,7 @@ func (a *App) stationAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	g := id.grant(site)
 	if g == nil {
+		a.recordAudit(id.UserID, id.Email, id.Name, "access_denied", site, "forbidden", "該身分未被賦予此模組的操作權限", r)
 		fail(w, 403, "No access to this workspace")
 		return
 	}

@@ -28,8 +28,9 @@ var migrations embed.FS
 var sites = []string{"mes", "erp", "pos", "crm", "dining", "shop"}
 
 type App struct {
-	db     *sql.DB
-	assets string
+	db      *sql.DB
+	assets  string
+	license *LicensePayload
 }
 type Grant struct {
 	Site    string `json:"site"`
@@ -154,6 +155,9 @@ func openDB(file string) (_ *sql.DB, resultErr error) {
 	if e = tx.Commit(); e != nil {
 		return nil, e
 	}
+	if err := ensureAuditTable(db); err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -192,7 +196,13 @@ func sessionCookieName(r *http.Request) string {
 		site = r.URL.Query().Get("site")
 	}
 	if knownSite(site) {
-		return cookieName + "_" + site
+		if c, err := r.Cookie(cookieName + "_" + site); err == nil && len(c.Value) == 64 {
+			return cookieName + "_" + site
+		}
+	}
+	// Check SSO session cookie
+	if c, err := r.Cookie(cookieName + "_sso"); err == nil && len(c.Value) == 64 {
+		return cookieName + "_sso"
 	}
 	// Legacy callers without a site may use a single unambiguous station session.
 	found := ""
@@ -304,16 +314,103 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 		fail(w, 405, "Method not allowed")
 		return
 	}
-	if action == "logout" {
-		name := sessionCookieName(r)
-		if name == "" {
-			fail(w, 400, "Specify the workspace to sign out of")
+		if action == "sso-login" && r.Method == "POST" {
+		var input struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+			Space    string `json:"space"`
+		}
+		if body(r, &input) != nil || len(input.Email) > 254 || len(input.Password) > 256 {
+			fail(w, 400, "無效的登入請求參數")
 			return
 		}
-		if c, e := r.Cookie(name); e == nil {
+		space := input.Space
+		if space == "" {
+			if c, e := r.Cookie(demoCookie); e == nil && len(c.Value) == 64 {
+				space = c.Value
+			}
+		}
+		if space == "" {
+			space = "desktop_sso_default_space_01"
+		}
+		for len(space) < 64 {
+			space = space + "0"
+		}
+		org := "org_test_" + space
+		email := strings.ToLower(strings.TrimSpace(input.Email))
+
+		if !publishedDemoCredentials(email, input.Password) {
+			a.recordAudit("", email, "", "sso_login", "portal", "failed", "帳號或密碼驗證失敗", r)
+			fail(w, 401, "帳號或密碼錯誤")
+			return
+		}
+
+		var exists bool
+		if e := a.db.QueryRowContext(r.Context(), "SELECT EXISTS(SELECT 1 FROM organizations WHERE id=?)", org).Scan(&exists); e != nil {
+			fail(w, 503, "認證服務暫時無法使用")
+			return
+		}
+		if !exists {
+			if e := a.initializeDemo(space); e != nil {
+				fail(w, 500, "無法初始化工作區")
+				return
+			}
+		}
+
+		var user, hash, displayName string
+		e := a.db.QueryRow(`SELECT a.user_id, a.password_hash, u.display_name 
+			FROM station_accounts a 
+			JOIN users u ON u.id=a.user_id 
+			WHERE a.organization_id=? AND a.email=? AND a.disabled=0`, org, email).Scan(&user, &hash, &displayName)
+		if e != nil || !passwordOK(input.Password, hash) {
+			a.recordAudit("", email, "", "sso_login", "portal", "failed", "驗證認證失敗", r)
+			fail(w, 401, "帳號或密碼錯誤")
+			return
+		}
+
+		val := token()
+		_, e = a.db.Exec("INSERT INTO station_sessions(token_hash, user_id, expires_at) VALUES(?, ?, ?)",
+			digest(val), user, time.Now().Add(12*time.Hour).UnixMilli())
+		if e != nil {
+			fail(w, 500, "建立 SSO 會話失敗")
+			return
+		}
+
+		cookie(w, r, cookieName+"_sso", val, 12*3600)
+		for _, s := range sites {
+			cookie(w, r, cookieName+"_"+s, val, 12*3600)
+		}
+		cookie(w, r, demoCookie, space, 604800)
+
+		a.recordAudit(user, email, displayName, "sso_login", "portal", "success", "SSO 統一身分登入成功", r)
+
+		lic := a.resolveCurrentLicense()
+		ok(w, map[string]any{
+			"signedIn": true,
+			"user": map[string]string{
+				"userId":      user,
+				"email":       email,
+				"displayName": displayName,
+			},
+			"license": lic,
+		})
+		return
+	}
+	if action == "logout" {
+		name := sessionCookieName(r)
+		if c, e := r.Cookie(cookieName + "_sso"); e == nil {
 			a.db.Exec("DELETE FROM station_sessions WHERE token_hash=?", digest(c.Value))
 		}
-		cookie(w, r, name, "", -1)
+		if name != "" {
+			if c, e := r.Cookie(name); e == nil {
+				a.db.Exec("DELETE FROM station_sessions WHERE token_hash=?", digest(c.Value))
+			}
+		}
+		cookie(w, r, cookieName+"_sso", "", -1)
+		for _, s := range sites {
+			cookie(w, r, cookieName+"_"+s, "", -1)
+		}
+		a.recordAudit("", "", "", "sso_logout", "portal", "success", "使用者已成功登出", r)
 		ok(w, map[string]bool{"signedOut": true})
 		return
 	}
@@ -416,6 +513,9 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		ok(w, map[string]string{"backend": "go", "status": "ready", "revision": validatedReleaseRevision(releaseSHA)})
 	})
+	mux.HandleFunc("GET /api/license/status", a.licenseStatusAPI)
+	mux.HandleFunc("POST /api/license/update", a.licenseUpdateAPI)
+	mux.HandleFunc("GET /api/audit/logs", a.auditLogsAPI)
 	mux.HandleFunc("/api/auth/{action}", a.auth)
 	mux.HandleFunc("/api/stations/{site}/traffic", a.trafficAPI)
 	mux.HandleFunc("/api/stations/{site}/{action}", a.stationAPI)

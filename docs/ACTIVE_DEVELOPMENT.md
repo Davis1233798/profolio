@@ -4,6 +4,13 @@ GitHub merge records verified on 2026-11-12, Asia/Taipei.
 
 ## Current work and delivery boundaries
 
+| Current change | Local acceptance | Delivery still to verify |
+|---|---|---|
+| MES BOM revision [PR #20](https://github.com/Davis1233798/business-suite-mes/pull/20) | Chromium verified separate material quantities and an unchanged work order reference after reload. | CI, merge, and public revision. |
+| ERP fiscal period close [PR #17](https://github.com/Davis1233798/business-suite-erp/pull/17) | Go tests cover authorization, audit rollback, and posting date boundaries. Chromium verified confirmation and persistence after reload. | CI, merge, and independent OCI acceptance. |
+| CRM Windows launcher [PR #12](https://github.com/Davis1233798/business-suite-crm/pull/12) | Packaged Windows launcher started successfully and created an encrypted SQLCipher database. | CI artifact acceptance, merge, and existing database migration. |
+| Portfolio MES handoff [PR #48](https://github.com/Davis1233798/profolio/pull/48) | The public MES health endpoint reported Go revision `e09c5bf` ready. | Merge and owner-authenticated legacy history acceptance. |
+
 | System / feature | Merged or in review | Remaining acceptance |
 |---|---|---|
 | Portfolio | Dataset pagination merged as `7eca7e3` and resource lifecycle regression [PR29](https://github.com/Davis1233798/profolio/pull/29) as `96d0ef7`. Hybrid synchronization and the Rust desktop supervisor are present in main. | Confirm the currently served revision and retain measured browser heap and resource evidence for the deployed build. |

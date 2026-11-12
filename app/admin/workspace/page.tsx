@@ -6,6 +6,7 @@ import { usePortfolioLocale } from '@/components/portfolio-experience';
 type User = { id: string; email: string; name: string; isOwner?: boolean };
 type Workspace = { id: string; permissions: string[] };
 type KeyRecord = { id: string; userId: string; workspaceId: string; enabled: boolean; expiresAt: number; remaining: number | null };
+type LegacyMesHistory = { linked: boolean; reports: { reportId: string; orderNumber: string | null; goodQuantity: number; scrapQuantity: number; reportTime: string; sharedOrder: number }[] };
 type AuditRecord = { id: number; actor: string; event: string; target: string; createdAt: number };
 const datasets = ['pos_sales', 'pos_catalog_items', 'erp_items', 'crm_contacts', 'mes_work_orders', 'dining_orders', 'shop_orders'];
 export default function WorkspaceAdministration() {
@@ -16,6 +17,10 @@ export default function WorkspaceAdministration() {
   const [restoreFile, setRestoreFile] = useState<File | null>(null), [restorePassword, setRestorePassword] = useState(''), [restoreConfirmed, setRestoreConfirmed] = useState(false);
   const [audit, setAudit] = useState<AuditRecord[]>([]);
   const [googleAvailable, setGoogleAvailable] = useState(false);
+  const [mesUser, setMesUser] = useState('');
+  const [mesWorkspace, setMesWorkspace] = useState('');
+  const [mesHistory, setMesHistory] = useState<LegacyMesHistory | null>(null);
+
   async function api<T = Record<string, unknown>>(path: string, method = 'GET', body?: unknown): Promise<T> {
     const response = await fetch(path, { method, credentials: 'same-origin', cache: 'no-store', headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
     const value = await response.json() as { error?: string | { message?: string } };
@@ -57,6 +62,55 @@ export default function WorkspaceAdministration() {
         <form className="space-y-3" onSubmit={event => form(event, async data => { const value = await api<{secret:string}>('/api/workspace-admin/keys', 'POST', { userId: data.get('userId'), workspaceId: data.get('workspaceId'), scope: data.get('kind') === 'json' ? { kind: 'json' } : { kind: 'csv', datasets: [data.get('dataset')] }, expiresInSeconds: Number(data.get('days')) * 86400, quota: Number(data.get('quota')) }); setIssued(value.secret); await refresh(); })}><h3 className="font-semibold">{t('Issue a download key', '簽發下載金鑰')}</h3><select name="userId" aria-label={t('Key owner', '金鑰持有人')} className={field}>{users.map(account => <option key={account.id} value={account.id}>{account.email}</option>)}</select><input name="workspaceId" aria-label={t('Key workspace ID', '金鑰空間識別碼')} className={field} placeholder={t('Authorized workspace ID', '已授權空間識別碼')} required/><select name="kind" aria-label={t('Key scope', '金鑰範圍')} className={field}><option value="json">JSON backup</option><option value="csv">CSV only</option></select><select name="dataset" aria-label={t('Key CSV dataset', '金鑰 CSV 資料表')} className={field}>{datasets.map(name => <option key={name}>{name}</option>)}</select><label className="block">{t('Expires in days', '有效天數')}<input className={field} name="days" type="number" min="1" max="30" defaultValue="7" required/></label><label className="block">{t('Maximum downloads', '下載次數上限')}<input className={field} name="quota" type="number" min="1" max="100" defaultValue="10" required/></label><button className={button} disabled={busy}>{t('Generate key', '產生金鑰')}</button></form>
         {issued && <div role="status" className="rounded-xl border border-amber-400 bg-amber-50 p-4 space-y-3"><p>{t('Save this key now. It will only be shown once. Send it to the assigned user through a private channel.', '請立即保存此金鑰，之後不會再次顯示。請透過私密管道交付指定使用者。')}</p><textarea readOnly className={field} aria-label={t('New download key', '新下載金鑰')} value={issued}/><button className={button} onClick={() => setIssued('')}>{t('I saved the key', '我已保存金鑰')}</button></div>}
         <h3 className="font-semibold">{t('Issued keys', '已簽發金鑰')}</h3><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th>ID</th><th>{t('User', '使用者')}</th><th>{t('Workspace', '空間')}</th><th>{t('Status', '狀態')}</th><th/></tr></thead><tbody>{keys.map(record => <tr key={record.id}><td className="p-2 break-all">{record.id}</td><td className="p-2 break-all">{record.userId}</td><td className="p-2 break-all">{record.workspaceId}</td><td>{record.enabled ? t('Active', '有效') : t('Revoked', '已撤銷')}</td><td><button className={button} disabled={busy || !record.enabled} onClick={() => void run(async () => { await api('/api/workspace-admin/keys', 'DELETE', { keyId: record.id }); await refresh(); })}>{t('Revoke', '撤銷')}</button></td></tr>)}</tbody></table></div>
+        <section className="space-y-3 rounded-xl border p-4">
+          <h3 className="font-semibold">{t('Legacy MES history', '舊 MES 紀錄')}</h3>
+          <label>{t('Portfolio user', 'Portfolio 使用者')}
+            <select disabled={busy} value={mesUser} onChange={event => { setMesUser(event.target.value); setMesHistory(null); }}>
+              <option value="">{t('Select a user', '選擇使用者')}</option>
+              {users.map(account => <option key={account.id} value={account.id}>{account.email}</option>)}
+            </select>
+          </label>
+          <label>{t('Workspace ID', '工作區 ID')}
+            <input disabled={busy} value={mesWorkspace} maxLength={256} onChange={event => { setMesWorkspace(event.target.value); setMesHistory(null); }} />
+          </label>
+          <button className={button} disabled={busy || !mesUser || !mesWorkspace.trim()} onClick={() => void run(async () => {
+            const query = new URLSearchParams({ userId: mesUser, workspaceId: mesWorkspace.trim() });
+            setMesHistory(await api<LegacyMesHistory>(`/api/workspace-admin/legacy-mes-history?${query}`));
+          })}>{t('View reports', '查閱報工')}</button>
+          <form onSubmit={event => form(event, async data => {
+            setMesHistory(await api<LegacyMesHistory>('/api/workspace-admin/legacy-mes-history', 'POST', {
+              userId: mesUser, workspaceId: mesWorkspace.trim(), operatorId: String(data.get('operatorId')).trim()
+            }));
+          })}>
+            <label>{t('Reviewed legacy operator ID', '已核對的舊操作者 ID')}
+              <input required name="operatorId" maxLength={256} disabled={busy} />
+            </label>
+            <button className={button} disabled={busy || !mesUser || !mesWorkspace.trim()}>{t('Link operator', '對應操作者')}</button>
+          </form>
+          {mesHistory && <p>{mesHistory.linked
+            ? t(`Reports shown: ${mesHistory.reports.length}`, `顯示 ${mesHistory.reports.length} 筆報工`)
+            : t('No reviewed operator link', '尚無已核對的操作者對應')}</p>}
+          {!!mesHistory?.reports.length && <button type="button" className={button} disabled={busy} onClick={() => {
+            const account = users.find(candidate => candidate.id === mesUser);
+            if (!account || !window.confirm(t(
+              `Clear personal report attribution and notes for ${account.email} in ${mesWorkspace.trim()}? Production quantities will be retained.`,
+              `要清除 ${account.email} 在 ${mesWorkspace.trim()} 的個人報工歸屬與備註嗎？生產數量會保留。`
+            ))) return;
+            void run(async () => {
+              setMesHistory(await api<LegacyMesHistory>('/api/workspace-admin/legacy-mes-history', 'DELETE', {
+                userId: mesUser, workspaceId: mesWorkspace.trim(), confirmUserId: mesUser
+              }));
+              setMessage(t('Personal MES report history cleared', '個人 MES 報工紀錄已清除'));
+              await refresh();
+            });
+          }}>{t('Clear personal report history', '清除個人報工紀錄')}</button>}
+          {!!mesHistory?.reports.length && <ul>
+            {mesHistory.reports.map(report => <li key={report.reportId}>
+              {report.reportTime} · {report.orderNumber ?? report.reportId} · {report.goodQuantity} / {report.scrapQuantity}
+              {Boolean(report.sharedOrder) && <> · {t('Shared work order', '共用工單')}</>}
+            </li>)}
+          </ul>}
+        </section>
         <h3 className="font-semibold">{t('Security audit — latest 100 events', '安全稽核 — 最近 100 筆')}</h3><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr><th>{t('Time', '時間')}</th><th>{t('Account ID', '帳號識別碼')}</th><th>{t('Action', '操作')}</th><th>{t('Target and request reference', '目標與請求參照')}</th></tr></thead><tbody>{audit.map(event => <tr key={event.id}><td className="p-2">{new Date(event.createdAt).toISOString()}</td><td className="p-2 break-all">{event.actor}</td><td className="p-2">{event.event}</td><td className="p-2 break-all">{event.target}</td></tr>)}</tbody></table></div>
       </section>}
     </>}

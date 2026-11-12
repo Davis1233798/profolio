@@ -5,6 +5,8 @@ import { NodeSqliteDialect } from "@better-auth/kysely-adapter/node-sqlite-diale
 import { admin } from "better-auth/plugins";
 import { apiKey, defaultKeyHasher } from "@better-auth/api-key";
 import { randomBytes } from "node:crypto";
+import path from "node:path";
+import { clearLegacyMesHistory, legacyMesIdentitySchema, linkLegacyMesIdentity, readLegacyMesHistory, resolveLegacyMesIdentity } from "./legacy-mes-history";
 import type { TenantContext } from "./tenant";
 
 export class WorkspaceSecurityError extends Error {
@@ -119,6 +121,44 @@ async function management(request:Request,runtime:ReturnType<typeof openWorkspac
   const isOwner = actor.role === "admin";
   if (route !== 'session' && route !== 'workspaces' && !isOwner) throw new WorkspaceSecurityError(403, "Owner required");
   if (request.method !== "GET" && request.headers.get("origin") !== canonicalOrigin) throw new WorkspaceSecurityError(403, "Invalid origin");
+  if (route === "legacy-mes-history" && (["GET", "POST", "DELETE"].includes(request.method))) {
+    consumeLimit(runtime, `legacy-mes-history:${actor.id}`, 20, 60_000);
+    const input = request.method !== "GET"
+      ? await readJson<{ userId?: unknown; workspaceId?: unknown; operatorId?: unknown; confirmUserId?: unknown }>(request)
+      : { userId: url.searchParams.get("userId"), workspaceId: url.searchParams.get("workspaceId"), operatorId: undefined, confirmUserId: undefined };
+    const { userId, workspaceId, operatorId, confirmUserId } = input ?? {};
+    if (typeof userId !== "string" || !userId || userId.length > 256 ||
+        typeof workspaceId !== "string" || !workspaceId || workspaceId.length > 256 ||
+        (request.method === "POST" && (typeof operatorId !== "string" || !operatorId || operatorId.length > 256))) {
+      throw new WorkspaceSecurityError(400, "Invalid legacy MES identity");
+    }
+    if (!runtime.sqlite.prepare("SELECT 1 FROM workspace_memberships WHERE user_id=? AND workspace_id=?").get(userId, workspaceId)) {
+      throw new WorkspaceSecurityError(404, "Workspace membership not found");
+    }
+    runtime.sqlite.exec(legacyMesIdentitySchema);
+    const businessPath = path.resolve(process.env.SUITE_SQLITE_PATH || path.join(process.cwd(), ".data/portfolio.sqlite"));
+    const business = new DatabaseSync(businessPath, { readOnly: request.method !== "DELETE" });
+    try {
+      if (request.method === "POST" && typeof operatorId === "string") {
+        if (!business.prepare("SELECT 1 FROM mes_production_reports WHERE organization_id=? AND operator_id=? LIMIT 1").get(workspaceId, operatorId)) {
+          throw new WorkspaceSecurityError(404, "Legacy MES operator not found in this workspace");
+        }
+        try { linkLegacyMesIdentity(runtime.sqlite, userId, workspaceId, operatorId); }
+        catch { throw new WorkspaceSecurityError(409, "Legacy MES identity is already linked"); }
+        runtime.audit(actor.id, "legacy-mes.link", JSON.stringify({ userId, workspaceId, operatorId }));
+      }
+      const linkedOperator = resolveLegacyMesIdentity(runtime.sqlite, userId, workspaceId);
+      if (request.method === "DELETE") {
+        if (confirmUserId !== userId || !linkedOperator) throw new WorkspaceSecurityError(400, "Confirm the linked Portfolio user");
+        const cleared = clearLegacyMesHistory(business, workspaceId, linkedOperator);
+        runtime.audit(actor.id, "legacy-mes.clear", JSON.stringify({ userId, workspaceId, cleared }));
+      }
+      const reports = linkedOperator ? readLegacyMesHistory(business, workspaceId, linkedOperator) : [];
+      return Response.json({ linked: Boolean(linkedOperator), reports }, { headers: { "cache-control": "no-store" } });
+    } finally {
+      business.close();
+    }
+  }
   if (request.method === "POST" && route === "users") {
     const body = await readJson<{ email?: string; password?: string; name?: string }>(request);
     if (!body.email || !body.password || body.password.length < 12 || !body.name) throw new WorkspaceSecurityError(400, "Invalid user details");

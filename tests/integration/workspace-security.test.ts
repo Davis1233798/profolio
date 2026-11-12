@@ -1,3 +1,4 @@
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -41,6 +42,44 @@ test("private SQLite Better Auth runtime uses actual login cookies and owner-onl
     assert.equal(userLogin.ok, true);
     const userCookie = userLogin.headers.get("set-cookie")!.split(";")[0];
     const membership=await security.request("/api/workspace-admin/memberships",{method:"POST",headers:{cookie:cookieHeader,origin:"https://portfolio.example.test","content-type":"application/json"},body:JSON.stringify({userId:aliceId,workspaceId:"workspace-a",permissions:["export"]})});
+    assert.equal(membership.status, 200);
+    const previousBusinessPath = process.env.SUITE_SQLITE_PATH;
+    process.env.SUITE_SQLITE_PATH = join(dir, "legacy-mes.sqlite");
+    const business = new DatabaseSync(process.env.SUITE_SQLITE_PATH);
+    try {
+      business.exec(`
+        CREATE TABLE mes_work_orders (id TEXT, organization_id TEXT, order_no TEXT);
+        CREATE TABLE mes_production_reports (
+          id TEXT, organization_id TEXT, operator_id TEXT, work_order_id TEXT,
+          good_quantity INTEGER, scrap_quantity INTEGER, report_time TEXT, notes TEXT
+        );
+        INSERT INTO mes_work_orders VALUES ('order-a','workspace-a','WO-1');
+        INSERT INTO mes_production_reports VALUES ('report-a','workspace-a','legacy-a','order-a',2,0,'2026-01-01','note');
+      `);
+      const target = { userId: aliceId, workspaceId: "workspace-a" };
+      const route = "/api/workspace-admin/legacy-mes-history";
+      const query = new URLSearchParams(target);
+      assert.equal((await security.request(`${route}?${query}`, { headers: { cookie: userCookie } })).status, 403);
+      const mutate = (method: string, body: object, origin = "https://portfolio.example.test") =>
+        security.request(route, { method, headers: { cookie: cookieHeader, origin, "content-type": "application/json" }, body: JSON.stringify(body) });
+      assert.equal((await mutate("POST", { ...target, operatorId: "legacy-a" }, "https://other.example.test")).status, 403);
+      const linked = await mutate("POST", { ...target, operatorId: "legacy-a" });
+      assert.equal(linked.status, 200);
+      assert.equal((await linked.json() as { reports: unknown[] }).reports.length, 1);
+      assert.equal((await mutate("DELETE", { ...target, confirmUserId: "wrong-user" })).status, 400);
+      const cleared = await mutate("DELETE", { ...target, confirmUserId: aliceId });
+      assert.equal(cleared.status, 200);
+      assert.deepEqual((await cleared.json() as { reports: unknown[] }).reports, []);
+      const retained = business.prepare("SELECT operator_id, notes, good_quantity FROM mes_production_reports").get();
+      assert.equal(retained?.operator_id, "");
+      assert.equal(retained?.notes, null);
+      assert.equal(retained?.good_quantity, 2);
+    } finally {
+      business.close();
+      if (previousBusinessPath === undefined) delete process.env.SUITE_SQLITE_PATH;
+      else process.env.SUITE_SQLITE_PATH = previousBusinessPath;
+    }
+
     assert.equal(membership.ok,true);
     const keyResponse=await security.request("/api/workspace-admin/keys",{method:"POST",headers:{cookie:cookieHeader,origin:"https://portfolio.example.test","content-type":"application/json"},body:JSON.stringify({userId:aliceId,workspaceId:"workspace-a",scope:{kind:"csv",datasets:["pos_sales"]},expiresInSeconds:600,quota:2})});
     assert.equal(keyResponse.status,201);

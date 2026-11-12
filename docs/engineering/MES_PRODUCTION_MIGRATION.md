@@ -26,6 +26,12 @@ in the maintenance ticket before freezing writes.
 
    Replace the example paths and organization ID with the approved values.
    Keep the source untouched and use a destination that does not yet exist.
+   Repeat `--organization` for each approved organization. Supply
+   `--reviewed-outbox-archive ARCHIVE.sqlite` when the source contains processed
+   delivery history, and `--reviewed-report-mapping MAPPINGS.json` when migrating
+   legacy report retry records. Follow the pinned contract for each input.
+   A rejection leaves the candidate unfit for activation. Resolve the underlying
+   reconciliation error before another rehearsal.
 3. Compare counts and representative business records per organization,
    including work orders, operations, reports, material movements, quality and
    finished goods. Verify station accounts, grants, the legacy report retry

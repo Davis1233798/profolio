@@ -15,9 +15,17 @@ in the maintenance ticket before freezing writes.
    Take consistent SQLite backups through their respective application backup
    commands. Record the snapshot digests and prove each opens in a separate
    recovery location.
-2. Restore the approved source snapshot to a private rehearsal location. Run
-   the independent MES repository's migration contract against that snapshot.
-   Keep the source untouched and write output to a new candidate database.
+2. Restore the approved source snapshot to a private rehearsal location.
+   From the independent MES checkout pinned to the candidate release, use the
+   [migration contract](https://github.com/Davis1233798/business-suite-mes/blob/e09c5bf/docs/engineering/MES_GO_DB_MIGRATION.md).
+   The single-organization command is:
+
+   ```sh
+   node scripts/migrate-mes-go-db.mjs --source /private/rehearsal/shared.sqlite --destination /private/rehearsal/mes-candidate.sqlite --organization ORG_ID
+   ```
+
+   Replace the example paths and organization ID with the approved values.
+   Keep the source untouched and use a destination that does not yet exist.
 3. Compare counts and representative business records per organization,
    including work orders, operations, reports, material movements, quality and
    finished goods. Verify station accounts, grants, the legacy report retry

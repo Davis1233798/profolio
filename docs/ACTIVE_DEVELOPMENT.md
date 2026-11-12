@@ -1,38 +1,19 @@
 # Active development and remaining delivery
 
-Evidence snapshot: 2026-11-07, Asia/Taipei. Check the linked commit,
-workflow and runtime before acting. CI, image publication, and live
-deployment are recorded separately.
+GitHub merge records verified on 2026-11-12, Asia/Taipei.
 
-## Active pull-request snapshot
+## Current work and delivery boundaries
 
-Remote state checked on 2026-11-05, Asia/Taipei. Workflow results below are exact-head evidence where stated; duplicate push and pull-request workflow runs are reported as one status when they agree. Recheck before relying on this snapshot.
-
-| Work | Current remote state | Boundary |
+| System / feature | Merged or in review | Remaining acceptance |
 |---|---|---|
-| [ERP invoice/payment posting PR9](https://github.com/Davis1233798/business-suite-erp/pull/9) | Open draft at `5a732c2`; backend, forms, HTTP path and browser acceptance are present. Both exact-head `erp` checks are pending; earlier RED501 evidence remains a prior result, not stable completion. | Do not call the iteration green until both exact-head checks finish and are reviewed. |
-| [Portfolio dataset pagination PR28](https://github.com/Davis1233798/profolio/pull/28) | Merged into main as `7eca7e3`; exact-head web, infrastructure, Windows, k6 and station-delivery checks passed before merge. | Merge/CI evidence does not itself prove a live deployment. |
-| [Shop pagination PR10](https://github.com/Davis1233798/business-suite-shop/pull/10) | Merged as `6d5cb34`; both exact-head shop checks passed. | Merge/CI evidence does not itself prove a live deployment. |
-| [CRM pagination PR5](https://github.com/Davis1233798/business-suite-crm/pull/5), [POS PR4](https://github.com/Davis1233798/business-suite-pos/pull/4), [Dining PR4](https://github.com/Davis1233798/business-suite-dining/pull/4) | Merged as `ce51c5f`, `842e207` and `c8e730d`, respectively. | Workspace row pagination bounds rendered DOM rows, not total browser process memory. |
-| [MES pagination PR15](https://github.com/Davis1233798/business-suite-mes/pull/15) | Open at `d414150`; exact-head rootless-host-provisioning passed, while MES checks remain pending. | Not yet verified as stable or deployed. |
-| [Portfolio resource lifecycle PR29](https://github.com/Davis1233798/profolio/pull/29) | Draft open; branch now integrates main through `7eca7e3` and adds the later batch-sample-on-failure diagnostics fix. Final exact-head CI is pending. The earlier `364f2ed` web/station RED was a test-only unsupported CDP command and did not reach Chromium. | The long-run heap/resource acceptance has not passed yet. No heap reduction or GPU/process-memory result is claimed. |
-| [Portfolio resource lifecycle PR26](https://github.com/Davis1233798/profolio/pull/26), [MES cutover documentation PR14](https://github.com/Davis1233798/business-suite-mes/pull/14) | PR26 is merged as `5b97344` and the live runtime was separately verified at that revision. MES PR14 is merged as `e4ba765`. | PR26 runtime evidence does not measure heap reduction. MES data conversion and live cutover remain pending despite the documentation merge. |
+| Portfolio | Dataset pagination merged as `7eca7e3` and resource lifecycle regression [PR29](https://github.com/Davis1233798/profolio/pull/29) as `96d0ef7`. Hybrid synchronization and the Rust desktop supervisor are present in main. | Confirm the currently served revision and retain measured browser heap and resource evidence for the deployed build. |
+| MES | Pagination [PR15](https://github.com/Davis1233798/business-suite-mes/pull/15) merged as `9a4a9f3` and migration contract [PR16](https://github.com/Davis1233798/business-suite-mes/pull/16) as `17a97ee`. Work-order and BOM creation are in [PR19](https://github.com/Davis1233798/business-suite-mes/pull/19). | Validate the current release, identity enrollment, migration continuity and public routing before cutover. |
+| ERP | Invoice/payment posting [PR9](https://github.com/Davis1233798/business-suite-erp/pull/9), stock transfer [PR10](https://github.com/Davis1233798/business-suite-erp/pull/10) and private candidate delivery [PR12](https://github.com/Davis1233798/business-suite-erp/pull/12) merged as `82e21b4`, `d2b0701` and `7381c25`. | Verify private runtime provisioning, rollback and data continuity before public routing. |
+| CRM | SQLCipher engine verification [PR7](https://github.com/Davis1233798/business-suite-crm/pull/7) merged as `17386ce` and encrypted export proof followed in PR8. | Verify migration, recovery and the packaged Windows client-server runtime. |
 
-## Current work
+Google OAuth and private workspace-owner setup remain deferred at the user's request.
 
-The public portfolio and its demo workspaces are live. Current development
-covers the browser memory regression, ERP stock transfer and isolated ERP
-delivery. Google OAuth and private workspace-owner setup are deferred at
-the user's request.
-
-| Current delivery | Evidence | Remaining work |
-|---|---|---|
-| Public portfolio and station demos | The [deployed release](https://github.com/Davis1233798/profolio/actions/runs/42336644199) runs as `fbfa73e`. The 12 front and back office links reached their corresponding role-based workspace views. MES, CRM and Dining dataset labels were verified in English and Traditional Chinese. An anonymous backup request returned HTTP 401 with `Cache-Control: no-store`. | Keep the public flows in regression coverage. The central station currently serves the demos. |
-| Long session memory | [PR29](https://github.com/Davis1233798/profolio/pull/29) exercises repeated navigation and measures retained heap and resource counts. | Resolve the failing remote interaction and background window cases before merging. |
-| ERP stock transfer | [ERP PR10](https://github.com/Davis1233798/business-suite-erp/pull/10) includes a persisted ledger transfer, replay, permissions and a mobile bilingual flow. | Review the latest browser and release runs before merging. |
-| ERP independent OCI | The [main release run](https://github.com/Davis1233798/business-suite-erp/actions/runs/42336549088) published native ARM64 and AMD64 images. [ERP PR12](https://github.com/Davis1233798/business-suite-erp/pull/12) adds pinned-image checks, private candidate rehearsal, activation, rollback and a forced CI deployment entry point. | Finish dedicated runtime provisioning and remote acceptance, then run the first private deployment. Public routing and data continuity remain separate gates. |
-| MES independent OCI | The [main workflow](https://github.com/Davis1233798/business-suite-mes/actions/runs/42348527658) deployed `17a97ee`. The host loopback health endpoint returned that revision. [MES PR16](https://github.com/Davis1233798/business-suite-mes/pull/16) passed the offline migration contract with synthetic data. | Review live identity enrollment and legacy report retry mappings, rehearse continuity and verify the public route before cutover. |
-| CRM Windows encryption | [CRM PR7](https://github.com/Davis1233798/business-suite-crm/pull/7) checks the pinned SQLCipher engine and WAL behavior in Windows CI. | Production database migration, key protection, recovery and packaged runtime acceptance remain pending. |
+## Earlier implementation evidence
 
 | System / feature | Verified delivery | Still required |
 |---|---|---|

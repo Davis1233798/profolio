@@ -43,7 +43,7 @@ Each project has its own public repository with default branch main: [MES](https
 
 ## Completion gates for the full user request
 
-- Complete architecture -> program boundaries -> meaningful tests -> implementation iterations; no local application tests/builds. Remote GitHub checks are the test authority. Review PRs autonomously and merge stable versions into main.
+- Iterate in this order: architecture, program boundaries, tests, and implementation. Run applicable tests locally before pushing to conserve GitHub Actions time. Review the exact PR revision and merge stable versions into main after its remote checks pass.
 - Finish the requested page/role UX across independent system login, front/back-office, mobile preview, print/labels and English/Traditional Chinese behavior. Reuse the checked-in reference/template boundaries; homepage polish alone is insufficient.
 - Finish the planned Go business transactions and matching React forms for all six systems, preserving real persistence, tenant isolation, state transitions, retries and audit. MES/commerce traffic demonstrations need real bounded workload evidence; no unlimited-throughput or production-HA claim.
 - Deliver Web systems to the existing OCI through each project's automatic pipeline, with version/routing/HTTPS, unauthorized rejection, backups/migrations/restore and rollback verified per system. Existing shared service health is not proof that a new independent repo version is served.

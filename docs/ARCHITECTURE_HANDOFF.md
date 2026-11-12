@@ -70,9 +70,10 @@ flowchart LR
 - **功能邊界**：`mes_business.go` 管工單狀態、報工數量與重試；
   `mes_operations.go` 管生產現場紀錄；`mes_finished_goods.go`
   管成品放行與入庫。獨立 MES 管自己的製造資料，中央站的跨系統
-  MES／ERP 整合另有 API。公開 MES 子網域目前仍走共用 Web。
-- **未完成**：獨立 Go 版的工單建立、BOM 編修與中央站功能需逐項對照；
-  公開切換尚待驗證。離線匯入測試目前使用合成資料。
+  MES／ERP 整合另有 API。獨立 Go 版已加入工單與 BOM 建立（[#19](https://github.com/Davis1233798/business-suite-mes/pull/19)）。
+  [公開 MES 健康端點](https://mes.blockchen.duckdns.org/api/health) 已回報 Go 版 `e09c5bf` 就緒。
+  舊版報工仍由作品集依操作者保留，擁有者可在後台指定清除歸屬與備註（[作品集 #47](https://github.com/Davis1233798/profolio/pull/47)）。
+- **未完成**：BOM 編修與中央站功能仍需逐項對照。離線匯入測試目前使用合成資料，正式站擁有者登入後的清除流程仍待驗收。
 - **推版**：`mes.yml` 驗證 Go、Windows 原生 Rust 桌面、rootless 主機與回滾；
   `main` 發布 SHA 標籤映像與部署套件。啟用 `MES_DEPLOY_ENABLED` 後，
   `mes-production` 透過固定 SSH 指令更新獨立服務。

@@ -95,7 +95,7 @@ class MesPublicRouteTests(unittest.TestCase):
         self.assertIn('MES_PUBLIC_UPSTREAM: ${MES_PUBLIC_UPSTREAM:?route upstream must come from the allowlisted IaC mode}', compose)
         mes_block = caddy.split('mes.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0]
         self.assertIn('reverse_proxy {$MES_PUBLIC_UPSTREAM}', mes_block)
-        self.assertIn('import suite-proxy', caddy.split('erp.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0])
+        self.assertIn('reverse_proxy {$ERP_PUBLIC_UPSTREAM:web:8080}', caddy.split('erp.{$BASE_DOMAIN} {', 1)[1].split('\n}', 1)[0])
         self.assertIn('external: true', isolated_overlay)
         self.assertIn('name: business-suite-mes_default', isolated_overlay)
         self.assertNotIn('business-suite-mes_default', compose)

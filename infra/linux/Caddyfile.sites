@@ -27,7 +27,8 @@ mes.{$BASE_DOMAIN} {
 }
 erp.{$BASE_DOMAIN} {
     redir / /erp 302
-    import suite-proxy
+    import suite-policy
+    reverse_proxy {$ERP_PUBLIC_UPSTREAM:web:8080}
 }
 pos.{$BASE_DOMAIN} {
     redir / /pos 302

@@ -1,0 +1,6 @@
+services:
+  edge:
+    environment:
+      ERP_PUBLIC_UPSTREAM: unix//run/erp-ingress/upstream.sock
+    volumes:
+      - /run/erp-ingress:/run/erp-ingress:ro

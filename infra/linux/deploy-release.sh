@@ -45,6 +45,11 @@ compose() {
   overlay=$(route_overlay "$route_mode")
   local files=(-f compose.yaml -f linux/compose.web.yaml -f linux/compose.public-sites.yaml -f linux/compose.stations.yaml)
   if [[ -n "$overlay" ]]; then files+=(-f "$overlay"); fi
+  local erp_mode
+  erp_mode=$(python3 "$release/infra/linux/erp_public_route.py" "$release/infra/.env") || return
+  if [[ "$erp_mode" == rootless && -f "$dir/infra/linux/compose.erp-rootless-route.yaml" ]]; then
+    files+=(-f linux/compose.erp-rootless-route.yaml)
+  fi
   (cd "$dir/infra" && sudo -n env MES_PUBLIC_UPSTREAM="$upstream" docker compose --project-name business-suite "${env_args[@]}" \
     "${files[@]}" "$@")
 }

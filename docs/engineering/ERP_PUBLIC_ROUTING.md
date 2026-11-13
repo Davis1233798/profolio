@@ -26,6 +26,4 @@ sudo curl --fail --silent --show-error --unix-socket /run/erp-ingress/upstream.s
 
 To apply the rehearsed route, recreate only the edge service with
 `up -d --no-deps --force-recreate edge`. To revert it, recreate edge using
-the original file list. The current release scripts do not persist this
-overlay across deployments. Integrate the route mode into those scripts
-before relying on it for a public cutover.
+the original file list. Persist ERP_PUBLIC_ROUTE=rootless in the shared environment to retain the overlay on subsequent releases. Set ERP_PUBLIC_ROUTE=shared before recreating edge to restore the shared route.

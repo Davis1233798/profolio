@@ -27,6 +27,11 @@ for option in "$@"; do
     --public-web) args+=(-f linux/compose.web.yaml -f linux/compose.public-web.yaml);;
     --public-sites)
       args+=(-f linux/compose.web.yaml -f linux/compose.public-sites.yaml)
+      erp_mode=$(python3 linux/erp_public_route.py .env)
+      if [[ "$erp_mode" == rootless ]]; then
+        sudo -n curl -fsS --max-time 5 --unix-socket /run/erp-ingress/upstream.sock http://localhost/api/health >/dev/null
+        args+=(-f linux/compose.erp-rootless-route.yaml)
+      fi
       if [[ "$route_mode" == isolated ]]; then
         network=business-suite-mes_default
         network_project=$(docker network inspect --format '{{ index .Labels "com.docker.compose.project" }}' "$network" 2>/dev/null || true)

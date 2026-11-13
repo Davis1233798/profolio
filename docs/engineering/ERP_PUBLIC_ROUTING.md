@@ -10,3 +10,22 @@ data and user access in the independent ERP. Check the public login,
 anonymous rejection, and matching ERP revision immediately after cutover.
 Rollback restores the shared upstream and removes the overlay. Reconcile
 any writes accepted by the independent ERP before reopening shared writes.
+
+## Rehearse and verify
+
+From the active release's infra directory, use the current Compose project
+name, shared environment file and existing MES overlay. Append
+`-f linux/compose.erp-rootless-route.yaml` to that same Compose invocation.
+Use `config --quiet` to check the combined configuration without printing
+the environment. On the host, confirm the private endpoint before any edge
+recreation:
+
+```sh
+sudo curl --fail --silent --show-error --unix-socket /run/erp-ingress/upstream.sock http://localhost/api/health
+```
+
+To apply the rehearsed route, recreate only the edge service with
+`up -d --no-deps --force-recreate edge`. To revert it, recreate edge using
+the original file list. The current release scripts do not persist this
+overlay across deployments. Integrate the route mode into those scripts
+before relying on it for a public cutover.

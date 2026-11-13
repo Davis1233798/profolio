@@ -51,3 +51,11 @@ Each project has its own public repository with default branch main: [MES](https
 - When private administration resumes, complete actual owner initialization, Google OAuth/OIDC, per-user key issuance and live revocation acceptance.
 
 The full goal remains active. None of these rows may be treated as proof that all remaining delivery is finished. Historical notes such as GOAL_AUDIT.md and GO_REACT_DESKTOP.md retain older snapshots and must not override current source/runtime evidence.
+
+## Legacy ERP public routing gate
+
+A read-only production inventory on 2026-11-13 found 1,609 legacy demo workspaces with ERP items, first created on 2026-10-30 and most recently on 2026-11-13. The legacy application creates demo workspaces automatically when an API request has no valid demo-session cookie. This count measures seeded workspaces, not registrations.
+
+Nine workspaces had a purchase order whose ID differs from that workspace's seed purchase order. All nine additional orders were created on 2026-10-30. This check does not detect all edits to seed records or establish who performed an operation. An unsigned demo cookie, seeded user, or business record does not establish account ownership.
+
+Keep public routing on the shared ERP until ownership can be verified and the account mapping is complete. Keep legacy records available for reconciliation. Treat private deployment, aggregate inventory, and public routing as separate acceptance steps.

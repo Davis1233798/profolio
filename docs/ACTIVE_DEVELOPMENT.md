@@ -4,6 +4,13 @@ GitHub merge records verified on 2026-11-12, Asia/Taipei.
 
 ## Current work and delivery boundaries
 
+| Current change | Local acceptance | Delivery still to verify |
+|---|---|---|
+| MES BOM revision [PR #20](https://github.com/Davis1233798/business-suite-mes/pull/20) | Chromium verified separate material quantities and an unchanged work order reference after reload. | CI, merge, and public revision. |
+| ERP fiscal period close [PR #17](https://github.com/Davis1233798/business-suite-erp/pull/17) | Go tests cover authorization, audit rollback, and posting date boundaries. Chromium verified confirmation and persistence after reload. | CI, merge, and independent OCI acceptance. |
+| CRM Windows launcher [PR #12](https://github.com/Davis1233798/business-suite-crm/pull/12) | Packaged Windows launcher started successfully and created an encrypted SQLCipher database. | CI artifact acceptance, merge, and existing database migration. |
+| Portfolio MES handoff [PR #48](https://github.com/Davis1233798/profolio/pull/48) | The public MES health endpoint reported Go revision `e09c5bf` ready. | Merge and owner-authenticated legacy history acceptance. |
+
 | System / feature | Merged or in review | Remaining acceptance |
 |---|---|---|
 | Portfolio | Dataset pagination merged as `7eca7e3` and resource lifecycle regression [PR29](https://github.com/Davis1233798/profolio/pull/29) as `96d0ef7`. Hybrid synchronization and the Rust desktop supervisor are present in main. | Confirm the currently served revision and retain measured browser heap and resource evidence for the deployed build. |
@@ -36,7 +43,7 @@ Each project has its own public repository with default branch main: [MES](https
 
 ## Completion gates for the full user request
 
-- Complete architecture -> program boundaries -> meaningful tests -> implementation iterations; no local application tests/builds. Remote GitHub checks are the test authority. Review PRs autonomously and merge stable versions into main.
+- Iterate in this order: architecture, program boundaries, tests, and implementation. Run applicable tests locally before pushing to conserve GitHub Actions time. Review the exact PR revision and merge stable versions into main after its remote checks pass.
 - Finish the requested page/role UX across independent system login, front/back-office, mobile preview, print/labels and English/Traditional Chinese behavior. Reuse the checked-in reference/template boundaries; homepage polish alone is insufficient.
 - Finish the planned Go business transactions and matching React forms for all six systems, preserving real persistence, tenant isolation, state transitions, retries and audit. MES/commerce traffic demonstrations need real bounded workload evidence; no unlimited-throughput or production-HA claim.
 - Deliver Web systems to the existing OCI through each project's automatic pipeline, with version/routing/HTTPS, unauthorized rejection, backups/migrations/restore and rollback verified per system. Existing shared service health is not proof that a new independent repo version is served.

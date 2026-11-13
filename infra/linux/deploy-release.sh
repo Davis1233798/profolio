@@ -36,6 +36,10 @@ if [[ "$route_mode" == isolated ]]; then
 elif [[ "$route_mode" == rootless ]]; then
   sudo -n python3 "$route_tool" check-unix-health >/dev/null
 fi
+erp_mode=$(python3 "$release/infra/linux/erp_public_route.py" "$release/infra/.env")
+if [[ "$erp_mode" == rootless ]]; then
+  sudo -n curl -fsS --max-time 5 --unix-socket /run/erp-ingress/upstream.sock http://localhost/api/health >/dev/null
+fi
 compose() {
   local dir=$1; shift
   local env_args=(--env-file .env)
@@ -45,8 +49,6 @@ compose() {
   overlay=$(route_overlay "$route_mode")
   local files=(-f compose.yaml -f linux/compose.web.yaml -f linux/compose.public-sites.yaml -f linux/compose.stations.yaml)
   if [[ -n "$overlay" ]]; then files+=(-f "$overlay"); fi
-  local erp_mode
-  erp_mode=$(python3 "$release/infra/linux/erp_public_route.py" "$release/infra/.env") || return
   if [[ "$erp_mode" == rootless && -f "$dir/infra/linux/compose.erp-rootless-route.yaml" ]]; then
     files+=(-f linux/compose.erp-rootless-route.yaml)
   fi

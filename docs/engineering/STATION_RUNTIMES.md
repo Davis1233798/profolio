@@ -24,3 +24,21 @@
 CI 定義已加入逐站啟停測試；遠端 CI 執行狀態須另行驗證，不能以本機／Linux 收據推論 GitHub Actions 已執行。
 
 2026-10-30 release `20261030-16`：修正電商後台 `/commerce` 路由歸屬為 shop；新增 alias 路由 Red/Green。Linux 六站停啟再次通過，shop 停止時 `/shop`、領域 API 與 `/commerce` 皆 503，重啟後後台回應包含 `X-Suite-Station: shop`。收據 `/srv/business-suite/shared/station-isolation-16.log`。
+
+## Dining standalone OCI acceptance
+
+The ARM64 Dining candidate at revision 5894f22 was exercised privately on
+OCI. The container runs as UID 10001 and GID 999. Mount its writable state
+volume at /srv/station/data, where SUITE_DB points to stations.sqlite.
+
+Acceptance covered front-office login, menu reads, order creation, container
+recreation against the persistent volume, and verification of new order
+writes in that volume. The preceding tested image c042424 started against
+the same volume and retained the existing orders. The candidate was then
+restarted on 5894f22.
+
+Public ingress still serves the shared Portfolio backend. The legacy
+SQLite source contained 1,647 dining orders across 1,639 workspaces at the
+time of inspection, including eight non-fixture orders. Verify ownership
+and preservation of those records before routing visitors to separate
+state. Keep identifiers and private data in the deployment environment.

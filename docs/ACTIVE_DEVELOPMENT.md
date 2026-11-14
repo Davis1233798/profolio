@@ -59,3 +59,9 @@ A read-only production inventory on 2026-11-13 found 1,609 legacy demo workspace
 Nine workspaces had a purchase order whose ID differs from that workspace's seed purchase order. All nine additional orders were created on 2026-10-30. This check does not detect all edits to seed records or establish who performed an operation. An unsigned demo cookie, seeded user, or business record does not establish account ownership.
 
 Keep public routing on the shared ERP until ownership can be verified and the account mapping is complete. Keep legacy records available for reconciliation. Treat private deployment, aggregate inventory, and public routing as separate acceptance steps.
+
+## POS, Dining and Shop legacy records
+
+Read-only OCI inventory on November 13, 2026 found nine POS sales, eight Dining orders beyond the known seed order, and fifteen Shop orders beyond the known seed order. The additions were recorded on October 30, 2026 according to database timestamps. This inventory does not establish account ownership or detect modifications to seeded records.
+
+Keep each public route on its existing data source until its independent runtime has passed an isolated import, tenant-scoped relation and aggregate reconciliation, and rollback rehearsal. Retain unmapped legacy records in the source while ownership is resolved. Never infer ownership from demo cookie IDs or order metadata.

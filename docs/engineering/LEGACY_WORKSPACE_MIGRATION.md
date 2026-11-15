@@ -15,3 +15,14 @@ Isolated staging rejects open POS shifts, claimed held carts, active commerce re
 An older demo seed recorded a discounted order with the undiscounted item total. New seeds correct the value; existing workspaces are not silently changed. If staging reports an order total mismatch, reconcile the actual source order and its return history before exporting again; do not assume that a matching ID makes an existing record safe to rewrite.
 
 The preliminary ERP ledger check looks for a possible balance chain beginning at zero for each item and warehouse, independently of row order. It separately warns when the supplied order cannot be replayed through the destination ledger trigger. Legacy export preserves database row order, and timestamps alone do not prove historical order when absent or tied; full migration validation must still verify the source and actual insertion sequence.
+
+## Unsupported future proposal: POS open-shift migration
+
+A proposal to migrate active POS open shifts is not implemented. Current migration policy and isolated staging require every source open shift to be resolved before export; staging rejects open shifts, and they must not be imported. This is a mandatory stop-work condition, not permission to close shifts automatically or alter source data. Future support needs further technical design and implementation. That work must define and verify how all source writers are frozen before the final export, how the freeze is maintained through cutover, and how the extracted state is reconciled before writes resume.
+
+Any future implementation must satisfy this contract:
+- **Preserve shift status and sales**: Preserve open shift status, opening drawer balances, and all associated sales transactions without synthesizing artificial close events or altering historical line items.
+- **Validate explicit user mapping**: Cashier references (`cashier_id`) must be explicitly mapped to valid destination accounts; fail validation if any operator identity is unmapped or defaulted to a fallback admin.
+- **Reject duplicate destination open registers atomically**: Enforce an atomic invariant that rejects import if a destination register already has an open shift, preventing multiple active shifts per register.
+- **Stop source writers for final cutover**: Enforce a write freeze on the source POS workspace before extracting final cutover state, preventing in-flight sales, drawer modifications, or split-brain state.
+- **Test rollback and replay**: Validate end-to-end import failure scenarios ensuring complete, atomic rollback on error, and verify deterministic replay of sales and drawer events to ensure destination reports reconcile against source figures.

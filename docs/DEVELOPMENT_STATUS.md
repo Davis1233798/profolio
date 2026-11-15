@@ -1,6 +1,6 @@
 # 目前開發狀態
 
-GitHub PR／CI 證據更新至 2026-11-15；OCI 主機與公開端點證據最後查於 2026-11-04 01:06 UTC。本文分別記錄程式合併、CI、正式部署及端到端驗收，不以合併或 CI 通過代表服務已更新、資料已遷移或 UI／主機驗收完成。Web 版在既有 OCI 主機運行；MES、ERP、CRM 桌面 client-server 使用本地 Windows。各項工作仍依 `engineering/LOOP.md` 更新。
+GitHub PR／CI 證據與 POS 私有 OCI 部署證據更新至 2026-11-15；Portfolio 主站公開端點證據最後查於 2026-11-04 01:06 UTC。本文分別記錄程式合併、CI、正式部署及端到端驗收，不以合併或 CI 通過代表所有服務已更新、資料已遷移或公開路由／UI 驗收完成。POS P04 已確認私有主機版本健康；外部可達性未驗證。Web 版在既有 OCI 主機運行；MES、ERP、CRM 桌面 client-server 使用本地 Windows。各項工作仍依 `engineering/LOOP.md` 更新。
 
 部署資訊是該觀測時間的快照，不會在每次 main 發布後自動改寫；正式版本另以 GitHub Actions、主機 release pointer 與公開端點交叉核對。
 
@@ -15,7 +15,7 @@ GitHub PR／CI 證據更新至 2026-11-15；OCI 主機與公開端點證據最�
 
 - OCI 入口：[PR #19](https://github.com/Davis1233798/profolio/pull/19) 提供中央 Caddy 至 rootless MES 的 Unix socket 代理；已完成遠端 CI、審核與合併，主站 release 已包含此入口程式；rootless 主機配置及正式切換尚未完成。
 
-- POS／CounterPoint：收銀 UI 與單行固定折讓切片 [POS PR #13](https://github.com/Davis1233798/business-suite-pos/pull/13) 已於 2026-11-15 合併至 POS `main`，merge commit `dd612f382851c9ca9850ee3aaf154b25abf4133f`。該 PR 的 Ubuntu AMD64 與 ARM64 CI 均通過；OCI 部署工作被跳過，故此變更未有正式部署證據。P04 掛單目前正在本機進行架構設計，尚無實作、遠端分支、PR 或 CI 證據。
+- POS／CounterPoint：收銀與折讓 [POS PR #13](https://github.com/Davis1233798/business-suite-pos/pull/13) 及 P04 掛單 [POS PR #14](https://github.com/Davis1233798/business-suite-pos/pull/14) 均已合併；P04 merge commit `b475381a36222b06bf518c3d1a80094a28108098`。POS 主分支 Ubuntu AMD64／ARM64 驗證通過，OCI 私有部署工作亦成功；受限部署程序在切換 release pointer 前以 `/api/health` 確認回報 revision 符合 `b475381`。POS host 綁定 loopback，外部 DNS／TLS／公開可達性沒有驗證。P05 退款架構設計進行中，尚無 P05 實作 PR 或 CI 證據。
 
 ## 最新主站與分站證據
 
@@ -25,7 +25,7 @@ GitHub PR／CI 證據更新至 2026-11-15；OCI 主機與公開端點證據最�
 | MES／ForgeFlow | [#8 成品入庫](https://github.com/Davis1233798/business-suite-mes/pull/8)、[#9 既有 OCI 共存](https://github.com/Davis1233798/business-suite-mes/pull/9)、[#10 執行檔版本識別](https://github.com/Davis1233798/business-suite-mes/pull/10) 均已合併；最新 main `318ccebe5f2ef2b3de27c8e0fb00d1365cd71a10`。 | 各 PR 的 Linux／Windows 檢查通過；合併後發版另行追蹤，不等同已部署。 | Web 版使用既有 OCI。獨立 rootless 執行環境、公開路由、正式資料 migration/備份還原及瀏覽器驗收待完成。桌面 client-server 使用本地 Windows，安裝、啟動、登入、資料隔離與連線驗收待完成。 |
 | ERP | 最新已合併 PR：[ #3 Windows 身分與資料隔離](https://github.com/Davis1233798/business-suite-erp/pull/3)。 | PR 與 workflow 狀態只作為程式證據；正式主機及用戶端仍需獨立驗收。 | Web 版使用既有 OCI；桌面 client-server 使用本地 Windows。OCI 站台路由/版本、資料 migration/還原、正式資料演練、UI/瀏覽器驗收，以及 Windows 安裝與連線驗收待完成。 |
 | CRM | 最新已合併 PR：[ #2 Windows 身分與資料隔離](https://github.com/Davis1233798/business-suite-crm/pull/2)。 | PR 與 workflow 狀態只作為程式證據；正式主機及用戶端仍需獨立驗收。 | Web 版使用既有 OCI；桌面 client-server 使用本地 Windows。OCI 站台路由/版本、資料 migration/還原、正式資料演練、UI/瀏覽器驗收，以及 Windows 安裝與連線驗收待完成。 |
-| POS／CounterPoint | [POS PR #13](https://github.com/Davis1233798/business-suite-pos/pull/13) 收銀 UI／單行固定折讓已合併至 POS `main`，merge commit `dd612f382851c9ca9850ee3aaf154b25abf4133f`。P04 掛單正在本機進行架構設計，尚無實作或遠端 PR。 | PR #13 的 Ubuntu AMD64 與 ARM64 CI 均通過；該次 OCI 部署工作為 skipped。 | CI 只證明該提交通過相應工作，未證明 POS 已部署。尚未核對這次提交是否進入 OCI release，也未完成公開路由、正式收銀／掛單流程及逐站瀏覽器驗收。P04 架構設計完成後仍須依序定義程式邊界、撰寫行為測試、實作、驗證及獨立審查。 |
+| POS／CounterPoint | [POS PR #13](https://github.com/Davis1233798/business-suite-pos/pull/13) 收銀 UI／單行固定折讓及 [PR #14](https://github.com/Davis1233798/business-suite-pos/pull/14) P04 掛單已合併至 POS `main`；P04 merge commit `b475381a36222b06bf518c3d1a80094a28108098`。 | 主分支 GitHub Actions run [#43681689457](https://github.com/Davis1233798/business-suite-pos/actions/runs/43681689457) 全部成功；包含 AMD64／ARM64 測試、映像建置與 smoke，以及私有 OCI 部署。遠端部署程序檢查 `/api/health` revision 與 `b475381` 相符後才啟用 release。 | P04 已部署至私有 loopback POS host，版本健康檢查通過；外部 DNS、TLS、公開路由及外部瀏覽器可達性未驗證。P05 退款架構設計進行中，尚無實作 PR／CI；功能及驗收仍待定義與實作。 |
 | Shop／MarketLane | 最新已合併 PR：[ #8 Go 店面接到結帳](https://github.com/Davis1233798/business-suite-shop/pull/8)；此前 #7 優惠券、#6 退貨退款、#5 出貨操作亦已合併。 | PR 與 workflow 只證明程式/CI 狀態。 | Web 版使用既有 OCI。正式發布/路由、資料 migration、瀏覽器與行動裝置端到端驗收待辦；付款與出貨目前依功能設計使用模擬流程，未記為正式第三方串接要求。 |
 
 主站直接 OCI 證據顯示 current release SHA 為 `a7a22b18032aef32c9af7f70c9ef63a95c38e5fd`，外部主站 health 回報資料庫已連線。此主站證據不替代 MES、ERP、POS、CRM、餐飲及 Shop 六個 Web 站逐站版本/路由檢查；也不表示任何資料 migration 或桌面驗收已完成。桌面 client-server 使用本地 Windows，MES、ERP、CRM 的安裝與連線仍待實機驗收。
@@ -51,7 +51,7 @@ GitHub PR／CI 證據更新至 2026-11-15；OCI 主機與公開端點證據最�
 
 - MES：OCI 部署後驗收報工、品檢放行、成品批次入庫、工單結案及 ERP 庫存同步；確認成本/商品/倉庫映射管理流程，完成實際瀏覽器操作驗收。本地 Windows client-server 安裝/連線與裝置操作驗收仍待完成。
 - ERP／CRM：確認各自最新合併後功能與 Windows 隔離行為；補齊 OCI Web 站路由/版本核對、資料 migration、瀏覽器 UI；本地 Windows client-server 打包/執行/連線驗收。
-- POS／餐飲：POS P01–P03 收銀 UI／單行固定折讓已合併且其 PR CI 通過；該 PR 的 OCI 部署工作被跳過。仍須核對 OCI Web 站版本/路由並完成正式收銀、桌位/KDS 流程的瀏覽器驗收。POS P04 掛單正在本機進行架構設計；架構設計完成後，實作、行為測試、CI、審查及部署仍待進行與驗證。
+- POS／餐飲：POS P01–P04 已合併；P04 merge commit `b475381` 已由私有 OCI 部署流程安裝，host-side `/api/health` 確認 revision 相符。公開外部路由／瀏覽器可達性未驗證；Dining 桌位/KDS 流程的瀏覽器驗收仍待完成。P05 退款架構設計進行中，實作、行為測試、CI、審查及部署尚未完成。
 - Shop：驗收 Go 店面到 checkout、租戶隔離優惠券、模擬付款/出貨、退貨退款及訂單狀態；完成瀏覽器及行動端端到端驗收。
 - 共用列印：等待遠端 CI，完成支援/不支援條碼行為、重複預覽及實體掃描器驗收。
 - 共用 Go 站台維護鎖、release revision、公開部署版本識別：完成遠端 Green 與 server/maintenance-mode 端到端驗證。
@@ -64,7 +64,7 @@ GitHub PR／CI 證據更新至 2026-11-15；OCI 主機與公開端點證據最�
 
 ## 已知狀態判讀
 
-- 本次讀取的分站 GitHub Deployments API 均無部署紀錄；主站亦為 0 筆。這不證明其他管道絕無部署，但目前沒有可用的 GitHub 部署證據可確認。
-- POS PR #13 的合併與 Ubuntu CI 僅代表原始碼／CI 狀態；其 OCI 部署工作為 skipped。這不能代替 POS OCI Web 版本／路由、正式收銀 UI 或 P04 掛單驗收。MES、ERP、CRM、Shop 的 PR 合併與 workflow 也不能代替六站 OCI Web 版本／路由、資料遷移或 Windows client-server 驗收。
+- GitHub Deployments API 沒有可用的 Portfolio 主站部署紀錄；其他系統的 PR/workflow 證據不替代各站部署核對。POS P04 是已獨立確認的例外：GitHub Actions run #43681689457 成功執行 OCI 部署，host-side `/api/health` 回報的 revision 符合 `b475381`。
+- POS P04 私有 host 部署及 revision health 已確認，但 POS loopback 服務的外部 DNS／TLS／路由與瀏覽器可達性未驗證。MES、ERP、CRM、Shop 的 PR 合併與 workflow 也不能代替六站 OCI Web 版本／路由、資料遷移或 Windows client-server 驗收；P05 仍在架構設計階段。
 - 文件編修期間只更新開發狀態與 Three.js 0.187.0 的 MIT 授權靜態檔；沒有本機應用測試、沒有操作 dirty 原樹，也沒有手動變更服務、DNS、OCI host 或資料。合併後仍由既有 GitHub Actions 發布流程處理。
 - Three.js 授權全文隨公開資產附於 [three-0.187.0.txt](../public/licenses/three-0.187.0.txt)，來源為官方 r187 LICENSE；粒子效果是本專案實作，參考作品未複製程式碼。

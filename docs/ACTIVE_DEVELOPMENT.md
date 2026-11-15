@@ -5,7 +5,6 @@ GitHub evidence refreshed 2026-11-16, Asia/Taipei.
 ## Current work and delivery boundaries
 
 | Current change | Local acceptance | Delivery still to verify |
-|---|---|---|
 | POS cash movements and shift variance close [PR #16](https://github.com/Davis1233798/business-suite-pos/pull/16), merged as `228124e` on 2026-11-16 Asia/Taipei. | Merge commit is on POS `main`; Linux job passed in main run [#43738660955](https://github.com/Davis1233798/business-suite-pos/actions/runs/43738660955). Earlier exact PR-head Linux and ARM checks passed. | Main ARM and Linux jobs passed in run [#43738660955](https://github.com/Davis1233798/business-suite-pos/actions/runs/43738660955); its private OCI deploy job succeeded using image digest `sha256:edb104602ae394b14c416baa2e91fe8cd0e2e03cb839274f9b2200e6f6da41ae`, and the container reported healthy for commit `228124e`. Public ingress and external reachability remain unverified. P07 member-to-transaction linking design is starting locally; no implementation or acceptance is claimed yet. |
 |---|---|---|
 | MES BOM revision [PR #20](https://github.com/Davis1233798/business-suite-mes/pull/20) | Chromium verified separate material quantities and an unchanged work order reference after reload. | CI, merge, and public revision. |

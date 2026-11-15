@@ -1,10 +1,12 @@
 # Active development and remaining delivery
 
-GitHub merge records verified on 2026-11-12, Asia/Taipei.
+GitHub evidence refreshed 2026-11-16, Asia/Taipei.
 
 ## Current work and delivery boundaries
 
 | Current change | Local acceptance | Delivery still to verify |
+|---|---|---|
+| POS cash movements and shift variance close [PR #16](https://github.com/Davis1233798/business-suite-pos/pull/16), merged as `228124e` on 2026-11-16 Asia/Taipei. | Merge commit is on POS `main`; Linux job passed in main run [#43738660955](https://github.com/Davis1233798/business-suite-pos/actions/runs/43738660955). Earlier exact PR-head Linux and ARM checks passed. | Main ARM and Linux jobs passed in run [#43738660955](https://github.com/Davis1233798/business-suite-pos/actions/runs/43738660955); its private OCI deploy job succeeded using image digest `sha256:edb104602ae394b14c416baa2e91fe8cd0e2e03cb839274f9b2200e6f6da41ae`, and the container reported healthy for commit `228124e`. Public ingress and external reachability remain unverified. P07 member-to-transaction linking design is starting locally; no implementation or acceptance is claimed yet. |
 |---|---|---|
 | MES BOM revision [PR #20](https://github.com/Davis1233798/business-suite-mes/pull/20) | Chromium verified separate material quantities and an unchanged work order reference after reload. | CI, merge, and public revision. |
 | ERP fiscal period close [PR #17](https://github.com/Davis1233798/business-suite-erp/pull/17) | Go tests cover authorization, audit rollback, and posting date boundaries. Chromium verified confirmation and persistence after reload. | CI, merge, and independent OCI acceptance. |
@@ -34,7 +36,7 @@ Google OAuth and private workspace-owner setup remain deferred at the user's req
 | ERP journal | [ERP PR4](https://github.com/Davis1233798/business-suite-erp/pull/4) merged as `0542115`; Linux/race/browser and Windows/publication checks passed. Real balanced posting, tenant/role rules, closed periods, late failure rollback, Taipei dates and database journal-number uniqueness implemented. | Independent OCI deployment and actual Windows client-server acceptance remain separate from image publication. |
 | ERP purchasing and finance | [ERP PR5](https://github.com/Davis1233798/business-suite-erp/pull/5) covers purchase approval and receipts. [ERP PR9](https://github.com/Davis1233798/business-suite-erp/pull/9) covers invoices and payments. Both are merged. | Returns, stock count, fiscal close and the remaining ERP workflows need implementation and acceptance. |
 | CRM lead lifecycle | [CRM PR3](https://github.com/Davis1233798/business-suite-crm/pull/3) merged as `15da8ea`; main publication passed. Real create/qualify/atomic conversion, tenant/role/owner/stage rules, duplicate/concurrent denial, rollback, exact integer bound and two Chromium cases passed. | Other CRM workflows, independent OCI deployment and actual Windows client-server acceptance remain unfinished. |
-| Shop / POS / dining | All have independent public main repositories and workflows. Workflow source inspection confirms main image-publication steps. | Image publication alone does not deploy OCI. Audit current Go business-flow coverage and finish missing APIs/forms, independent delivery/routing, migration/restore and role/mobile/print regression acceptance. |
+| Shop / POS / dining | POS [PR #16](https://github.com/Davis1233798/business-suite-pos/pull/16) merged as `228124e`; exact PR-head Linux and ARM checks passed. Main run [#43738660955](https://github.com/Davis1233798/business-suite-pos/actions/runs/43738660955) passed Linux and ARM. | Private OCI deployment of `228124e` succeeded and the container reported healthy; public ingress and external reachability remain unverified. P07 member linking is at local design start; no implementation or acceptance claim. Shop and dining image publication alone does not prove OCI deployment; finish independent delivery/routing, migration/restore and role/mobile/print acceptance. |
 | Windows data continuity | Current main contains substantial offline snapshot/import/restore framework. Original Windows checkouts also contain separate uncommitted SQLCipher, DPAPI and device-lock drafts; these originals were preserved. | Reconcile drafts against latest split repositories. Prove encrypted migration/recovery and individual device identity/session revocation on remote Windows acceptance before claiming completion. Do not mistake older local drafts or a packaged artifact for verified migration. |
 
 ## Repository boundary

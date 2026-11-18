@@ -13,6 +13,8 @@
 
 本版本可操作核心流程，並非 `docs/PLAN.md` 全部規格的正式商用交付。功能及驗證邊界見 [驗收對照](docs/ACCEPTANCE.md)，請勿用舊進度文件中的階段名稱推論全部功能已驗收。
 
+整體架構、優先開發計畫、交接與驗收 harness 見 [Construction](docs/CONSTRUCTION.md)、[Development plan](docs/DEVELOP_PLAN.md)、[Handoff](docs/HANDOFF.md) 與 [Harness](docs/HARNESS.md)。這些文件標示各自證據日期；部署、CI 與實機狀態仍須按最新來源逐項確認。
+
 ## 本地啟動
 
 需要 Node.js 22.13 以上（建議使用專案驗證時的 Node 24）、npm 與 Git。測試會使用 Node 內建 SQLite；第一次執行可能顯示 experimental 提示。

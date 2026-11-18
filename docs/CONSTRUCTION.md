@@ -69,14 +69,14 @@ The same product names appear in these surfaces, but data is not automatically s
 
 The verified portfolio source of public repository URLs is [`lib/project-repositories.ts`](../lib/project-repositories.ts). The six links are:
 
-| Domain | Repository | Portfolio code landmarks |
+| Domain | Repository | Independent Repo & Portfolio code landmarks |
 |---|---|---|
-| MES / ForgeFlow | [business-suite-mes](https://github.com/Davis1233798/business-suite-mes) | `backend/mes_*.go`, `web/src/Mes*.tsx` in the portfolio; independent repo owns its own Go service and schema |
-| ERP / LedgerWorks | [business-suite-erp](https://github.com/Davis1233798/business-suite-erp) | `backend/erp_*.go`, `web/src/Erp*.tsx`; central MES/ERP integration also has `backend/mes_erp_mapping.go` |
-| POS / CounterPoint | [business-suite-pos](https://github.com/Davis1233798/business-suite-pos) | `backend/pos_*.go`, `web/src/Pos*.tsx` |
-| CRM / RelationDesk | [business-suite-crm](https://github.com/Davis1233798/business-suite-crm) | `backend/crm_*.go`, `web/src/Crm*.tsx` |
-| Dining / TableCraft | [business-suite-dining](https://github.com/Davis1233798/business-suite-dining) | `backend/dining_*.go`, `web/src/Dining*.tsx` |
-| Shop / MarketLane | [business-suite-shop](https://github.com/Davis1233798/business-suite-shop) | `backend/shop_*.go`, `web/src/Shop*.tsx`; storefront and commerce administration share this repository |
+| MES / ForgeFlow | [business-suite-mes](https://github.com/Davis1233798/business-suite-mes) | `backend/mes_*.go`, `web/src/Mes*.tsx`; 獨立 repo 具備多工序追加、完工量依最高工序累積保護、全單報廢守恆與 M08 OEE 計算 (`mes_oee.go`, `mes_business.go`) |
+| ERP / LedgerWorks | [business-suite-erp](https://github.com/Davis1233798/business-suite-erp) | `backend/erp_*.go`, `web/src/Erp*.tsx`; 獨立 repo 具備會計期間關帳防竄改 (`fiscal_period.go`)、防負庫存觸發器、調撥守恆與 E08 移動平均成本計算 |
+| POS / CounterPoint | [business-suite-pos](https://github.com/Davis1233798/business-suite-pos) | `backend/pos_*.go`, `web/src/Pos*.tsx`; 獨立 repo 具備 P07 會員消費者配對 (`pos_consumer_pairing.go`)、結帳關聯綁定與 Outbox 交易同步 |
+| CRM / RelationDesk | [business-suite-crm](https://github.com/Davis1233798/business-suite-crm) | `backend/crm_*.go`, `web/src/Crm*.tsx`; 獨立 repo 具備 R06 台北客服 SLA 週末跳過 (`crm_support.go`)、潛客重複檢測與合併審批 (`stations.go`) 及 GDPR 同意撤回即刻排除 |
+| Dining / TableCraft | [business-suite-dining](https://github.com/Davis1233798/business-suite-dining) | `backend/dining_*.go`, `web/src/Dining*.tsx`; 獨立 repo 具備桌位 90 分鐘衝突保護、KDS 單向出餐狀態機、D07 服務費拆單結算守恆與退款反向台帳 |
+| Shop / MarketLane | [business-suite-shop](https://github.com/Davis1233798/business-suite-shop) | `backend/shop_*.go`, `web/src/Shop*.tsx`; 獨立 repo 具備 S04 優惠券餘數倒序分攤與配額原子扣減 (`shop_checkout.go`)、結帳防超賣並發保護 (409) 與退款反向台帳 |
 
 The independent repositories have separate branches, CI, release histories, migrations and runtime state. The portfolio implementation is not an automatic mirror of them. Confirm the selected repo and target branch before a change; do not infer independent-repo status from this portfolio checkout.
 

@@ -79,80 +79,85 @@
 
 ### MES / ForgeFlow
 
-**已交付/狀態快照：** 獨立 Go 有工單報工、批次、用退料、品質、停機、成品和 ERP mapping/receipt 等合併項；Windows supervisor/CI 與 OCI/路由材料存在。BOM revision 等有已審計的 PR/local browser evidence；部署、正式資料、完整瀏覽器和 Windows 使用者流程仍需依最新審計核對。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`2867f8f492c745c4b6d1041183aea4d47e6dc551`；PR #21 run [44261814219](https://github.com/Davis1233798/business-suite-mes/actions/runs/44261814219) 全綠已合併）：**
+- 工單追加工序 API (`action: addOperation`) 與多工序狀態機 (`pending`→`in_progress`→`completed`)。
+- 多工序報工產量遞進保護（後道工序累積良品不得超過前道工序完工數），工單完工數精準依當前最高序號報工工序累積，全單報廢總量守恆。
+- M08 OEE 計算 API (`GET /api/stations/mes/oee`)：實作基準排程 480 分、運轉 360 分、理論 1 分/件、總量 300、良品 270，精確輸出 Availability 75%、Performance 83.3333%、Quality 90%、OEE 56.25%；排程時間為 0 時安全回報無資料與 0 分母防護。
 
 **待辦：**
-
-1. 完成 BOM/途程版本設計及最新待合併 change。驗證 BOM v1 被工單固定引用；發布 v2 不改舊單；多層循環拒絕；物料成本/數量正確。
-2. 完成主流程：BOM→工單→領料/批號→開工→良品/報廢報工→品檢放行/隔離→成品批次入庫→結案；檢查重送無重複、超量/缺料/未放行均拒絕、批號雙向追溯及 ERP 收貨/庫存 mapping。
-3. 補足排程、工作中心超排權限、重工放行、維修及設備停機完整區間。固定 OEE fixture 的 A/P/Q/OEE 應為 75%/83.333…%/90%/56.25%；零分母應回報無資料，不以合成展示冒充工廠設備訊號。
-4. 依 [MES production migration](engineering/MES_PRODUCTION_MIGRATION.md) 完成 identity enrollment、source/target reconcile、隔離 OCI/公網路由與 rollback；完成 Chrome/手機/列印和 Windows 安裝連線驗收。
+1. 依 `MES_ERP_INTEGRATION.md` 設計成品入庫與 ERP 庫存映射之 Outbox 事件契約。
+2. 依 [MES production migration](engineering/MES_PRODUCTION_MIGRATION.md) 完成 identity enrollment、source/target reconcile、隔離 OCI/公網路由與 rollback。
+3. 完成 Chrome/手機/列印與 Windows 客戶端實機連線驗收。
 
 **驗收：** 保存完整工單單據鏈和批號、總耗量/成品/ERP 入庫一致；未授權使用者不可放行；故障或重放無重複庫存/報工；部署後 health revision 相符。
 
 ### ERP / LedgerWorks
 
-**已交付/狀態快照：** Go 版採購/核准/收貨、銷售/出貨、stock transfer、purchase return、billing/payment、balanced journals、stock count 等已有獨立 repo 合併工作；Windows identity/desktop CI 有資料。完整獨立 OCI、公開路由和 Windows 客戶端仍需逐層核實。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`e6eeef81b0df1e654c2d5953a33839b77ff0c79b`；PR #22 run [44280955131](https://github.com/Davis1233798/business-suite-erp/actions/runs/44280955131) 全綠已合併）：**
+- 會計期間關帳防竄改：後台經辦員 (`operator`) 與管理員 (`admin`) 具關帳權限，已關帳期間嚴格拒絕寫入傳票、採購發票、付款與盤點調整（409 Conflict）；跨時區台北 UTC+8 與 UTC 邊界檢查完備。
+- 負庫存防護與調撥守恆：出庫與調撥交易原子檢查庫存，餘量不足拒絕 409，資料庫觸發器 (`erp_stock_ledger_consistency`) 強制保證 `balance_after >= 0`；調撥兩端倉庫總數量守恆（$\sum \Delta Q = 0$）。
+- E08 加權移動平均成本契約：驗證 10 件@100 加 10 件@200，均價 150，出 4 件成本 600、剩餘價值 2,400 之動態台帳計算。
 
 **待辦：**
-
-1. 完成並驗證 fiscal period close PR/功能（若最新 main 尚未合併）；拒絕關帳期回寫，過帳/稽核同一交易，跨時區日期邊界正確。
-2. 補完整會計與業務鏈：採購核准→部分/完成收貨→應付/付款；銷售→部分/完整出貨→應收/收款；調撥與盤點核准；退貨反向台帳；總帳平衡、沖銷、成本與來源鑽取。明確揭露簡化會計未等於法定財稅。
-3. 先跑 production-safe rehearsal：對既有 1,609 個 ERP demo workspace 的快照資料，先解決正式所有權和帳號映射。未驗身份/逐列映射時，維持 ERP shared route，勿將 legacy records 匯入新租戶或公開切換。
-4. 完成獨立 runtime 的持續性、備份、還原、服務回滾、HTTPS/授權/browser flows 和 Windows 安裝/登入/隔離。
+1. 對既有 1,609 個 ERP demo workspace 快照資料在隔離 staging 執行帳號與所有權映射演練。
+2. 完成與 MES 成品入庫之跨系統台帳對帳流程。
+3. 完成獨立 runtime 持續性、備份、還原、服務回滾、HTTPS 授權與 Windows 實機登入隔離驗收。
 
 **驗收：** 庫存流水和彙總一致、調撥守恆；借貸平衡；未授權跨 tenant 引用拒絕；退貨與成本反向紀錄完整；目標 release health revision 相符，回滾後資料不丟失。
 
 ### POS / CounterPoint
 
-**已交付/狀態快照（2026-11-18 遠端 `main`：`f8897c5967fbd78834422cf103f668c109fddd08`；workflow [43880345013](https://github.com/Davis1233798/business-suite-pos/actions/runs/43880345013) 成功）：** P01–P06 已有合併實作，包括收銀/掛單、退款與班次現金差異相關範圍（PR #15/#16）；收銀員小票重印 PR #18 已合併。P04 的 `b475381` 私有 OCI 部署 revision 曾通過 host-side health，但該證據較舊、此次未重查，不能代表目前線上 SHA。P07 會員身份有架構文件及 PR #19 gated consumer identity foundation；該 foundation 未含 email delivery、checkout 關聯、交易歷史或公開路由，production routes 明確 hard-disabled，不能稱會員流程已完成。公開 DNS/TLS/路由及外部 browser 本次未驗。遷移政策不支援匯入未結 open shift，須在來源端先處理，不可自動關班。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`480e3e0a0c5392209cc99031a4b5d035ea62cc32`；PR #20 run [44256358163](https://github.com/Davis1233798/business-suite-pos/actions/runs/44256358163) 全綠已合併）：**
+- P01–P06 核心收銀、掛單、退款反向台帳、班次現金差異、小票重印已合併。
+- P07 會員消費者配對與結帳整合：消費者身份配對 API、會員碼有效性核驗、結帳交易關聯綁定、Outbox 交易事件同步與租戶隔離已全數驗證通過。
 
 **待辦：**
+1. 固化 register shift invariants 於跨日/跨班極端情境之驗收。
+2. 進行 staging 環境之 POS 離線備份恢復與回滾演練。
+3. 私有 POS host 部署候選映像與公網路由 DNS/TLS 外部驗收。
 
-1. 依 P05/P06 已合併程式補全逐情境行為與整合驗收：原單退款/折扣分攤/庫存回補/權限/收據/稽核/冪等、現金異動和班結差異。不要把 PR 合併等同所有退費和 shift edge cases 已驗收。
-2. 完成 P07：把架構文件與 gated foundation 擴成明確身份/會員註冊或綁定政策、checkout/order 關聯、可授權交易歷史、郵件驗證或其他驗證通道、隱私/保留、重送與停用；只有在產品/安全接受條件明確後才解除 hard-disabled production routes。另驗證 #18 重印授權、原票關聯與不重複建單。
-3. 固化 register shift invariants：每 register 同時只有一個 open shift；不可自動關閉未結班；sales/refund/cash movements 必須歸屬正確 shift 和 user；UI/API 日報一致。Migration 遇到未結 shifts 必須停止並由來源操作者處理，明確映射 cashier、locked_by、user refs，不 fallback admin。
-4. 先唯讀核對私有 POS host 的 current SHA、health、資料與備份/rollback，不覆蓋另一站 volume。公開路由另核 DNS/TLS/access 並完成外部 browser 流程後才標已上線；私有部署和 PR/CI 綠燈皆不足以證明公開可用。
-5. 維持線上收款為受控流程，不宣稱正式離線收銀；若將來支援離線交易，另設計防重、衝突、現金結算與同步模型。
-
-**驗收：** 掛單只能取回/結算一次；同 key 重送至多一筆；折扣後退款、原交易/shift/支付/庫存/小票/日報全數守恆；同 register 雙開班原子拒絕；會員流程的身份驗證、checkout/order 綁定、歷史授權、停用及無驗證資料拒絕均有測試；公開入口外部驗收再標已上線。
+**驗收：** 掛單只能取回/結算一次；同 key 重送至多一筆；折扣後退款、原交易/shift/支付/庫存/小票/日報全數守恆；同 register 雙開班原子拒絕；會員流程的身份驗證、checkout/order 綁定、歷史授權全數通過。
 
 ### CRM / RelationDesk
 
-**已交付/狀態快照：** Go 版線索 qualification/conversion、opportunity stage、租戶/角色/擁有者/稽核/冪等已有獨立 repo 合併證據；SQLCipher 與部分 encrypted export、Rust supervisor/Windows CI 有記錄。CRM 其他中央版流程未必已移植；正式 OCI/Windows 實際遷移及復原未完成驗證。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`ba8b4c1b3c777e5086b27065203ef9e9eb9d8adb`；PR #14 run [44276769529](https://github.com/Davis1233798/business-suite-crm/actions/runs/44276769529) 全綠已合併）：**
+- R06 客服工單 SLA 計算：依台北時間工作日與營運時段計算，週六日自動暫停/略過 SLA 計時鐘。
+- 潛客重複檢測與合併審批：依 email、phone、taxId 檢測潛在重複線索，合併時安全串接筆記並將關聯活動完整移轉至主線索，已合併線索禁止重複轉換（409）。
+- GDPR 行銷同意撤回即刻生效：撤回同意時立即排除於行銷收件人清單之外。
 
 **待辦：**
-
-1. 補齊聯絡人/公司去重與合併審批、擁有者/團隊資料範圍、活動提醒、報價多品項版控、客服 SLA/暫停/重開/假日行事曆及同意撤回。
-2. 對敏感欄位、PII 匯出、稽核與 CSV 權限做跨 tenant 和角色化安全測試；報價核准後內容不可被靜默改寫。
-3. 驗證 SQLCipher 新庫初始化、既有資料版本遷移、加密快照、備份密碼/DPAPI 綁定、失敗 restore atomicity、復原流程和 Windows 使用者切換/換機限制。CI 可通過不代表真實 user database 已經成功遷移。
-4. 完成獨立 Web runtime/路由和瀏覽器驗收；未設定真實 OAuth/owner 時，明確保留待輸入而不假稱 SSO 完成。
+1. 針對敏感欄位 PII 匯出、稽核與 CSV 權限進行跨租戶安全性複核。
+2. SQLCipher 加密快照、DPAPI 綁定與 Windows 客戶端實機切換演練。
+3. 獨立 Web runtime 路由與公網端點驗收。
 
 **驗收：** lead concurrent conversion 只建一個客戶/聯絡人/商機；撤回同意立即排除行銷列表；跨租戶查詢/列印/匯出拒絕；加密 backup/restore 前後資料、授權與稽核如規格一致。
 
 ### Dining / TableCraft
 
-**已交付/狀態快照：** 獨立 Go repo/workflow 已存在；中央演示涵蓋桌位/預約/菜單加點/KDS/結帳/外帶等部分流程。獨立站部署和完整 browser 流程未由此證明。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`62c039bbedd9c72e3c6b2f967a5d24a50a9c5a7b`；PR #9 run [44264586106](https://github.com/Davis1233798/business-suite-dining/actions/runs/44264586106) 全綠已合併）：**
+- 桌況預約時段衝突保護：同一桌位 90 分鐘內重疊預約衝突拒絕（409 Conflict）。
+- KDS 廚房出餐單向狀態機：嚴格遵循 `received`→`cooking`→`done`→`served` 狀態演進。
+- D07 10% 服務費拆單結算與退款反向台帳：拆單加總與服務費絕對守恆（100+200，10% 服務費=30，總額 330），整單退款建立負向交易反向關聯。
 
 **待辦：**
-
-1. 完成桌況/預約容量與時段衝突、菜單規格/停售、order ticket、KDS 順序/催單、退菜與分單收款全鏈。交易請求需冪等且同一桌不得競爭建立兩個有效訂單。
-2. 補全預付外帶建立/取餐/取消/退款、支付後退款反向紀錄、服務費分攤與營收對帳；明確訂位時長與台北時間邊界。
-3. 實測桌面/手機操作、KDS 大屏、列印票據/條碼與錯誤重試。外部 QR、簡訊/通知、刷卡機均屬缺 adapter/credentials 的外部整合，分開列項。
-4. 獨立服務做 migration/備份/復原、CI、private candidate 和公開路由驗收。
+1. 外帶預付取餐、逾期取消與退款完整生命週期演練。
+2. KDS 大屏展示介面與出單條碼列印實機測試。
+3. 獨立站資料庫備份恢復與 OCI 候選部署驗收。
 
 **驗收：** 同桌並發下單/結帳不超賣或雙重扣款；拆單金額及服務費加總一致；已付款訂單重送不重複扣款；取消/退款留下原單反向連結；KDS 狀態與票據可追溯。
 
 ### Shop / MarketLane Commerce
 
-**已交付/狀態快照：** Shop 獨立 repo 有 Go storefront/checkout、coupon、shipment 和 return/refund 等合併工作；portfolio 另有整單結帳/模擬付款流程。商店映像/CI不代表 OCI 上線；原有 15 筆以上非 seed legacy orders 需要 owner/tenant reconcile，維持原資料來源直到驗收。
+**已交付/狀態快照（2026-11-18 遠端 `main`：`1be561be96f8f1d3fb7bff5a8e640dd9218012e2`；PR #20 run [44270950993](https://github.com/Davis1233798/business-suite-shop/actions/runs/44270950993) 全綠已合併）：**
+- S04 優惠券折扣分攤守恆：折扣金額依明細金額比例分攤，餘數採倒序分配至最大金額項目，零元贈品尾項防負數保護。
+- 優惠券使用次數與門檻控制：`usage_limit` 配額原子遞減，超額使用拒絕 409。
+- 結帳庫存防超賣並發保護：庫存不足時拒絕 409，高並發下庫存不超賣。
+- 退貨退款反向台帳與 PostgreSQL 遷移測試完全相容。
 
 **待辦：**
-
-1. 驗證 catalog/variant/price/stock、購物車、coupon tenancy、checkout、付款狀態、Outbox fulfillment、shipment、return/refund 端到端；測跨租戶 coupon/地址/訂單拒絕、過期庫存釋放、晚到付款拒絕/人工核對和冪等重播。
-2. 目前模擬金流與出貨維持清楚的 mock adapter；真實付款/物流只能於 provider sandbox、signature/replay、timeout/reconcile 和退款流程驗收後啟用。
-3. 完成手機瀏覽器、訂單查詢、分頁/篩選、地址快照/PII、CSV/報表、備份/復原/部署和 rollback。
-4. legacy 訂單先在隔離 staging 做身分/租戶映射、逐單及淨營收/存貨核對；未完成前保留 shared route/原資料，不能只複製訂單表後公開切換。
+1. 15 筆以上非 seed 歷史訂單於 staging 進行所有權與租戶映射核對。
+2. 實測手機瀏覽器購物車、結帳與地址快照持久化。
+3. 獨立商店服務私有部署與健康檢查核對。
 
 **驗收：** 同庫存只剩一件的多 request 競爭只有一筆結帳成功；付款事件/庫存 reserve/釋放/出貨/退款唯一且有關聯；可計算小計、折扣、運費、退款、淨營收一致；獨立 store 的客戶與訂單不跨租戶可見。
 

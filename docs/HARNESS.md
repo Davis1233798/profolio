@@ -18,12 +18,12 @@
 | Portfolio (`profolio`) | 首頁、導覽及網站端位於 `app/`、`components/`、`lib/`；repo 對照在 `lib/project-repositories.ts`。 | 負責作品集與各系統入口；卡片或案例頁不擁有工作站交易。公開入口所指服務須由設定及運行證據確認。 |
 | Workers/Vinext demo | `app/api/`、`lib/services/`、`db/`、`drizzle/`、`middleware.ts`、`worker/`。 | 自成一個 Web demo 與資料面。網站修正不會自動更新 Go 工作站或六個獨立 repo。 |
 | 中央 Go/React station | `backend/main.go`、`backend/stations.go`、`backend/*` 領域模組、`backend/migrations/`、`web/src/`。 | 統一服務中的六套展示工作區。中央站有些流程可能先於獨立 repo；反向亦然。每個目標需分開實作、測試、遷移和部署。 |
-| MES / ForgeFlow | 領域為 BOM、工單、領退料、報工、品檢、停機與成品；中央站對應 `backend/mes_*.go`，獨立系統為 `business-suite-mes`。成品/ERP 交界見 `engineering/MES_ERP_INTEGRATION.md`。 | MES 擁有製造執行與追溯資料。成品收貨事件不代表 ERP 已過帳；映射、成本、目的倉及冪等需經 ERP 權限流程確認。 |
-| ERP / LedgerWorks | 採購收貨、銷售出貨、庫存台帳、應收應付、傳票與盤點；中央程式在 `backend/erp_*.go`，獨立系統為 `business-suite-erp`。 | ERP 擁有其帳務與正式庫存交易。不可因 MES、POS、Dining 或 Shop 有相同 SKU 就共用寫入庫存；整合走具版本和權限的明確 API／事件流程。 |
-| POS / CounterPoint | 門市商品、購物車、班次、收銀、退貨、現金異動與日報；中央程式在 `backend/pos_*.go`，獨立系統為 `business-suite-pos`。 | POS 的交易及班次有自己的狀態和租戶範圍。離線正式交易及跨系統即時庫存不能由現有展示推定已支援。 |
-| CRM / RelationDesk | 潛客、客戶、商機、報價、活動、客服及同意；中央程式在 `backend/crm_*.go`，獨立系統為 `business-suite-crm`。 | CRM 擁有 CRM 流程；中央與獨立版功能面可能不同。團隊可見／寫入、個別 owner 權限與行銷同意需依具體 API 驗證，不把漏斗過濾當完整資料授權。 |
-| Dining / TableCraft | 訂位、桌次、點餐、KDS、拆帳、結帳及退款；中央程式在 `backend/dining_*.go`，獨立系統為 `business-suite-dining`。 | Dining 擁有桌次、訂單及結帳狀態。實體 QR 發送、外部付款與遷移後資料歸屬須獨立驗收。 |
-| Shop / MarketLane | 商品、購物車、優惠、結帳、模擬付款、出貨及退款；中央程式在 `backend/shop_*.go`，獨立系統為 `business-suite-shop`；前台與 `/commerce` 管理面共用 Shop 邊界。 | Shop 擁有網路通路訂單；模擬 payment/webhook 不代表真實金流。不得把商店庫存視為 ERP 的共用台帳。 |
+| MES / ForgeFlow | 領域為 BOM、工單、領退料、報工、品檢、停機與成品；中央站對應 `backend/mes_*.go`，獨立系統為 `business-suite-mes`。成品/ERP 交界見 `engineering/MES_ERP_INTEGRATION.md`。 | MES 擁有製造執行與追溯資料。多工序報工完工量依最高工序累積、全單報廢守恆、後道良品受前道完工數約束、OEE 零分母防護。成品收貨事件不代表 ERP 已過帳；映射走明確 ERP 事件流程。 |
+| ERP / LedgerWorks | 採購收貨、銷售出貨、庫存台帳、應收應付、傳票與盤點；中央程式在 `backend/erp_*.go`，獨立系統為 `business-suite-erp`。 | ERP 擁有其帳務與正式庫存交易。關帳期間嚴格禁止寫入傳票/發票/付款/盤點調整（409），底層觸發器保證庫存無負數（`balance_after >= 0`），調撥數量守恆（$\sum \Delta Q = 0$），成本依加權移動平均計算。不可與其他系統共寫庫存。 |
+| POS / CounterPoint | 門市商品、購物車、班次、收銀、退貨、現金異動與日報；中央程式在 `backend/pos_*.go`，獨立系統為 `business-suite-pos`。 | POS 擁有收銀班次、交易與會員消費者配對（P07）。交易結帳綁定會員、發送 Outbox 事件；離線正式交易及跨系統即時庫存不能由現有展示推定已支援。 |
+| CRM / RelationDesk | 潛客、客戶、商機、報價、活動、客服及同意；中央程式在 `backend/crm_*.go`，獨立系統為 `business-suite-crm`。 | CRM 擁有客戶商機與客服 SLA（R06 週末跳過計時）。潛客重複檢測（email/phone/taxId）與審批合併，已合併線索禁止重複轉換（409），GDPR 同意撤回即刻排除行銷名單。 |
+| Dining / TableCraft | 訂位、桌次、點餐、KDS、拆帳、結帳及退款；中央程式在 `backend/dining_*.go`，獨立系統為 `business-suite-dining`。 | Dining 擁有桌次預約、KDS 出餐及帳務結算。桌位 90 分鐘重疊衝突拒絕（409），KDS 單向狀態機，D07 服務費拆單結算加總守恆，退款記錄原單反向連結。 |
+| Shop / MarketLane | 商品、購物車、優惠、結帳、模擬付款、出貨及退款；中央程式在 `backend/shop_*.go`，獨立系統為 `business-suite-shop`；前台與 `/commerce` 管理面共用 Shop 邊界。 | Shop 擁有網路通路訂單。S04 優惠券折扣倒序分攤與配額原子遞減，結帳並發防超賣扣庫存（409），退款反向台帳，PostgreSQL 遷移相容。模擬 payment/webhook 不代表真實金流。 |
 | Windows desktop | Rust/WebView2 supervisor 與本機 Go 服務，參考 `desktop/` 及各獨立 repo 的桌面程式。範圍以 MES、ERP、CRM 為主。 | 本機執行、登入、加密、資料移轉、復原與更新為另一驗收面。Windows CI 或打包不證明使用者電腦安全鎖定、資料可復原或跨 Windows 身分可移轉。 |
 
 六個獨立系統 repo 各自擁有 `main`、程式、路由、migration、CI、release 和部署狀態；實際清單見 [`engineering/REPOSITORY_LINKS.md`](engineering/REPOSITORY_LINKS.md)。修改前明確選擇：Web demo、中央工作站、獨立站、桌面端，或其中多個。跨面功能必須列出要修改的每個 repo／服務及對應驗收，不能將一次程式改動說成所有產品面都完成。

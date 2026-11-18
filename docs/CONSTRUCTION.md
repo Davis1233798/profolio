@@ -11,33 +11,48 @@ There are multiple implementations with different maturity and data stores. A sh
 ```mermaid
 flowchart LR
   Visitor --> Portfolio[Portfolio repo: profolio]
-  Portfolio --> Web[Vinext / Workers web app]
-  Web --> D1[(Web D1 / SQLite adapter)]
+  Portfolio --> Web[Vinext web app]
+  Web -->|Workers deployment| Workers[Cloudflare Workers adapter]
+  Workers --> D1[(Workers D1)]
+  Web -->|Linux Node deployment| MainWeb[Node Worker adapter / gateway]
+  MainWeb --> WebMES[web-mes Node station]
+  MainWeb --> WebERP[web-erp Node station]
+  MainWeb --> WebPOS[web-pos Node station]
+  MainWeb --> WebCRM[web-crm Node station]
+  MainWeb --> WebDining[web-dining Node station]
+  MainWeb --> WebShop[web-shop Node station]
+  MainWeb --> SharedWebDB[(Shared persistent SQLite volume)]
+  WebMES --> SharedWebDB
+  WebERP --> SharedWebDB
+  WebPOS --> SharedWebDB
+  WebCRM --> SharedWebDB
+  WebDining --> SharedWebDB
+  WebShop --> SharedWebDB
   Portfolio --> Central[Central Go + React station]
   Central --> CDB[(Central station SQLite)]
-  Portfolio --> MESRepo[MES repository]
+  Portfolio --> MESRepo[MES independent repository]
   MESRepo --> MESService[MES Go service]
-  MESService --> MESDB[(MES SQLite)]
-  Portfolio --> ERPRepo[ERP repository]
+  MESService --> MESDB[(MES repository SQLite)]
+  Portfolio --> ERPRepo[ERP independent repository]
   ERPRepo --> ERPService[ERP Go service]
-  ERPService --> ERPDB[(ERP SQLite)]
-  Portfolio --> POSRepo[POS repository]
+  ERPService --> ERPDB[(ERP repository SQLite)]
+  Portfolio --> POSRepo[POS independent repository]
   POSRepo --> POSService[POS Go service]
-  POSService --> POSDB[(POS SQLite)]
-  Portfolio --> CRMRepo[CRM repository]
+  POSService --> POSDB[(POS repository SQLite)]
+  Portfolio --> CRMRepo[CRM independent repository]
   CRMRepo --> CRMService[CRM Go service]
-  CRMService --> CRMDB[(CRM SQLite)]
-  Portfolio --> DiningRepo[Dining repository]
+  CRMService --> CRMDB[(CRM repository SQLite)]
+  Portfolio --> DiningRepo[Dining independent repository]
   DiningRepo --> DiningService[Dining Go service]
-  DiningService --> DiningDB[(Dining SQLite)]
-  Portfolio --> ShopRepo[Shop repository]
+  DiningService --> DiningDB[(Dining repository SQLite)]
+  Portfolio --> ShopRepo[Shop independent repository]
   ShopRepo --> ShopService[Shop Go service]
-  ShopService --> ShopDB[(Shop SQLite)]
+  ShopService --> ShopDB[(Shop repository SQLite)]
   Desktop[Windows Rust supervisor + WebView2] --> LocalGo[Local Go service]
   LocalGo --> LocalDB[(Encrypted local database where configured)]
 ```
 
-The six repository/service/database chains are separate project boundaries; this diagram does not claim that every independent service is currently deployed or publicly routed.
+The Workers and Linux Node paths are separate deployment adapters for the Portfolio web app. In the Linux Node topology, the six `web-<site>` station processes share the same persistent SQLite volume; they are process/routing boundaries, not six separate databases. Each independent repository Go service has its own service/schema/data boundary. The diagram does not claim that every independent service is currently deployed or publicly routed.
 
 ### Portfolio repository (`profolio`)
 
@@ -48,7 +63,7 @@ This repository contains the public portfolio, an existing Vinext/Workers web ap
 - `web/src/` contains React station interfaces. `desktop/` contains the desktop wrapper/supervisor sources; packaging and user-machine behavior must be checked separately from CI artifacts.
 - `infra/` contains Compose, gateway, service graph and deployment scripts. Read the matching runbook before operating any host.
 
-The same product names appear in these surfaces, but data is not automatically shared. In particular, the web D1/SQLite data, central station SQLite data, and each independent station database are separate stores. A feature implemented in one does not imply migration to the others.
+The same product names appear in these surfaces, but data is not automatically shared. Workers D1, the Linux Node web stations' shared SQLite volume, central station SQLite, independent repository databases, and Windows local databases are separate stores. A feature implemented in one does not imply migration to the others.
 
 ## Repository map
 

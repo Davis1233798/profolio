@@ -48,7 +48,7 @@
 
 ### 資料儲存與來源權威
 
-Portfolio 內至少有彼此分離的資料面：Workers 綁定 D1（本地 adapter 可用 SQLite）、中央 Go station SQLite、Linux Node/SQLite 部署資料；另外六個獨立 Go repo 各自有 SQLite/schema，Windows 本機 Go 服務又是本機資料庫。檔案／adapter 位置不代表資料已複製或已遷移。README、[`ARCHITECTURE_HANDOFF.md`](ARCHITECTURE_HANDOFF.md)、[`engineering/STATION_RUNTIMES.md`](engineering/STATION_RUNTIMES.md) 為各面入口；操作前要識別實際資料庫、volume、migration 與備份。
+Portfolio 與獨立站有幾種不可混為一談的資料面：Workers 部署使用其 D1 binding（本機 Worker 預覽使用 local D1；測試另有 SQLite adapter）；Portfolio Linux Node Worker adapter 則由主站 gateway 及六個 `web-<site>` station processes 共用同一個持久 SQLite volume，這六個程序是路由／程序隔離，不是六個獨立資料庫；中央 Go station 使用另一份 SQLite；六個獨立 Go repo 各有自己的程式/schema/runtime data boundary；Windows 本機 Go 服務另有本機資料面。依據見 repo `README.md`、[`ARCHITECTURE_HANDOFF.md`](ARCHITECTURE_HANDOFF.md) 和 [`engineering/STATION_RUNTIMES.md`](engineering/STATION_RUNTIMES.md)。檔案／adapter 位置不代表資料已複製或已遷移；操作前要識別實際資料庫、volume、migration 與備份。
 
 開發規劃 [`PLAN.md`](PLAN.md) 將 MES 製造、ERP 正式庫存與財務、POS 門市交易、CRM 商機、Dining 桌務與 Shop 網路通路各自劃分領域，並要求跨系統以版本化事件整合。這是責任邊界；任何特定部署的實際權威資料仍需讀該服務程式與遷移狀態。不得根據 `engineering/HYBRID_SYNC_ARCHITECTURE.md` 的目標權威表，推論所有雲地同步已完成。README 說明目前有 Shop 付款後履約任務 Outbox；完整 CRM→ERP→MES 或 POS／Shop 中央庫存同步尚未完成。MES 成品至 ERP 流程的具體邊界及其限制見 [`engineering/MES_ERP_INTEGRATION.md`](engineering/MES_ERP_INTEGRATION.md)。
 

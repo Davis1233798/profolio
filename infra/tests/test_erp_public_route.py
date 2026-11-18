@@ -20,9 +20,20 @@ class ERPPublicRouteTest(unittest.TestCase):
         cases = [
             ("OTHER=value\n", "shared"),
             ("ERP_PUBLIC_ROUTE=shared\n", "shared"),
+            ('ERP_PUBLIC_ROUTE="shared"\n', "shared"),
+            ("ERP_PUBLIC_ROUTE='shared'\n", "shared"),
             ("ERP_PUBLIC_ROUTE=rootless # enabled\n", "rootless"),
+            ('ERP_PUBLIC_ROUTE="rootless" # enabled\n', "rootless"),
+            ("ERP_PUBLIC_ROUTE='rootless' # enabled\n", "rootless"),
             ("ERP_PUBLIC_ROUTE=unknown\n", None),
+            ('ERP_PUBLIC_ROUTE="unknown"\n', None),
+            ("ERP_PUBLIC_ROUTE='unknown'\n", None),
+            ('ERP_PUBLIC_ROUTE="shared"extra\n', None),
+            ("ERP_PUBLIC_ROUTE='shared'extra\n", None),
+            ('ERP_PUBLIC_ROUTE="shared\n', None),
+            ("ERP_PUBLIC_ROUTE='shared\n", None),
             ("ERP_PUBLIC_ROUTE=shared\nERP_PUBLIC_ROUTE=rootless\n", None),
+            ('ERP_PUBLIC_ROUTE="shared"\nERP_PUBLIC_ROUTE="rootless"\n', None),
         ]
         with tempfile.TemporaryDirectory() as directory:
             env = Path(directory) / ".env"

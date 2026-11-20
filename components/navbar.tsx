@@ -76,11 +76,11 @@ export function Navbar() {
                 aria-current={isActive ? "page" : undefined}
                 className={`inline-flex items-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium transition ${
                   isActive
-                    ? "bg-blue-50 text-primary font-semibold"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+                    ? "bg-blue-50 dark:bg-blue-950/40 text-primary font-semibold"
+                    : "text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-50 dark:hover:bg-stone-800"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-stone-900" : "text-stone-500"}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-stone-500 dark:text-stone-400"}`} />
                 <span>{t(item.label)}</span>
               </Link>
             );
@@ -92,7 +92,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-1.5 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition"
+            className="p-1.5 rounded-md text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition"
             aria-label={t("Toggle color theme", "切換深淺色系")}
             title={theme === "dark" ? t("Theme: Dark", "目前色系：深色模式") : t("Theme: Light", "目前色系：淺色模式")}
           >
@@ -101,8 +101,8 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setLocale(locale === "en" ? "zh-TW" : "en")}
-            className="px-2 py-1 rounded-md text-xs font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition"
-            aria-label={t("Language", "語言")}
+            className="px-2 py-1 rounded-md text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+            aria-label={locale === "zh-TW" ? "Switch language to English" : "切換語言至繁體中文"}
           >
             {locale === "zh-TW" ? "EN" : "繁中"}
           </button>
@@ -115,7 +115,7 @@ export function Navbar() {
             aria-controls="suite-mobile-menu"
             aria-expanded={menuOpen}
             aria-label={menuOpen ? t("Close navigation", "關閉選單") : t("Open navigation", "開啟選單")}
-            className="p-2 rounded-lg border border-stone-200"
+            className="p-2 rounded-lg border border-stone-200 dark:border-stone-700"
           >
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -131,18 +131,20 @@ export function Navbar() {
               onClick={() => setMenuOpen(false)}
               aria-current={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/")) ? "page" : undefined}
               className={`flex items-center gap-2 p-3 rounded-lg text-xs ${
-                pathname === item.href ? "bg-primary text-white" : "bg-stone-50 text-stone-700"
+                pathname === item.href
+                  ? "bg-primary text-white"
+                  : "bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200"
               }`}
             >
               <item.icon size={16} />
               {t(item.label)}
             </Link>
           ))}
-          <div className="flex items-center justify-between p-3 border-t border-stone-200 mt-2">
+          <div className="flex items-center justify-between p-3 border-t border-stone-200 dark:border-stone-700 mt-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex items-center gap-2 text-xs text-stone-700"
+              className="flex items-center gap-2 text-xs text-stone-700 dark:text-stone-300"
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
               {theme === "dark" ? t("Theme: Dark", "深色模式") : t("Theme: Light", "淺色模式")}
@@ -150,7 +152,8 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "zh-TW" : "en")}
-              className="text-xs font-semibold px-3 py-1 bg-stone-200 rounded-md"
+              className="text-xs font-semibold px-3 py-1 bg-stone-200 dark:bg-stone-700 dark:text-stone-200 rounded-md"
+              aria-label={locale === "zh-TW" ? "Switch language to English" : "切換語言至繁體中文"}
             >
               {locale === "zh-TW" ? "English" : "繁體中文"}
             </button>

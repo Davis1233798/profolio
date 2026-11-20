@@ -1,6 +1,6 @@
 # 全作品集開發與交付計畫
 
-**基準日：2026-11-18（Asia/Taipei）。** 此計畫以 freshly fetched portfolio `origin/main`（`db09380`）為文件基線，狀態快照依 [Active development](ACTIVE_DEVELOPMENT.md)、[Development status](DEVELOPMENT_STATUS.md)、[Acceptance](ACCEPTANCE.md)、[Architecture handoff](ARCHITECTURE_HANDOFF.md)、本次更新的 [Handoff](HANDOFF.md) 與原始 [PLAN](PLAN.md)。handoff 對各系統 main SHA/CI 的查詢日為 2026-11-18；其公開端點、OCI 主機和瀏覽器沒有在當日重查。較早的現況文件只保留其各自快照，不能當成最新 repo 狀態。後續工作的最新狀態須從各 repository 的 `main`、CI、部署 revision 與實際驗收更新；舊快照不得覆蓋新證據。
+**基準日：2026-11-20（Asia/Taipei）。** 此計畫以 freshly fetched portfolio `origin/main`（`ed867fa`）為文件基線，已納入雙重架構（Next.js 與 Go Station）深淺色系獨立切換與完整繁體中文在地化覆蓋。狀態快照依 [Active development](ACTIVE_DEVELOPMENT.md)、[Development status](DEVELOPMENT_STATUS.md)、[Acceptance](ACCEPTANCE.md)、[Architecture handoff](ARCHITECTURE_HANDOFF.md)、本次更新的 [Handoff](HANDOFF.md) 與原始 [PLAN](PLAN.md)。handoff 對各系統 main SHA/CI 的查詢日為 2026-11-20；其公開端點、OCI 主機和瀏覽器沒有在當日重查。較早的現況文件只保留其各自快照，不能當成最新 repo 狀態。後續工作的最新狀態須從各 repository 的 `main`、CI、部署 revision 與實際驗收更新；舊快照不得覆蓋新證據。
 
 相關交付文件：[Construction map](CONSTRUCTION.md)、[Handoff](HANDOFF.md)、[Harness](HARNESS.md)。
 

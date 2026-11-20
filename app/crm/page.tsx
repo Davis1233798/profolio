@@ -186,7 +186,7 @@ export default function CrmPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-sm font-bold text-stone-900">
+            <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100">
               {t("Sales funnel and weighted opportunities", "銷售漏斗與加權商機預測")}
             </h2>
           </div>
@@ -200,7 +200,7 @@ export default function CrmPage() {
             <div className="text-xs text-primary font-medium">
               {t("Weighted forecast (Weighted)", "加權預估值 (Weighted)")}
             </div>
-            <div className="text-2xl font-black text-stone-900 mt-1">
+            <div className="text-2xl font-black text-stone-900 dark:text-stone-100 mt-1">
               ${funnel?.totalWeightedAmount?.toLocaleString()}
             </div>
             <div className="text-[10px] text-stone-500 mt-0.5">
@@ -212,7 +212,7 @@ export default function CrmPage() {
             <div className="text-xs text-stone-600 font-medium">
               {t("Pipeline value (Pipeline)", "管線總金額 (Pipeline)")}
             </div>
-            <div className="text-2xl font-black text-stone-900 mt-1">
+            <div className="text-2xl font-black text-stone-900 dark:text-stone-100 mt-1">
               ${funnel?.totalPipelineAmount?.toLocaleString()}
             </div>
             <div className="text-[10px] text-stone-500 mt-0.5">
@@ -224,7 +224,7 @@ export default function CrmPage() {
             <div className="text-xs text-stone-600 font-medium">
               {t("Opportunity count", "進行中商機筆數")}
             </div>
-            <div className="text-2xl font-black text-stone-900 mt-1">
+            <div className="text-2xl font-black text-stone-900 dark:text-stone-100 mt-1">
               {funnel?.totalCount} {t("units", "筆")}
             </div>
             <div className="text-[10px] text-stone-500 mt-0.5">
@@ -248,7 +248,7 @@ export default function CrmPage() {
 
       {/* 6-Stage Pipeline Kanban Board */}
       <section id="opportunities" className="space-y-4">
-        <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
           <Briefcase className="w-4 h-4 text-stone-700" />
           <span>{t("Six-stage opportunity board (Opportunities Kanban)", "六階段商機看板 (Opportunities Kanban)")}</span>
         </h3>
@@ -267,7 +267,7 @@ export default function CrmPage() {
               <div key={stage.id} className="opportunity-column">
                 <div>
                   <div className="flex items-center justify-between pb-2 border-b border-stone-200 mb-3">
-                    <span className="font-bold text-xs text-stone-900">{t(stage.name)}</span>
+                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100">{t(stage.name)}</span>
                     <span className="text-[10px] font-mono font-semibold bg-stone-200 text-stone-700 px-1.5 py-0.5 rounded">
                       {stage.probability}%
                     </span>
@@ -285,7 +285,7 @@ export default function CrmPage() {
                           key={opp.id}
                           className="bg-white p-3 rounded-lg border border-stone-200 shadow-sm space-y-2 text-xs"
                         >
-                          <div className="font-bold text-stone-900 leading-tight">{opp.name}</div>
+                          <div className="font-bold text-stone-900 dark:text-stone-100 leading-tight">{opp.name}</div>
                           <div className="text-[11px] text-stone-500">
                             {t("Value:", "金額:")} ${opp.amount?.toLocaleString()}
                           </div>
@@ -337,7 +337,7 @@ export default function CrmPage() {
       <div id="leads" className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Leads Conversion */}
         <section className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-primary" />
             <span>{t("Convert a lead (Lead Conversion)", "潛客轉換作業 (Lead Conversion)")}</span>
           </h3>
@@ -349,7 +349,7 @@ export default function CrmPage() {
                 className="p-3 rounded-lg border border-stone-200 bg-stone-50/50 flex items-center justify-between gap-3"
               >
                 <div>
-                  <div className="font-bold text-stone-900">
+                  <div className="font-bold text-stone-900 dark:text-stone-100">
                     {lead.name} ({lead.company})
                   </div>
                   <div className="text-stone-500 font-mono text-[11px]">
@@ -379,7 +379,7 @@ export default function CrmPage() {
 
         {/* Tickets SLA */}
         <section className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
             <LifeBuoy className="w-4 h-4 text-blue-600" />
             <span>{t("Support tickets and SLA", "客服工單與服務承諾 (SLA)")}</span>
           </h3>
@@ -388,7 +388,7 @@ export default function CrmPage() {
             {data?.tickets.map((tck: any) => (
               <div key={tck.id} className="p-3 rounded-lg border border-stone-200 bg-stone-50/50 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-stone-900">{tck.ticketNumber}</span>
+                  <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{tck.ticketNumber}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                     SLA {tck.slaHours} {t("hours (excluding weekends)", "小時 (跳過週末)")}
                   </span>

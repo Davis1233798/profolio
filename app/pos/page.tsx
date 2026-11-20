@@ -271,13 +271,13 @@ export default function PosPage() {
             {data?.catalogItems.map((item: any) => (
               <button key={item.id} onClick={() => addToCart(item)} className="pos-product">
                 <div>
-                  <div className="font-bold text-xs text-stone-900 group-hover:text-primary transition line-clamp-2">
+                  <div className="font-bold text-xs text-stone-900 dark:text-stone-100 group-hover:text-primary transition line-clamp-2">
                     {item.name}
                   </div>
                   <div className="text-[10px] text-stone-400 font-mono mt-0.5">{item.barcode}</div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold font-mono text-sm text-stone-900">${item.price}</span>
+                  <span className="font-bold font-mono text-sm text-stone-900 dark:text-stone-100">${item.price}</span>
                   <span className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">
                     {t("Stock", "庫存")}:{item.stockQuantity}
                   </span>
@@ -302,7 +302,7 @@ export default function PosPage() {
         <div className="lg:col-span-5 bg-white rounded-xl border border-stone-200 p-6 shadow-sm flex flex-col justify-between space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+              <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm flex items-center gap-1.5">
                 <Receipt className="w-4 h-4 text-stone-600" />
                 <span>{t("Checkout cart", "收銀購物車")}</span>
               </h3>
@@ -331,12 +331,12 @@ export default function PosPage() {
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-bold text-stone-900">{line.item.name}</div>
+                        <div className="font-bold text-stone-900 dark:text-stone-100">{line.item.name}</div>
                         <div className="text-stone-500 font-mono text-[11px]">
                           ${line.item.price} x {line.quantity}
                         </div>
                       </div>
-                      <div className="font-bold font-mono text-stone-900">
+                      <div className="font-bold font-mono text-stone-900 dark:text-stone-100">
                         ${line.item.price * line.quantity - line.lineDiscount}
                       </div>
                     </div>
@@ -384,13 +384,13 @@ export default function PosPage() {
             <div className="space-y-1.5 text-xs text-stone-600">
               <div className="flex justify-between">
                 <span>{t("Subtotal:", "小計:")}</span>
-                <span className="font-mono font-bold text-stone-900">${subtotal}</span>
+                <span className="font-mono font-bold text-stone-900 dark:text-stone-100">${subtotal}</span>
               </div>
               <div className="flex justify-between text-rose-600">
                 <span>{t("Allocated discount:", "分攤折價:")}</span>
                 <span className="font-mono font-bold">-${totalDiscount}</span>
               </div>
-              <div className="flex justify-between text-base font-extrabold text-stone-900 pt-1 border-t border-dashed border-stone-200">
+              <div className="flex justify-between text-base font-extrabold text-stone-900 dark:text-stone-100 pt-1 border-t border-dashed border-stone-200">
                 <span>{t("Total due:", "應付總額:")}</span>
                 <span className="font-mono text-amber-700 text-lg">${totalAmount}</span>
               </div>

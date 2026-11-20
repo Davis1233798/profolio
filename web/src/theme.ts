@@ -1,6 +1,9 @@
 export type Theme = 'light' | 'dark';
 
+let inMemoryTheme: Theme | null = null;
+
 export function currentTheme(): Theme {
+  if (inMemoryTheme) return inMemoryTheme;
   try {
     const suiteTheme = localStorage.getItem('suite-theme');
     if (suiteTheme === 'dark' || suiteTheme === 'light') return suiteTheme;
@@ -16,6 +19,7 @@ export function currentTheme(): Theme {
 }
 
 export function setTheme(theme: Theme) {
+  inMemoryTheme = theme;
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('suite-theme', theme);

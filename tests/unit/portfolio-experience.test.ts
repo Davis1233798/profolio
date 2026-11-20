@@ -67,7 +67,10 @@ test("station theme and locale logic operates seamlessly", async () => {
 
   assert.equal(typeof currentTheme(), "string");
   assert.equal(typeof currentLanguage(), "string");
+  setLanguage("zh-TW");
   assert.equal(tr("Light mode"), "淺色模式");
   assert.equal(tr("Dark mode"), "深色模式");
   assert.equal(tr("Initial contact"), "初步接觸");
+  setLanguage("en");
+  assert.equal(tr("Light mode"), "Light mode");
 });

@@ -1,6 +1,9 @@
 export type Language = 'en' | 'zh-TW';
 
+let inMemoryLanguage: Language | null = null;
+
 export function currentLanguage(): Language {
+  if (inMemoryLanguage) return inMemoryLanguage;
   try {
     const suiteLang = localStorage.getItem('suite-language');
     if (suiteLang === 'zh-TW' || suiteLang === 'en') return suiteLang;
@@ -16,6 +19,7 @@ export function currentLanguage(): Language {
 }
 
 export function setLanguage(lang: Language) {
+  inMemoryLanguage = lang;
   try {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("suite-language", lang);

@@ -9,9 +9,9 @@ export function currentLanguage(): Language {
     if (typeof navigator !== 'undefined' && typeof navigator.language === 'string') {
       if (navigator.language.toLowerCase().startsWith('zh')) return 'zh-TW';
     }
-    return 'zh-TW';
+    return 'en';
   } catch {
-    return 'zh-TW';
+    return 'en';
   }
 }
 

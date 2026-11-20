@@ -44,6 +44,7 @@ export function Navbar() {
   return (
     <header
       data-suite-navigation
+      data-no-particles
       className={`suite-navigation sticky top-0 z-50 w-full border-b border-stone-200 bg-white/95 backdrop-blur-md ${
         isPlatform ? platformStyles.navigation : ""
       } ${isMes ? mesStyles.navigation : ""}`}

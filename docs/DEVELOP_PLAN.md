@@ -1,6 +1,6 @@
 # 全作品集開發與交付計畫
 
-**基準日：2026-11-20（Asia/Taipei）。** 此計畫以 freshly fetched portfolio `origin/main`（`ed867fa`）為文件基線，已納入雙重架構（Next.js 與 Go Station）深淺色系獨立切換與完整繁體中文在地化覆蓋。狀態快照依 [Active development](ACTIVE_DEVELOPMENT.md)、[Development status](DEVELOPMENT_STATUS.md)、[Acceptance](ACCEPTANCE.md)、[Architecture handoff](ARCHITECTURE_HANDOFF.md)、本次更新的 [Handoff](HANDOFF.md) 與原始 [PLAN](PLAN.md)。handoff 對各系統 main SHA/CI 的查詢日為 2026-11-20；其公開端點、OCI 主機和瀏覽器沒有在當日重查。較早的現況文件只保留其各自快照，不能當成最新 repo 狀態。後續工作的最新狀態須從各 repository 的 `main`、CI、部署 revision 與實際驗收更新；舊快照不得覆蓋新證據。
+**基準日：2026-11-20（Asia/Taipei）。** 此計畫以 freshly fetched portfolio `origin/main`（`af6c66a`）為文件基線，已納入雙重架構（Next.js 與 Go Station）深淺色系獨立切換、全子系統常駐頂部導覽列與完整繁體中文在地化覆蓋，CI 5 項全綠驗收並成功發布至 OCI 線上正式站台。狀態快照依 [Active development](ACTIVE_DEVELOPMENT.md)、[Development status](DEVELOPMENT_STATUS.md)、[Acceptance](ACCEPTANCE.md)、[Architecture handoff](ARCHITECTURE_HANDOFF.md)、本次更新的 [Handoff](HANDOFF.md) 與原始 [PLAN](PLAN.md)。handoff 對各系統 main SHA/CI 的查詢日為 2026-11-20；其公開端點、OCI 主機和瀏覽器沒有在當日重查。較早的現況文件只保留其各自快照，不能當成最新 repo 狀態。後續工作的最新狀態須從各 repository 的 `main`、CI、部署 revision 與實際驗收更新；舊快照不得覆蓋新證據。
 
 相關交付文件：[Construction map](CONSTRUCTION.md)、[Handoff](HANDOFF.md)、[Harness](HARNESS.md)。
 
@@ -66,7 +66,7 @@
 
 ### Portfolio / profolio
 
-**已交付或已合併證據：** Portfolio 首頁、六系統入口、語系/特效工作、部分長期資源生命週期及表格分頁；既有私人備份/使用者金鑰程式、hybrid sync 和 Rust 桌面 supervisor 程式。PR #59、#61、#62 已全數合併至 `main`。2026-11-20 完成正式站台（`blockchen.dpdns.org/(系統)`）切換各子系統全繁體中文（zh-TW）在地化支援（涵蓋 MES/ERP/POS/CRM/Dining/Shop/Commerce/Platform 全流程工作區、表單與看板），以及桌機與手機抽屜之 Dark/Light Mode 色系切換器與 CSS 變數主題引擎。單元與整合測試 64/64 全數通過，生產環境建置通過。已記錄過 main CI/OCI 部署及 browser 例子，但 live endpoint 快照日期早於此基準日，須刷新。
+**已交付或已合併證據：** Portfolio 首頁、六系統入口、語系/特效工作、部分長期資源生命週期及表格分頁；既有私人備份/使用者金鑰程式、hybrid sync 和 Rust 桌面 supervisor 程式。PR #59、#61、#62、#63、#64 已全數合併至 `main`（commit `af6c66a`）。2026-11-20 完成正式站台（`blockchen.duckdns.org` / `blockchen.dpdns.org`）全業務子系統（MES/ERP/POS/CRM/Dining/Shop/Commerce/Platform）繁體中文（zh-TW）在地化支援、頂部常駐導覽列及深淺色系切換器（Sun/Moon），徹底分離 Light Mode（純淨白底 `#f8fafc`）與 Dark Mode（極光黑底 `#0b0d12`）樣式。Go Station 前後台（`web/src/`）側邊欄及登入頁同步提供切換器並支援 in-memory 與 localStorage 雙向同步。詞典擴充至 651 個作品集條目與 820 個工作站條目。CI 5 項檢查（k6 isolated transaction tests、infrastructure、Build Windows desktop app、web、station-delivery）全綠通過，自動觸發 Deploy to OCI 並成功部署至主機 release `af6c66afff95c70fd78bdc73f416ae2a93117dc9-20261120094326`。
 
 **優先待辦：**
 

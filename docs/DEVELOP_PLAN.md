@@ -66,7 +66,7 @@
 
 ### Portfolio / profolio
 
-**已交付或已合併證據：** Portfolio 首頁、六系統入口、語系/特效工作、部分長期資源生命週期及表格分頁；既有私人備份/使用者金鑰程式、hybrid sync 和 Rust 桌面 supervisor 程式。已記錄過 main CI/OCI 部署及 browser 例子，但 live endpoint 快照日期早於此基準日，須刷新。
+**已交付或已合併證據：** Portfolio 首頁、六系統入口、語系/特效工作、部分長期資源生命週期及表格分頁；既有私人備份/使用者金鑰程式、hybrid sync 和 Rust 桌面 supervisor 程式。PR #59、#61、#62 已全數合併至 `main`。2026-11-20 完成正式站台（`blockchen.dpdns.org/(系統)`）切換各子系統全繁體中文（zh-TW）在地化支援（涵蓋 MES/ERP/POS/CRM/Dining/Shop/Commerce/Platform 全流程工作區、表單與看板），以及桌機與手機抽屜之 Dark/Light Mode 色系切換器與 CSS 變數主題引擎。單元與整合測試 64/64 全數通過，生產環境建置通過。已記錄過 main CI/OCI 部署及 browser 例子，但 live endpoint 快照日期早於此基準日，須刷新。
 
 **優先待辦：**
 

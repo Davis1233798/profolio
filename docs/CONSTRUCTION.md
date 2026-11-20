@@ -58,7 +58,7 @@ The Workers and Linux Node paths are separate deployment adapters for the Portfo
 
 This repository contains the public portfolio, an existing Vinext/Workers web application, the central Go station, and the newer Go/React/Rust desktop work. These are distinct surfaces:
 
-- `app/`, `lib/`, `db/`, `drizzle/`, `worker/`, and `middleware.ts` implement the web application, request-scoped data binding, demo identity, and migrations. The README describes a Workers/D1 path and a Linux Node/SQLite adapter path; these are separate deployment adapters.
+- `app/`, `lib/`, `db/`, `drizzle/`, `worker/`, and `middleware.ts` implement the web application, request-scoped data binding, demo identity, and migrations. `lib/portfolio-experience.ts` and `lib/portfolio-translations.ts` provide unified Traditional Chinese (zh-TW) localization and Dark/Light mode theme switching across all public workspaces (`/mes`, `/erp`, `/pos`, `/crm`, `/dining`, `/shop`, `/commerce`, `/platform`). The README describes a Workers/D1 path and a Linux Node/SQLite adapter path; these are separate deployment adapters.
 - `backend/` contains the central Go HTTP/API implementation, station dispatch, business modules, tests, and migrations. `backend/main.go`, `backend/stations.go`, and domain files such as `backend/pos_business.go` and `backend/mes_work_order.go` are useful entry points.
 - `web/src/` contains React station interfaces. `desktop/` contains the desktop wrapper/supervisor sources; packaging and user-machine behavior must be checked separately from CI artifacts.
 - `infra/` contains Compose, gateway, service graph and deployment scripts. Read the matching runbook before operating any host.

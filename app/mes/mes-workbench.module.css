@@ -222,3 +222,28 @@
   border-color: #30363d;
   color: #8b949e;
 }
+:global([data-theme="dark"]) .shell .good {
+  color: #3fb950;
+}
+:global([data-theme="dark"]) .shell .bad {
+  color: #f85149;
+}
+:global([data-theme="dark"]) .shell .warning {
+  color: #d29922;
+}
+:global([data-theme="dark"]) .orderNo {
+  color: #58a6ff;
+}
+:global([data-theme="dark"]) .subline {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .badge.active {
+  background: #162642;
+  color: #58a6ff;
+  border-color: #1f4277;
+}
+:global([data-theme="dark"]) .badge.success {
+  background: #132d1e;
+  color: #3fb950;
+  border-color: #1b4b2e;
+}

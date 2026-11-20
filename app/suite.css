@@ -520,3 +520,42 @@
 [data-theme="dark"] .loading-block {
   background: #21262d;
 }
+
+[data-theme="dark"] .suite-erp #finance .bg-stone-50 {
+  background: #161b22;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .register-context {
+  background: #12281e;
+  color: #e6edf3;
+}
+
+[data-theme="dark"] .pos-product {
+  background: #161b22;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+
+[data-theme="dark"] .suite-mobile-nav {
+  background: #161b22;
+  border-top-color: #30363d;
+}
+
+[data-theme="dark"] .order-overview td {
+  border-top-color: #30363d;
+}
+
+[data-theme="dark"] .order-badge {
+  background: #21262d;
+  color: #8b949e;
+}
+
+[data-theme="dark"] .order-paid {
+  background: #12281e;
+  color: #3fb950;
+}
+
+[data-theme="dark"] .commerce-metrics>div:nth-child(2) {
+  background: #12281e;
+}

@@ -1,6 +1,6 @@
 # Business Suite Construction and System Map
 
-**Evidence baseline:** freshly fetched portfolio `origin/main` at `db09380` on 2026-11-18 (Asia/Taipei). This document maps the source tree and links to existing status records. Deployment and acceptance statements are snapshots from the cited records, not a live host check. Confirm the target repository branch, current CI, release revision, and service health before calling an item current.
+**Evidence baseline:** freshly fetched portfolio `origin/main` at `ed867fa` on 2026-11-20 (Asia/Taipei). Subsystem dark/light theme separation and full Traditional Chinese localization integrated across Next.js and Go Station. This document maps the source tree and links to existing status records. Deployment and acceptance statements are snapshots from the cited records, not a live host check. Confirm the target repository branch, current CI, release revision, and service health before calling an item current.
 
 Related delivery documents: [Handoff](HANDOFF.md), [Development plan](DEVELOP_PLAN.md), and [Harness](HARNESS.md). Existing architecture and evidence references include [Architecture handoff](ARCHITECTURE_HANDOFF.md), [Development status](DEVELOPMENT_STATUS.md), [Acceptance matrix](ACCEPTANCE.md), [API contract](API.md), and [Linux deployment](../infra/linux/README.md).
 

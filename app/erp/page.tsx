@@ -184,7 +184,7 @@ export default function ErpPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-sm font-bold text-stone-900">{t("Trial balance check", "試算表檢查")}</h2>
+            <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100">{t("Trial balance check", "試算表檢查")}</h2>
           </div>
           <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
             {tb?.isBalanced
@@ -196,11 +196,11 @@ export default function ErpPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
             <div className="text-stone-500 font-medium">{t("Total debits (Grand Debit)", "借方總額 (Grand Debit)")}</div>
-            <div className="text-xl font-bold font-mono text-stone-900 mt-1">${tb?.grandDebit?.toLocaleString()}</div>
+            <div className="text-xl font-bold font-mono text-stone-900 dark:text-stone-100 mt-1">${tb?.grandDebit?.toLocaleString()}</div>
           </div>
           <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
             <div className="text-stone-500 font-medium">{t("Total credits (Grand Credit)", "貸方總額 (Grand Credit)")}</div>
-            <div className="text-xl font-bold font-mono text-stone-900 mt-1">${tb?.grandCredit?.toLocaleString()}</div>
+            <div className="text-xl font-bold font-mono text-stone-900 dark:text-stone-100 mt-1">${tb?.grandCredit?.toLocaleString()}</div>
           </div>
           <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
             <div className="text-stone-500 font-medium">
@@ -223,7 +223,7 @@ export default function ErpPage() {
         <div className="lg:col-span-2 space-y-6">
           <section className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
                 <Boxes className="w-4 h-4 text-stone-700" />
                 <span>{t("Stock ledger (Stock Ledger)", "庫存異動明細帳 (Stock Ledger)")}</span>
               </h3>
@@ -245,7 +245,7 @@ export default function ErpPage() {
                 <tbody className="divide-y divide-stone-100 font-mono">
                   {data?.stockLedger.slice(0, 8).map((stk: any) => (
                     <tr key={stk.id} className="hover:bg-stone-50/80">
-                      <td className="p-2.5 font-medium text-stone-900">{stk.referenceDoc}</td>
+                      <td className="p-2.5 font-medium text-stone-900 dark:text-stone-100">{stk.referenceDoc}</td>
                       <td className="p-2.5">
                         {data?.warehouses.find((warehouse: any) => warehouse.id === stk.warehouseId)?.name ||
                           stk.warehouseId}
@@ -260,7 +260,7 @@ export default function ErpPage() {
                       >
                         {stk.quantityChange > 0 ? `+${stk.quantityChange}` : stk.quantityChange}
                       </td>
-                      <td className="p-2.5 font-bold text-stone-900">{stk.balanceAfter}</td>
+                      <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{stk.balanceAfter}</td>
                       <td className="p-2.5 text-stone-600">${stk.unitCost}</td>
                     </tr>
                   ))}
@@ -271,7 +271,7 @@ export default function ErpPage() {
 
           {/* Invoices & Settlement */}
           <section className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-emerald-600" />
               <span>{t("Settle receivables and payables", "應收與應付帳款核銷結算")}</span>
             </h3>
@@ -285,7 +285,7 @@ export default function ErpPage() {
                     className="p-4 rounded-xl border border-stone-200 bg-stone-50 flex flex-wrap items-center justify-between gap-4"
                   >
                     <div className="space-y-1">
-                      <div className="font-mono font-bold text-stone-900">{inv.invoiceNumber}</div>
+                      <div className="font-mono font-bold text-stone-900 dark:text-stone-100">{inv.invoiceNumber}</div>
                       <div className="text-stone-500">
                         {t("Total", "總額")}: ${inv.totalAmount} | {t("Paid", "已付")}: ${inv.paidAmount} |{" "}
                         {t("Outstanding", "未結")}: ${unpaid}
@@ -327,7 +327,7 @@ export default function ErpPage() {
         {/* Right Col: Inter-warehouse Transfer */}
         <div className="space-y-6">
           <section className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
               <ArrowRightLeft className="w-4 h-4 text-emerald-600" />
               <span>{t("Warehouse transfer (stock conserved)", "跨倉庫調撥 (庫存總量守恆)")}</span>
             </h3>
@@ -418,7 +418,7 @@ export default function ErpPage() {
 
           {/* Box Conversion Ratio Card */}
           <section className="bg-stone-50 rounded-xl border border-stone-200 p-5 space-y-2 text-xs">
-            <h4 className="font-bold text-stone-900">{t("Units and pack conversion", "品項包裝與單位換算")}</h4>
+            <h4 className="font-bold text-stone-900 dark:text-stone-100">{t("Units and pack conversion", "品項包裝與單位換算")}</h4>
             <p className="text-stone-600">
               {t(
                 "Pack conversion converts two packs of ten sensor modules into twenty inventory units.",

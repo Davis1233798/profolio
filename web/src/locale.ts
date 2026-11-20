@@ -1,6 +1,43 @@
 export type Language = 'en' | 'zh-TW';
-export function currentLanguage():Language { return localStorage.getItem('suite-language')==='zh-TW'?'zh-TW':'en'; }
-export function initializeLanguage() { document.documentElement.lang=currentLanguage(); }
+
+let inMemoryLanguage: Language | null = null;
+
+export function currentLanguage(): Language {
+  if (inMemoryLanguage) return inMemoryLanguage;
+  try {
+    const suiteLang = localStorage.getItem('suite-language');
+    if (suiteLang === 'zh-TW' || suiteLang === 'en') return suiteLang;
+    const portLocale = localStorage.getItem('portfolio.locale');
+    if (portLocale === 'zh-TW' || portLocale === 'en') return portLocale;
+    if (typeof navigator !== 'undefined' && typeof navigator.language === 'string') {
+      if (navigator.language.toLowerCase().startsWith('zh')) return 'zh-TW';
+    }
+    return 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+export function setLanguage(lang: Language) {
+  inMemoryLanguage = lang;
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("suite-language", lang);
+      localStorage.setItem("portfolio.locale", lang);
+    }
+  } catch {
+    /* Storage unavailable */
+  }
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.lang = lang;
+  }
+}
+
+export function initializeLanguage() {
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.lang = currentLanguage();
+  }
+}
 const traditionalChinese:Record<string,string> = {
   "Fiscal periods": "會計期間",
   "MES product mappings": "MES 品項對應",
@@ -456,5 +493,35 @@ const traditionalChinese:Record<string,string> = {
   "Last page": "最後一頁",
   "Page": "第",
   "of": "頁，共",
+  "Time": "量測時間",
+  "Equipment": "設備名稱",
+  "Value": "數值",
+  "Assessment": "異常判定評估",
+  "Refreshing…": "更新中…",
+  "Score": "異常分數",
+  "Threshold": "門檻值",
+  "samples": "筆樣本",
+  "ready": "運作就緒",
+  "insufficient_variation": "訊號變異不足",
+  "warmup": "模型暖機中",
+  "rework": "退回重檢",
+  "scrap": "整批報廢",
+  "passed": "檢驗合格",
+  "Batch": "成品批次",
+  "Station": "工作站",
+  "Modifiers": "餐點規格 / 加料",
+  "hot_kitchen": "熱廚區",
+  "cold_bar": "冷飲吧",
+  "won": "贏單",
+  "lost": "失單",
+  "Initial contact": "初步接觸",
+  "Requirements": "需求確認",
+  "Proposal": "方案報價",
+  "Negotiation": "商務談判",
+  "Closed won": "成功結案",
+  "Closed lost": "結案失單",
+  "Light mode": "淺色模式",
+  "Dark mode": "深色模式",
+  "Language": "語系",
 };
 export function tr(text:string):string { return currentLanguage()==='zh-TW'?(traditionalChinese[text]??text):text; }

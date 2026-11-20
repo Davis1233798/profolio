@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { tr } from './locale';
+import { tr, currentLanguage, setLanguage, type Language } from './locale';
+import { currentTheme, toggleTheme, type Theme } from './theme';
 
 export type LicensePayload = {
   id: string;
@@ -186,6 +187,7 @@ export function PortalDashboard({
   identity: Identity | null;
   onIdentityChange: () => Promise<void>;
 }) {
+  const [themeState, setThemeState] = useState<Theme>(currentTheme());
   const [activeTab, setActiveTab] = useState<PortalTab>('modules');
   const [moduleCategory, setModuleCategory] = useState<string>('all');
   const [licenseInfo, setLicenseInfo] = useState<LicenseStatusResponse | null>(null);
@@ -511,6 +513,30 @@ export function PortalDashboard({
         </div>
 
         <div className="portal-topbar-actions">
+          <button
+            type="button"
+            className="portal-theme-btn"
+            onClick={() => {
+              const next = toggleTheme();
+              setThemeState(next);
+            }}
+            title={themeState === 'dark' ? '切換淺色模式' : '切換深色模式'}
+          >
+            {themeState === 'dark' ? '☀️ 淺色' : '🌙 深色'}
+          </button>
+          <label className="portal-lang-select">
+            <select
+              aria-label="選擇語系"
+              value={currentLanguage()}
+              onChange={e => {
+                setLanguage(e.target.value as Language);
+                location.reload();
+              }}
+            >
+              <option value="en">English</option>
+              <option value="zh-TW">繁體中文</option>
+            </select>
+          </label>
           <button
             type="button"
             className="portal-sync-pill-btn"

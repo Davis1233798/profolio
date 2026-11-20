@@ -1,6 +1,6 @@
 # Business Suite 交接手冊
 
-> 證據基準：2026-11-20（台北時間）。GitHub 目前 `main` SHA（`75cfc66`，PR #62 合併後）、最新主分支 workflow、PR head/check 與 GitHub Deployments API 已重新更新；正式站台切換各系統無中文與無色系切換之問題已於 PR `codex/i18n-theme-switcher` 完整修復並驗證。公開端點、OCI 主機和瀏覽器無當日直接連線證據仍標為「未知／待核」。
+> 證據基準：2026-11-20（台北時間）。GitHub 目前 `main` SHA（`ed867fa`，PR #63 合併後，與後續子系統深淺色系與在地化切換強化修復）；最新主分支 workflow、PR head/check 與 GitHub Deployments API 已重新更新；使用者反饋「怎麼切都是暗色系」與「子系統沒有色系/語系」之雙重架構缺陷已於分支 `codex/theme-locale-subsystems` 徹底根治修復並完成單元與整合測試驗證。公開端點、OCI 主機和瀏覽器無當日直接連線證據仍標為「未知／待核」。
 >
 > 建置地圖與完整來源樹請先讀 [CONSTRUCTION.md](CONSTRUCTION.md)；工作排序與建議驗收步驟見 [DEVELOP_PLAN.md](DEVELOP_PLAN.md)；工程邊界與驗證流程見 [HARNESS.md](HARNESS.md)。兩份文件已在本次建置分支的工作樹中提供，預計和本交接一同提交；目前尚未包含於 `origin/main`。合併前請以本分支版本為準。
 

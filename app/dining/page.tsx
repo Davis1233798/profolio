@@ -189,14 +189,15 @@ export default function DiningPage() {
 
   function add(item: Menu) {
     if (!data) return;
+    const isDrink = item.category === "Drinks" || item.category === "飲品";
     const mods =
-      item.category === "Drinks"
+      isDrink
         ? data.modifierGroups.flatMap(g =>
             (selectedMods[g.id] || []).map(optionId => ({ groupId: g.id, optionId }))
           )
         : [];
     if (
-      item.category === "Drinks" &&
+      isDrink &&
       data.modifierGroups.some(g => g.isRequired && !selectedMods[g.id]?.length)
     ) {
       setError(t("Select the required drink options first", "請先選擇飲品必選規格"));
@@ -455,7 +456,7 @@ export default function DiningPage() {
                           <span className="text-xs text-orange-700">{t(item.category)}</span>
                           <h2 className="mt-2 text-lg font-semibold">{item.name}</h2>
                           <p className="my-4 text-xl font-bold">{money(item.price)}</p>
-                          {item.category === "Drinks" &&
+                          {(item.category === "Drinks" || item.category === "飲品") &&
                             data.modifierGroups.map(g => (
                               <fieldset key={g.id} className="mb-4">
                                 <legend className="mb-2 text-xs font-semibold text-stone-600">{g.name}</legend>

@@ -15,7 +15,7 @@
 
 | 專案／領域 | 現有邊界與參考路徑 | 變更責任及限制 |
 |---|---|---|
-| Portfolio (`profolio`) | 首頁、導覽及網站端位於 `app/`、`components/`、`lib/`；repo 對照在 `lib/project-repositories.ts`。 | 負責作品集與各系統入口；卡片或案例頁不擁有工作站交易。公開入口所指服務須由設定及運行證據確認。多語系（zh-TW/en）與深淺色主題切換（Dark/Light）屬於前端呈現與 Context 狀態管理，以 localStorage 持久化，不改變後端 API 與資料庫邊界。 |
+| Portfolio (`profolio`) | 首頁、導覽及網站端位於 `app/`、`components/`、`lib/`；repo 對照在 `lib/project-repositories.ts`。 | 負責作品集與各系統入口；卡片或案例頁不擁有工作站交易。公開入口所指服務須由設定及運行證據確認。多語系（zh-TW/en）與深淺色主題切換（Dark/Light）全面支援 Next.js 頁面與 Go Station 前後台介面，透過 localStorage 雙向同步持久化，Navbar 全域掛載於各子系統頂部，且亮色與暗色系樣式完全分離，不改變後端 API 與資料庫邊界。 |
 | Workers/Vinext demo | `app/api/`、`lib/services/`、`db/`、`drizzle/`、`middleware.ts`、`worker/`。 | 自成一個 Web demo 與資料面。網站修正不會自動更新 Go 工作站或六個獨立 repo。 |
 | 中央 Go/React station | `backend/main.go`、`backend/stations.go`、`backend/*` 領域模組、`backend/migrations/`、`web/src/`。 | 統一服務中的六套展示工作區。中央站有些流程可能先於獨立 repo；反向亦然。每個目標需分開實作、測試、遷移和部署。 |
 | MES / ForgeFlow | 領域為 BOM、工單、領退料、報工、品檢、停機與成品；中央站對應 `backend/mes_*.go`，獨立系統為 `business-suite-mes`。成品/ERP 交界見 `engineering/MES_ERP_INTEGRATION.md`。 | MES 擁有製造執行與追溯資料。多工序報工完工量依最高工序累積、全單報廢守恆、後道良品受前道完工數約束、OEE 零分母防護。成品收貨事件不代表 ERP 已過帳；映射走明確 ERP 事件流程。 |

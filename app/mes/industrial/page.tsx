@@ -96,7 +96,7 @@ export default function IndustrialPage() {
         </Link>
         <header className="flex flex-wrap justify-between gap-4 border-b border-border pb-6">
           <div>
-            <p className="text-xs text-stone-600 tracking-widest">FORGEFLOW / EQUIPMENT</p>
+            <p className="text-xs text-stone-600 dark:text-stone-400 tracking-widest">{t("FORGEFLOW / EQUIPMENT", "FORGEFLOW / 設備監測")}</p>
             <h1 className="text-3xl font-semibold mt-2">
               {t("Equipment measurements and anomaly tracking", "設備量測監控與異常偵測追蹤")}
             </h1>

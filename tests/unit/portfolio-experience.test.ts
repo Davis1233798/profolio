@@ -38,3 +38,39 @@ test('animation respects ordinary activation without changing modified links or 
     { tag: 'SELECT', button: 0 },
   ]) assert.equal(shouldAnimateInteraction(input), false);
 });
+
+test('portfolio translations contain required subsystem keys', async () => {
+  const { portfolioChinese } = await import('../../lib/portfolio-translations.ts');
+  const required = [
+    // MES
+    'ForgeFlow', 'Manufacturing', 'New product', 'Receive material lot', 'Create work order',
+    // ERP
+    'LedgerWorks', 'Operations', 'New inventory item', 'Create purchase order', 'Approve purchase order',
+    // POS
+    'CounterPoint', 'Retail', 'Products and checkout', 'Shifts and transactions',
+    // CRM
+    'RelationDesk', 'Customers', 'Performance summary', 'Opportunity board', 'Initial contact',
+    // Dining
+    'TableCraft', 'Dining', 'Tables and ordering', 'Kitchen KDS', 'Bills and splits',
+    // Shop & Commerce
+    'MarketLane', 'Commerce', 'Add'
+  ];
+  for (const key of required) {
+    assert.ok(portfolioChinese[key], `Missing translation for key: ${key}`);
+    assert.ok(portfolioChinese[key].length > 0, `Empty translation for key: ${key}`);
+  }
+});
+
+test("station theme and locale logic operates seamlessly", async () => {
+  const { currentTheme, setTheme, toggleTheme } = await import("../../web/src/theme.ts");
+  const { currentLanguage, setLanguage, tr } = await import("../../web/src/locale.ts");
+
+  assert.equal(typeof currentTheme(), "string");
+  assert.equal(typeof currentLanguage(), "string");
+  setLanguage("zh-TW");
+  assert.equal(tr("Light mode"), "淺色模式");
+  assert.equal(tr("Dark mode"), "深色模式");
+  assert.equal(tr("Initial contact"), "初步接觸");
+  setLanguage("en");
+  assert.equal(tr("Light mode"), "Light mode");
+});

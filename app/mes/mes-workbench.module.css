@@ -108,3 +108,117 @@
 .headerActions .primary { background:#fff; color:#0057d2; }
 .metrics { border-top:3px solid #187796; box-shadow:0 4px 12px #12344a06; }
 @media(max-width:580px) { .pageHeader { padding:16px; flex-wrap:wrap; }.headerActions { justify-content:flex-start; }.headerActions>span { text-align:left; } }
+
+
+/* Dark mode overrides for MES module */
+:global([data-theme="dark"]) .shell {
+  background: #0d1117;
+  color: #e6edf3;
+}
+:global([data-theme="dark"]) .shell :is(button,input,select) {
+  background: #161b22;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+:global([data-theme="dark"]) .shell button {
+  color: #58a6ff;
+}
+:global([data-theme="dark"]) .shell button:hover:not(:disabled) {
+  background: #21262d;
+}
+:global([data-theme="dark"]) .appBar {
+  background: #161b22;
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .appBar>span {
+  color: #e6edf3;
+}
+:global([data-theme="dark"]) .appBar nav a {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .appBar nav a:first-child,
+:global([data-theme="dark"]) .appBar nav a:hover {
+  color: #58a6ff;
+  border-bottom-color: #58a6ff;
+}
+:global([data-theme="dark"]) .panel {
+  background: #161b22;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+:global([data-theme="dark"]) .panelTitle {
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .panelTitle>span {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .filters {
+  background: #161b22;
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .filters label,
+:global([data-theme="dark"]) .filters>span {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .shell th {
+  background: #161b22;
+  color: #8b949e;
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .shell td {
+  border-bottom-color: #21262d;
+}
+:global([data-theme="dark"]) .shell tbody tr:hover {
+  background: #162642;
+}
+:global([data-theme="dark"]) .shell tr.selected {
+  background: #162642;
+  box-shadow: inset 3px 0 #58a6ff;
+}
+:global([data-theme="dark"]) .metrics {
+  background: #161b22;
+  border-color: #30363d;
+  border-top-color: #58a6ff;
+}
+:global([data-theme="dark"]) .metrics>div {
+  border-color: #30363d;
+}
+:global([data-theme="dark"]) .metrics p,
+:global([data-theme="dark"]) .metrics small {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .metrics strong {
+  color: #e6edf3;
+}
+:global([data-theme="dark"]) .selectedInfo {
+  background: #162642;
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .selectedInfo dt {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .reportForm label,
+:global([data-theme="dark"]) .reportForm p {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .traceRows>div {
+  border-bottom-color: #30363d;
+}
+:global([data-theme="dark"]) .centerGrid>div {
+  border-color: #30363d;
+}
+:global([data-theme="dark"]) .fixture {
+  background: #161b22;
+  border-color: #30363d;
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .tableFooter,
+:global([data-theme="dark"]) .footer,
+:global([data-theme="dark"]) .empty {
+  color: #8b949e;
+}
+:global([data-theme="dark"]) .badge {
+  background: #21262d;
+  border-color: #30363d;
+  color: #8b949e;
+}

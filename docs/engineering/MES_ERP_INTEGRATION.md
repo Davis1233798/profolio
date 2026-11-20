@@ -32,7 +32,7 @@ MES 入庫已加入待驗證事件，ERP 有獨立 stock ledger 與 costing。�
 
 測試先行：建立、同鍵重試、不同內容重用鍵、更新版本、跨租戶與無效品項/倉庫、單位差異、MES 或 ERP 管理員權限撤銷、資料庫寫入失敗的全交易回滾，以及並行更新時唯一 active 映射。收貨事件與映射綁定、成本確認、過帳與補送屬後續獨立迭代。
 
-收貨事件測試 Red：[遠端完整 Go race 紀錄](https://github.com/Davis1233798/profolio/actions/runs/41479964312/job/125395343565) 顯示成功收貨後找不到事件；後續已新增交易內事件，Green 仍待最新版本 CI。版本化商品映射 API 及 migration 已實作，ERP 管理介面、事件與映射綁定、成本確認及過帳仍待完成。
+收貨事件與整合測試 Green：中央 Go 後端（`backend/`）已完整實作商品與倉庫映射（`POST /api/stations/erp/mes-integration`）、管理員確認成品入帳過帳（`POST /api/stations/erp/mes-receipt`）、讀取待過帳事件與映射版本（`GET /api/stations/erp/mes-integration`）以及歷史收貨事件補送（`POST /api/stations/erp/mes-receipt-backfill`），並已全數通過遠端 Go race detector 測試（`backend/erp_mes_integration_test.go`）。前端 `web/src/` 中 `MesIntegrationDashboard` 已整合至 ERP 後台介面。六個獨立 repository 之移植（包含 `business-suite-mes` 與 `business-suite-erp` 之 migrations 0006–0009、Transactional Outbox 事件派送與消費契約）列為後續獨立 repo 迭代里程碑。
 
 ## 管理員確認成品入帳
 

@@ -79,10 +79,11 @@
 
 ### MES / ForgeFlow
 
-**已交付/狀態快照（2026-11-18 遠端 `main`：`2867f8f492c745c4b6d1041183aea4d47e6dc551`；PR #21 run [44261814219](https://github.com/Davis1233798/business-suite-mes/actions/runs/44261814219) 全綠已合併）：**
+**已交付/狀態快照（2026-11-20 遠端 `main`：`424efa723eca06135f7693429462076768be076a`；PR #21、#22 全綠已合併）：**
 - 工單追加工序 API (`action: addOperation`) 與多工序狀態機 (`pending`→`in_progress`→`completed`)。
 - 多工序報工產量遞進保護（後道工序累積良品不得超過前道工序完工數），工單完工數精準依當前最高序號報工工序累積，全單報廢總量守恆。
 - M08 OEE 計算 API (`GET /api/stations/mes/oee`)：實作基準排程 480 分、運轉 360 分、理論 1 分/件、總量 300、良品 270，精確輸出 Availability 75%、Performance 83.3333%、Quality 90%、OEE 56.25%；排程時間為 0 時安全回報無資料與 0 分母防護。
+- 成品入庫 Transactional Outbox 事件原子性（PR #22）：實作並驗證成品收貨交易內原子寫入 `mes.finished_goods.received` 事件，同鍵重試冪等覆用，跨租戶商品拒絕，交易失敗回滾無殘留事件（`mes_finished_goods_outbox_test.go`）。
 
 **待辦：**
 1. 依 `MES_ERP_INTEGRATION.md` 設計成品入庫與 ERP 庫存映射之 Outbox 事件契約。
@@ -107,9 +108,10 @@
 
 ### POS / CounterPoint
 
-**已交付/狀態快照（2026-11-18 遠端 `main`：`480e3e0a0c5392209cc99031a4b5d035ea62cc32`；PR #20 run [44256358163](https://github.com/Davis1233798/business-suite-pos/actions/runs/44256358163) 全綠已合併）：**
+**已交付/狀態快照（2026-11-20 遠端 `main`：`a53be90a9a45adeb0fbc3648baf32123ce9feba8`；PR #20、#21 全綠已合併）：**
 - P01–P06 核心收銀、掛單、退款反向台帳、班次現金差異、小票重印已合併。
-- P07 會員消費者配對與結帳整合：消費者身份配對 API、會員碼有效性核驗、結帳交易關聯綁定、Outbox 交易事件同步與租戶隔離已全數驗證通過。
+- P07 會員消費者配對與結帳整合：消費者身份配對 API、會員碼有效性核驗、結帳交易關聯綁定。
+- 結帳與退款 Outbox 交易同步（PR #21）：單品結帳與購物車結帳交易內原子寫入 `pos.sale.completed`（含會員配對 customerId）、退款交易原子寫入 `pos.sale.refunded`，支援冪等重試防重發與交易失敗回滾無遺留事件保護（`pos_outbox_test.go`）。
 
 **待辦：**
 1. 固化 register shift invariants 於跨日/跨班極端情境之驗收。
@@ -120,8 +122,8 @@
 
 ### CRM / RelationDesk
 
-**已交付/狀態快照（2026-11-18 遠端 `main`：`ba8b4c1b3c777e5086b27065203ef9e9eb9d8adb`；PR #14 run [44276769529](https://github.com/Davis1233798/business-suite-crm/actions/runs/44276769529) 全綠已合併）：**
-- R06 客服工單 SLA 計算：依台北時間工作日與營運時段計算，週六日自動暫停/略過 SLA 計時鐘。
+**已交付/狀態快照（2026-11-20 遠端 `main`：`4ff165822529070f4b824ede9de71f5b26ecb243`；PR #14、#15 全綠已合併）：**
+- R06 客服工單 SLA 計算與時區對齊（PR #15）：全面強制對齊 `Asia/Taipei`（UTC+8）計算業務時間與 SLA 剩餘秒數，徹底根除 `pause-ticket` 與 `reopen-ticket` 在 UTC 下因週末與非營業時間漂移之缺陷，403 行時區與週末邊界測試（`crm_sla_timezone_test.go`）全數通過。
 - 潛客重複檢測與合併審批：依 email、phone、taxId 檢測潛在重複線索，合併時安全串接筆記並將關聯活動完整移轉至主線索，已合併線索禁止重複轉換（409）。
 - GDPR 行銷同意撤回即刻生效：撤回同意時立即排除於行銷收件人清單之外。
 

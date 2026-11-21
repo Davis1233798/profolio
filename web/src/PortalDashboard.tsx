@@ -74,7 +74,7 @@ const stationModules = [
   {
     key: 'mes',
     name: 'ForgeFlow MES',
-    zhName: '智能製造執行系統',
+    zhName: '智慧製造 ForgeFlow',
     category: 'manufacturing',
     desc: '工單排程、物料批次追蹤、BOM版本管理、成品檢驗處置與現場工控監測',
     tags: ['工單排程', 'BOM配方', '物料批次', '成品處置', '工控數據'],
@@ -85,7 +85,7 @@ const stationModules = [
   {
     key: 'erp',
     name: 'LedgerWorks ERP',
-    zhName: '企業資源規劃系統',
+    zhName: '企業營運 LedgerWorks',
     category: 'finance',
     desc: '多倉庫存調撥、採購核准入庫、銷售出貨過帳、財務會計總帳與MES成品整合入庫',
     tags: ['庫存調撥', '採購核准', '銷售出貨', '財務總帳', 'MES整合'],
@@ -96,7 +96,7 @@ const stationModules = [
   {
     key: 'crm',
     name: 'RelationDesk CRM',
-    zhName: '客戶關係與商機管理',
+    zhName: '客戶關係 RelationDesk',
     category: 'sales',
     desc: '潛在客戶開發、商機階段看板、多版本報價審核、客戶個資與支援服務單',
     tags: ['商機看板', '版本報價', '客戶合約', '個資合規', '服務工單'],
@@ -107,7 +107,7 @@ const stationModules = [
   {
     key: 'shop',
     name: 'MarketLane Commerce',
-    zhName: '數位全通路電商平台',
+    zhName: '品牌電商 MarketLane',
     category: 'retail',
     desc: '多規格商品型錄、購物車模擬結帳、即時履約配送與售後退貨折讓審核',
     tags: ['商品型錄', '多規格購物車', '履約配送', '售後退換'],
@@ -118,7 +118,7 @@ const stationModules = [
   {
     key: 'pos',
     name: 'CounterPoint POS',
-    zhName: '智慧門市收銀系統',
+    zhName: '門市零售 CounterPoint',
     category: 'retail',
     desc: '高速條碼掃描結帳、開班交班結算、掛單保留作業與熱感發票即時列印',
     tags: ['條碼掃描', '開收班交班', '掛單保留', '收銀發票'],
@@ -129,7 +129,7 @@ const stationModules = [
   {
     key: 'dining',
     name: 'TableCraft Dining',
-    zhName: '智慧餐飲與廚房調度',
+    zhName: '智慧餐飲 TableCraft',
     category: 'retail',
     desc: '現場桌位動態圖、廚房KDS即時出菜點單、分單拆單結帳與外帶退單作業',
     tags: ['現場桌位', '廚房KDS', '即時出菜', '分單結帳', '外帶退單'],
@@ -761,8 +761,8 @@ export function PortalDashboard({
                     <div className="module-card-header">
                       <div>
                         <div className="module-sys-badge">{mod.key.toUpperCase()}</div>
-                        <h3 className="module-sys-title">{mod.name}</h3>
-                        <div className="module-zh-title">{mod.zhName}</div>
+                        <h3 className="module-sys-title">{currentLanguage() === 'zh-TW' ? mod.zhName : mod.name}</h3>
+                        <div className="module-zh-title">{currentLanguage() === 'zh-TW' ? mod.name : mod.zhName}</div>
                       </div>
                       <div className="module-lic-badge">
                         {licensed ? (
@@ -787,7 +787,7 @@ export function PortalDashboard({
                       {licensed ? (
                         identity ? (
                           <a href={mod.entryUrl} className="btn-module-launch">
-                            立即進入 {mod.name} →
+                            {currentLanguage() === 'zh-TW' ? `立即進入 ${mod.zhName} →` : `Launch ${mod.name} →`}
                           </a>
                         ) : (
                           <button
@@ -1081,6 +1081,7 @@ export function PortalDashboard({
                   <div className="matrix-grid">
                     {stationModules.map((m) => {
                       const enabled = isModuleLicensed(m.key);
+                      const isZh = currentLanguage() === 'zh-TW';
                       return (
                         <div
                           key={m.key}
@@ -1088,8 +1089,8 @@ export function PortalDashboard({
                         >
                           <span className="matrix-icon">{enabled ? '✓' : '🔒'}</span>
                           <div>
-                            <strong>{m.name}</strong>
-                            <small>{m.zhName}</small>
+                            <strong>{isZh ? m.zhName : m.name}</strong>
+                            <small>{isZh ? m.name : m.zhName}</small>
                           </div>
                           <span className={`matrix-badge ${enabled ? 'ok' : 'locked'}`}>
                             {enabled ? '已授權' : '未購買'}

@@ -8,7 +8,7 @@ import { usePortfolioLocale } from "@/components/portfolio-experience";
 import { Factory, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
 
 export default function MesPage() {
-  const { t } = usePortfolioLocale();
+  const { t, locale } = usePortfolioLocale();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -155,7 +155,7 @@ export default function MesPage() {
     <main data-site="mes" className={styles.shell}>
       <div className={styles.appBar}>
         <span>
-          <Factory size={17} /> ForgeFlow <b>{t("Manufacturing execution", "製造執行系統")}</b>
+          <Factory size={17} /> {locale === "zh-TW" ? "智慧製造 ForgeFlow" : "ForgeFlow"} <b>{t("Manufacturing execution", "製造執行系統")}</b>
         </span>
         <nav aria-label={t("MES Workspace", "MES 製造工作區")}>
           <a href="#dispatch">{t("Shop floor overview", "生產現場總覽")}</a>

@@ -92,11 +92,11 @@ export default function IndustrialPage() {
     <main data-site="mes" className={`${theme.mes} min-h-screen`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <Link href="/mes" className="inline-flex text-primary text-sm">
-          ← {t("ForgeFlow Manufacturing workspace", "ForgeFlow 製造管理工作區")}
+          ← {t("ForgeFlow Manufacturing workspace", "智慧製造 ForgeFlow 工作區")}
         </Link>
         <header className="flex flex-wrap justify-between gap-4 border-b border-border pb-6">
           <div>
-            <p className="text-xs text-stone-600 dark:text-stone-400 tracking-widest">{t("FORGEFLOW / EQUIPMENT", "FORGEFLOW / 設備監測")}</p>
+            <p className="text-xs text-stone-600 dark:text-stone-400 tracking-widest">{t("FORGEFLOW / EQUIPMENT", "智慧製造 / 設備監測")}</p>
             <h1 className="text-3xl font-semibold mt-2">
               {t("Equipment measurements and anomaly tracking", "設備量測監控與異常偵測追蹤")}
             </h1>

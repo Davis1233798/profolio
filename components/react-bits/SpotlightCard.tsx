@@ -212,9 +212,8 @@ const SpotlightCard = ({
       const fade = reduce ? 1 : 1 - Math.exp(-dt / (target > state.presence ? 0.1 : 0.32));
       state.presence += (target - state.presence) * fade;
       if (Math.abs(target - state.presence) < 0.002) state.presence = target;
-      const press = state.pressed && s.flare && !reduce ? 1 : 0;
-      state.flare += (press - state.flare) * (1 - Math.exp(-dt / (press ? 0.05 : 0.28)));
-      if (Math.abs(press - state.flare) < 0.002) state.flare = press;
+      const press = 0; // Click explosion/flare completely disabled per user requirement
+      state.flare = 0;
       paint(s);
       const moving = Math.abs(tx - state.x) > 0.1 || Math.abs(ty - state.y) > 0.1;
       const settled = !moving && state.presence === target && state.flare === press;

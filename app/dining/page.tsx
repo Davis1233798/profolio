@@ -5,6 +5,8 @@ import Link from "next/link";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { TakeoutHistory } from "./takeout-history";
 import { CustomerOrdering } from "./customer-ordering";
+import { DiningManager } from "./dining-manager";
+import { DiningFranchise } from "./dining-franchise";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
 import {
   UtensilsCrossed,
@@ -18,6 +20,9 @@ import {
   CalendarDays,
   Trash2,
   Smartphone,
+  LayoutDashboard,
+  Building2,
+  Sparkles,
 } from "lucide-react";
 
 type Table = { id: string; tableNumber: string; capacity: number; status: string };
@@ -101,7 +106,36 @@ export default function DiningPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [tab, setTab] = useState("floor");
+  const [systemInterface, setSystemInterface] = useState<"customer" | "front" | "back" | "admin" | "franchise">("customer");
+  const [frontSubtab, setFrontSubtab] = useState<"floor" | "reservations">("floor");
+  const [backSubtab, setBackSubtab] = useState<"kitchen" | "billing">("kitchen");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view") || params.get("interface") || params.get("tab") || params.get("role");
+      if (v === "customer" || v === "guest") {
+        setSystemInterface("customer");
+      } else if (v === "front" || v === "floor") {
+        setSystemInterface("front");
+        setFrontSubtab("floor");
+      } else if (v === "reservations") {
+        setSystemInterface("front");
+        setFrontSubtab("reservations");
+      } else if (v === "back" || v === "kitchen") {
+        setSystemInterface("back");
+        setBackSubtab("kitchen");
+      } else if (v === "billing") {
+        setSystemInterface("back");
+        setBackSubtab("billing");
+      } else if (v === "admin" || v === "manager") {
+        setSystemInterface("admin");
+      } else if (v === "franchise" || v === "owner") {
+        setSystemInterface("franchise");
+      }
+    }
+  }, []);
+
   const [orderMode, setOrderMode] = useState<"dine_in" | "takeout">("dine_in");
   const [tableId, setTableId] = useState("");
   const [guests, setGuests] = useState(2);
@@ -249,8 +283,51 @@ export default function DiningPage() {
     );
   }
 
+  const renderTableCards = (currentData: Data) => (
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {currentData.tables.map(tInfo => {
+        const active = currentData.sessions.find(s => s.tableId === tInfo.id && s.status === "active");
+        return (
+          <button
+            key={tInfo.id}
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (tInfo.id !== tableId) setCart([]);
+              setTableId(tInfo.id);
+            }}
+            className={`rounded-xl border p-5 text-left transition cursor-pointer ${
+              tInfo.id === tableId
+                ? "border-primary bg-[#d4e9e2] ring-1 ring-primary"
+                : "border-stone-200 bg-white hover:border-stone-400"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <strong className="text-xl">{tInfo.tableNumber}</strong>
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  active ? "bg-orange-100 text-orange-800" : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {active
+                  ? t("Occupied", "用餐中")
+                  : tInfo.status === "vacant"
+                  ? t("Available", "空桌")
+                  : t("Unavailable", "不可用")}
+              </span>
+            </div>
+            <p className="mt-3 text-xs text-stone-500">
+              {tInfo.capacity} {t("seats", "人座")}
+              {active && ` · ${active.guestCount} ${t("guests", "位用餐")}`}
+            </p>
+          </button>
+        );
+      })}
+    </section>
+  );
+
   return (
-    <main data-site="dining" data-dining-view={tab} className="suite-page suite-dining space-y-6">
+    <main data-site="dining" data-dining-view={systemInterface} className="suite-page suite-dining space-y-6">
       <WorkspaceHeader
         brand="TableCraft"
         eyebrow="Dining operations / SERVICE"
@@ -315,77 +392,173 @@ export default function DiningPage() {
               </div>
             ))}
           </section>
-          <nav
-            aria-label={t("Dining workspace", "餐飲工作區")}
-            className="dining-tabs flex gap-2 overflow-x-auto border-b border-stone-200 pb-3"
-          >
-            {[
-              ["floor", t("Tables and ordering", "桌況與外場點餐"), Armchair],
-              ["customer", t("Customer Self-Ordering", "顧客手機點餐 (顧客端)"), Smartphone],
-              ["kitchen", t("Kitchen KDS", "廚房出餐看板 (KDS)"), ChefHat],
-              ["billing", t("Bills and splits", "帳單與分帳結算"), Receipt],
-              ["reservations", t("Reservations", "預約訂位"), CalendarDays],
-            ].map(([id, label, Icon]) => {
-              const TabIcon = Icon as typeof Armchair;
-              return (
-                <button
-                  key={String(id)}
-                  onClick={() => setTab(String(id))}
-                  aria-current={tab === id ? "page" : undefined}
-                  className={`${button} shrink-0 ${
-                    tab === id ? "bg-primary text-white" : "bg-white text-stone-600 hover:bg-stone-100"
-                  }`}
-                >
-                  <TabIcon size={16} />
-                  {String(label)}
-                </button>
-              );
-            })}
-          </nav>
-          {((tab === "floor" && orderMode === "dine_in") || tab === "billing") && (
-            <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {data.tables.map(tInfo => {
-                const active = data.sessions.find(s => s.tableId === tInfo.id && s.status === "active");
+          {/* 5-Interface System Switcher */}
+          <section aria-label="智慧餐飲五大專屬角色系統介面" className="rounded-2xl border border-stone-200 bg-white p-3 shadow-xs space-y-2">
+            <div className="flex flex-wrap items-center justify-between px-2 pt-1 pb-2 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="text-xs font-bold text-stone-900">
+                  {t("SMART DINING 5-ROLE INTERFACES", "智慧餐飲五大專屬角色系統介面")}
+                </span>
+              </div>
+              <span className="text-[11px] text-stone-500 font-medium">
+                {t("Click to switch interface perspective and role permissions", "點擊即時切換視角與功能權限")}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {[
+                {
+                  id: "customer",
+                  nameZh: "用戶端",
+                  nameEn: "Customer",
+                  roleZh: "顧客自選手機點餐",
+                  descZh: "桌席掃碼 · 候位訂位 · 出餐追蹤",
+                  icon: Smartphone,
+                  colorClass: "from-rose-50 to-pink-50 text-rose-700 border-rose-200",
+                  activeClass: "bg-rose-600 text-white shadow-md ring-2 ring-rose-600/30",
+                },
+                {
+                  id: "front",
+                  nameZh: "前台",
+                  nameEn: "Front of House",
+                  roleZh: "外場服務員 / 領檯收銀",
+                  descZh: "即時桌況 · 代客點餐 · 候位帶位",
+                  icon: Armchair,
+                  colorClass: "from-blue-50 to-indigo-50 text-blue-700 border-blue-200",
+                  activeClass: "bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30",
+                },
+                {
+                  id: "back",
+                  nameZh: "後台",
+                  nameEn: "Back of House",
+                  roleZh: "廚房主廚 / 出餐結帳員",
+                  descZh: "出餐 KDS · 站點分流 · 帳單結算",
+                  icon: ChefHat,
+                  colorClass: "from-amber-50 to-yellow-50 text-amber-700 border-amber-200",
+                  activeClass: "bg-amber-600 text-white shadow-md ring-2 ring-amber-600/30",
+                },
+                {
+                  id: "admin",
+                  nameZh: "管理者",
+                  nameEn: "HQ General Manager",
+                  roleZh: "餐廳店經理 / 營運總監",
+                  descZh: "營收看板 · 菜單定價 · SLA 監控",
+                  icon: LayoutDashboard,
+                  colorClass: "from-purple-50 to-indigo-50 text-purple-700 border-purple-200",
+                  activeClass: "bg-purple-600 text-white shadow-md ring-2 ring-purple-600/30",
+                },
+                {
+                  id: "franchise",
+                  nameZh: "加盟主",
+                  nameEn: "Franchisee Portal",
+                  roleZh: "連鎖加盟門市投資主",
+                  descZh: "多店分潤 · 央廚叫貨 · QSC 評鑑",
+                  icon: Building2,
+                  colorClass: "from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200",
+                  activeClass: "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-600/30",
+                },
+              ].map(role => {
+                const Icon = role.icon;
+                const isActive = systemInterface === role.id;
                 return (
                   <button
-                    key={tInfo.id}
-                    disabled={busy}
+                    key={role.id}
+                    type="button"
                     onClick={() => {
-                      if (tInfo.id !== tableId) setCart([]);
-                      setTableId(tInfo.id);
+                      setSystemInterface(role.id as typeof systemInterface);
                     }}
-                    className={`rounded-xl border p-5 text-left ${
-                      tInfo.id === tableId
-                        ? "border-primary bg-[#d4e9e2] ring-1 ring-primary"
-                        : "border-stone-200 bg-white"
+                    className={`flex flex-col text-left p-3 rounded-xl border transition cursor-pointer ${
+                      isActive
+                        ? role.activeClass
+                        : `border-stone-200 bg-gradient-to-br ${role.colorClass} hover:border-stone-400 hover:shadow-xs`
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <strong className="text-xl">{tInfo.tableNumber}</strong>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs ${
-                          active ? "bg-orange-100 text-orange-800" : "bg-emerald-50 text-emerald-700"
-                        }`}
-                      >
-                        {active
-                          ? t("Occupied", "用餐中")
-                          : tInfo.status === "vacant"
-                          ? t("Available", "空桌")
-                          : t("Unavailable", "不可用")}
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <Icon size={18} />
+                        <span className="font-black text-sm">{role.nameZh}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        isActive ? "bg-white/20 text-white" : "bg-white/80 text-stone-700"
+                      }`}>
+                        {role.nameEn}
                       </span>
                     </div>
-                    <p className="mt-3 text-xs text-stone-500">
-                      {tInfo.capacity} {t("seats", "人座")}
-                      {active && ` · ${active.guestCount} ${t("guests", "位用餐")}`}
-                    </p>
+                    <span className={`text-xs font-semibold ${isActive ? "text-white/90" : "text-stone-800"}`}>
+                      {role.roleZh}
+                    </span>
+                    <span className={`mt-1 text-[11px] leading-tight ${isActive ? "text-white/80" : "text-stone-500"}`}>
+                      {role.descZh}
+                    </span>
                   </button>
                 );
               })}
-            </section>
+            </div>
+          </section>
+
+          {/* 1. 用戶端 (Customer) */}
+          {systemInterface === "customer" && (
+            <CustomerOrdering
+              table={table}
+              session={session}
+              menuItems={data.menuItems}
+              modifierGroups={data.modifierGroups}
+              modifierOptions={data.modifierOptions}
+              orders={data.orders}
+              orderItems={data.orderItems}
+              kdsTickets={data.kdsTickets}
+              serviceFeeRate={rate}
+              tables={data.tables}
+              onSelectTable={(id: string) => setTableId(id)}
+              onOrderPlaced={() => void load()}
+              onUrge={(ticketId: string) => mutate("ticket/urge", { ticketId }, t("Kitchen reminded", "已催單通知廚房"))}
+              onOpenSession={(id: string, guests: number) =>
+                mutate("session", { tableId: id, guestCount: guests }, t("Table opened", "已開桌"))
+              }
+              busy={busy}
+            />
           )}
-          {tab === "floor" && (
-            <>
-              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
+
+          {/* 2. 前台 (Front of House) */}
+          {systemInterface === "front" && (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFrontSubtab("floor")}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      frontSubtab === "floor"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                    }`}
+                  >
+                    <Armchair size={15} />
+                    {t("Tables and ordering", "桌況翻桌與外場代客點餐")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFrontSubtab("reservations")}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      frontSubtab === "reservations"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                    }`}
+                  >
+                    <CalendarDays size={15} />
+                    {t("Reservations", "候位排桌與預約訂位")}
+                  </button>
+                </div>
+                <span className="text-xs text-blue-800 font-semibold bg-blue-50 px-2.5 py-1 rounded-lg">
+                  🛎️ 外場前台工作區 · 領檯、開桌與收銀代點即時連動
+                </span>
+              </div>
+
+              {frontSubtab === "floor" && (
+                <>
+                  {orderMode === "dine_in" && renderTableCards(data)}
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
                 <span className="text-sm font-medium">{t("Order type", "用餐方式")}</span>
                 {(["dine_in", "takeout"] as const).map(mode => (
                   <button
@@ -642,7 +815,150 @@ export default function DiningPage() {
               )}
             </>
           )}
-          {tab === "kitchen" && (
+
+          {frontSubtab === "reservations" && (
+            <section className="grid gap-6 lg:grid-cols-[340px_1fr]">
+              <form onSubmit={e => void reserve(e)} className="h-fit space-y-4 rounded-xl border border-stone-200 bg-white p-5">
+                <h2 className="text-lg font-bold">{t("New reservation", "預約訂位")}</h2>
+                <p className="text-xs leading-relaxed text-stone-500">
+                  {t(
+                    "Reservations last 90 minutes. Overlapping reservations for the same table are blocked.",
+                    "訂位保留時間為 90 分鐘。同一桌位若有重疊時段將自動阻擋防止衝突。"
+                  )}
+                </p>
+                <label className="block text-sm">
+                  {t("Table", "桌號")}
+                  <select
+                    className={`${field} mt-2`}
+                    value={reservationTable}
+                    onChange={e => setReservationTable(e.target.value)}
+                  >
+                    {data.tables.map(tInfo => (
+                      <option key={tInfo.id} value={tInfo.id}>
+                        {tInfo.tableNumber} · {tInfo.capacity} {t("seats", "人座")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm">
+                  {t("Customer name", "顧客姓名")}
+                  <input
+                    className={`${field} mt-2`}
+                    required
+                    maxLength={100}
+                    value={reservationName}
+                    onChange={e => setReservationName(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  {t("Phone", "聯絡電話")}
+                  <input
+                    className={`${field} mt-2`}
+                    type="tel"
+                    required
+                    minLength={3}
+                    maxLength={30}
+                    value={reservationPhone}
+                    onChange={e => setReservationPhone(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  {t("Party size", "用餐人數")}
+                  <input
+                    className={`${field} mt-2`}
+                    type="number"
+                    min={1}
+                    max={data.tables.find(tInfo => tInfo.id === reservationTable)?.capacity || 100}
+                    required
+                    value={reservationGuests}
+                    onChange={e => setReservationGuests(Number(e.target.value))}
+                  />
+                </label>
+                <label className="block text-sm">
+                  {t("Dining time (Taipei)", "用餐時間 (台北時間)")}
+                  <input
+                    className={`${field} mt-2`}
+                    type="datetime-local"
+                    required
+                    value={reservationTime}
+                    onChange={e => setReservationTime(e.target.value)}
+                  />
+                </label>
+                <button disabled={busy} className={`${button} w-full bg-primary text-white`}>
+                  {t("Create reservation", "建立預約訂位")}
+                </button>
+              </form>
+              <div className="space-y-3">
+                {!data.reservations.length && (
+                  <p className="rounded-xl border border-dashed p-8 text-center text-stone-500">
+                    {t("No reservations", "目前無預約訂位")}
+                  </p>
+                )}
+                {data.reservations.map(r => (
+                  <article
+                    key={r.id}
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-200 bg-white p-5"
+                  >
+                    <div>
+                      <h2 className="font-semibold">
+                        {r.customerName} · {r.guestCount} {t("guests", "位")}
+                      </h2>
+                      <p className="mt-2 text-sm text-stone-500">
+                        {new Date(
+                          r.reservationTime.includes("T")
+                            ? r.reservationTime
+                            : `${r.reservationTime.replace(" ", "T")}:00+08:00`
+                        ).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}
+                      </p>
+                    </div>
+                    <span className="rounded-lg bg-stone-100 px-3 py-2 text-sm">
+                      {data.tables.find(tInfo => tInfo.id === r.tableId)?.tableNumber} {t("table", "桌")} ·{" "}
+                      {r.status === "confirmed" ? t("Confirmed", "已確認") : r.status}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* 3. 後台 (Back of House / KDS & Billing) */}
+      {systemInterface === "back" && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setBackSubtab("kitchen")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  backSubtab === "kitchen"
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                }`}
+              >
+                <ChefHat size={15} />
+                {t("Kitchen KDS", "廚房出餐看板 (KDS 工作站)")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBackSubtab("billing")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  backSubtab === "billing"
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                }`}
+              >
+                <Receipt size={15} />
+                {t("Bills and splits", "帳單結算與清桌核銷")}
+              </button>
+            </div>
+            <span className="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg">
+              👨‍🍳 內場後台工作區 · 站點即時出餐、急單提醒與結帳清桌
+            </span>
+          </div>
+
+          {backSubtab === "kitchen" && (
             <section className="space-y-5">
               <div className="flex flex-wrap items-center gap-3">
                 <label htmlFor="station" className="text-sm font-medium">
@@ -736,7 +1052,7 @@ export default function DiningPage() {
               )}
             </section>
           )}
-          {tab === "billing" && (
+          {backSubtab === "billing" && (
             <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
               <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-5">
                 <h2 className="text-lg font-bold">
@@ -865,133 +1181,34 @@ export default function DiningPage() {
               </aside>
             </section>
           )}
-          {tab === "reservations" && (
-            <section className="grid gap-6 lg:grid-cols-[340px_1fr]">
-              <form onSubmit={e => void reserve(e)} className="h-fit space-y-4 rounded-xl border border-stone-200 bg-white p-5">
-                <h2 className="text-lg font-bold">{t("New reservation", "預約訂位")}</h2>
-                <p className="text-xs leading-relaxed text-stone-500">
-                  {t(
-                    "Reservations last 90 minutes. Overlapping reservations for the same table are blocked.",
-                    "訂位保留時間為 90 分鐘。同一桌位若有重疊時段將自動阻擋防止衝突。"
-                  )}
-                </p>
-                <label className="block text-sm">
-                  {t("Table", "桌號")}
-                  <select
-                    className={`${field} mt-2`}
-                    value={reservationTable}
-                    onChange={e => setReservationTable(e.target.value)}
-                  >
-                    {data.tables.map(tInfo => (
-                      <option key={tInfo.id} value={tInfo.id}>
-                        {tInfo.tableNumber} · {tInfo.capacity} {t("seats", "人座")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm">
-                  {t("Customer name", "顧客姓名")}
-                  <input
-                    className={`${field} mt-2`}
-                    required
-                    maxLength={100}
-                    value={reservationName}
-                    onChange={e => setReservationName(e.target.value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  {t("Phone", "聯絡電話")}
-                  <input
-                    className={`${field} mt-2`}
-                    type="tel"
-                    required
-                    minLength={3}
-                    maxLength={30}
-                    value={reservationPhone}
-                    onChange={e => setReservationPhone(e.target.value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  {t("Party size", "用餐人數")}
-                  <input
-                    className={`${field} mt-2`}
-                    type="number"
-                    min={1}
-                    max={data.tables.find(tInfo => tInfo.id === reservationTable)?.capacity || 100}
-                    required
-                    value={reservationGuests}
-                    onChange={e => setReservationGuests(Number(e.target.value))}
-                  />
-                </label>
-                <label className="block text-sm">
-                  {t("Dining time (Taipei)", "用餐時間 (台北時間)")}
-                  <input
-                    className={`${field} mt-2`}
-                    type="datetime-local"
-                    required
-                    value={reservationTime}
-                    onChange={e => setReservationTime(e.target.value)}
-                  />
-                </label>
-                <button disabled={busy} className={`${button} w-full bg-primary text-white`}>
-                  {t("Create reservation", "建立預約訂位")}
-                </button>
-              </form>
-              <div className="space-y-3">
-                {!data.reservations.length && (
-                  <p className="rounded-xl border border-dashed p-8 text-center text-stone-500">
-                    {t("No reservations", "目前無預約訂位")}
-                  </p>
-                )}
-                {data.reservations.map(r => (
-                  <article
-                    key={r.id}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-200 bg-white p-5"
-                  >
-                    <div>
-                      <h2 className="font-semibold">
-                        {r.customerName} · {r.guestCount} {t("guests", "位")}
-                      </h2>
-                      <p className="mt-2 text-sm text-stone-500">
-                        {new Date(
-                          r.reservationTime.includes("T")
-                            ? r.reservationTime
-                            : `${r.reservationTime.replace(" ", "T")}:00+08:00`
-                        ).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}
-                      </p>
-                    </div>
-                    <span className="rounded-lg bg-stone-100 px-3 py-2 text-sm">
-                      {data.tables.find(tInfo => tInfo.id === r.tableId)?.tableNumber} {t("table", "桌")} ·{" "}
-                      {r.status === "confirmed" ? t("Confirmed", "已確認") : r.status}
-                    </span>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-          {tab === "customer" && (
-            <CustomerOrdering
-              table={table}
-              session={session}
-              menuItems={data.menuItems}
-              modifierGroups={data.modifierGroups}
-              modifierOptions={data.modifierOptions}
-              orders={data.orders}
-              orderItems={data.orderItems}
-              kdsTickets={data.kdsTickets}
-              serviceFeeRate={rate}
-              tables={data.tables}
-              onSelectTable={(id: string) => setTableId(id)}
-              onOrderPlaced={() => void load()}
-              onUrge={(ticketId: string) => mutate("ticket/urge", { ticketId }, t("Kitchen reminded", "已催單通知廚房"))}
-              onOpenSession={(id: string, guests: number) =>
-                mutate("session", { tableId: id, guestCount: guests }, t("Table opened", "已開桌"))
-              }
-              busy={busy}
-            />
-          )}
-        </>
+        </div>
       )}
+
+      {/* 4. 店長 (Manager / Admin) */}
+      {systemInterface === "admin" && (
+        <DiningManager
+          menuItems={data.menuItems}
+          modifierGroups={data.modifierGroups}
+          modifierOptions={data.modifierOptions}
+          orders={data.orders}
+          orderItems={data.orderItems}
+          kdsTickets={data.kdsTickets}
+          bills={data.bills}
+          tablesCount={data.tables.length}
+          activeSessionsCount={data.sessions.filter(s => s.status === "active").length}
+          onRefresh={() => void load()}
+        />
+      )}
+
+      {/* 5. 加盟主 (Franchisee) */}
+      {systemInterface === "franchise" && (
+        <DiningFranchise
+          currentStoreRevenue={data.bills.filter(b => b.status === "paid").reduce((s, b) => s + b.finalAmount, 0)}
+          onRefresh={() => void load()}
+        />
+      )}
+    </>
+  )}
       {!data && (
         <div className="rounded-xl border border-dashed p-12 text-center text-stone-500">
           {loading ? t("Loading dining operations…", "正在載入餐飲作業…") : t("Unable to load data. Please refresh.", "無法載入資料，請重新整理。")}

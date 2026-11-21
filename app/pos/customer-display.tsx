@@ -289,7 +289,7 @@ export default function CustomerDisplay({
   onCloseFullscreen,
 }: CustomerDisplayProps) {
   const { locale, t } = usePortfolioLocale();
-  const getSubProjectName = (_id: string) => (locale === "zh-TW" ? "CounterPoint 門市零售" : "CounterPoint");
+  const getSubProjectName = (_id: string) => (locale === "zh-TW" ? "門市零售 CounterPoint" : "CounterPoint");
   const [selectedBrand, setSelectedBrand] = useState<PaymentBrand>("linepay");
   const [timeStr, setTimeStr] = useState<string>("");
 

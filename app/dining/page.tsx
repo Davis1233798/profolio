@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { TakeoutHistory } from "./takeout-history";
+import { CustomerOrdering } from "./customer-ordering";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
 import {
   UtensilsCrossed,
@@ -16,6 +17,7 @@ import {
   Armchair,
   CalendarDays,
   Trash2,
+  Smartphone,
 } from "lucide-react";
 
 type Table = { id: string; tableNumber: string; capacity: number; status: string };
@@ -319,6 +321,7 @@ export default function DiningPage() {
           >
             {[
               ["floor", t("Tables and ordering", "桌況與外場點餐"), Armchair],
+              ["customer", t("Customer Self-Ordering", "顧客手機點餐 (顧客端)"), Smartphone],
               ["kitchen", t("Kitchen KDS", "廚房出餐看板 (KDS)"), ChefHat],
               ["billing", t("Bills and splits", "帳單與分帳結算"), Receipt],
               ["reservations", t("Reservations", "預約訂位"), CalendarDays],
@@ -965,6 +968,27 @@ export default function DiningPage() {
                 ))}
               </div>
             </section>
+          )}
+          {tab === "customer" && (
+            <CustomerOrdering
+              table={table}
+              session={session}
+              menuItems={data.menuItems}
+              modifierGroups={data.modifierGroups}
+              modifierOptions={data.modifierOptions}
+              orders={data.orders}
+              orderItems={data.orderItems}
+              kdsTickets={data.kdsTickets}
+              serviceFeeRate={rate}
+              tables={data.tables}
+              onSelectTable={(id: string) => setTableId(id)}
+              onOrderPlaced={() => void load()}
+              onUrge={(ticketId: string) => mutate("ticket/urge", { ticketId }, t("Kitchen reminded", "已催單通知廚房"))}
+              onOpenSession={(id: string, guests: number) =>
+                mutate("session", { tableId: id, guestCount: guests }, t("Table opened", "已開桌"))
+              }
+              busy={busy}
+            />
           )}
         </>
       )}

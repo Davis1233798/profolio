@@ -4,6 +4,10 @@ import { WorkspaceHeader, WorkspaceLinks, WorkspaceLoading } from "@/components/
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import PosOperations from "./operations";
+import CustomerDisplay, {
+  CustomerCartLine,
+  CompletedTransactionData,
+} from "./customer-display";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
 import {
   Calculator,
@@ -20,6 +24,8 @@ import {
   Undo2,
   CheckCircle,
   AlertTriangle,
+  MonitorSmartphone,
+  Maximize2,
 } from "lucide-react";
 
 interface CartLine {
@@ -42,6 +48,11 @@ export default function PosPage() {
   const [checkingOut, setCheckingOut] = useState(false);
   const checkoutAttempt = useRef<{ signature: string; key: string } | null>(null);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
+
+  // Customer Secondary Display states
+  const [customerDisplayOpen, setCustomerDisplayOpen] = useState(true);
+  const [customerDisplayMode, setCustomerDisplayMode] = useState<"docked" | "modal">("docked");
+  const [completedTransaction, setCompletedTransaction] = useState<CompletedTransactionData | null>(null);
 
   const fetchData = async () => {
     try {
@@ -145,6 +156,15 @@ export default function PosPage() {
       if (json.success) {
         checkoutAttempt.current = null;
         setLastReceipt(json.data);
+        setCompletedTransaction({
+          receiptNumber: json.data?.receiptNumber || `REC-${Date.now().toString().slice(-6)}`,
+          totalAmount: json.data?.totalAmount ?? totalAmount,
+          tenderAmount: json.data?.tenderAmount ?? tenderAmount,
+          changeAmount: json.data?.changeAmount ?? changeAmount,
+          earnedPoints: Math.floor((json.data?.totalAmount ?? totalAmount) / 10),
+          member: null,
+          invoiceMode: "carrier",
+        });
         setSuccessMsg(
           t(
             `Checkout complete. Receipt: ${json.data.receiptNumber}, due $${json.data.totalAmount}, tendered $${json.data.tenderAmount}, change $${json.data.changeAmount}`,
@@ -198,6 +218,7 @@ export default function PosPage() {
       <WorkspaceLinks
         links={[
           { href: "#register", label: "Products and checkout" },
+          { href: "#customer-display", label: "Customer display" },
           { href: "#pos-operations", label: "Shifts and transactions" },
         ]}
       />
@@ -440,6 +461,81 @@ export default function PosPage() {
           </div>
         </div>
       </div>
+
+      {/* Customer Secondary Display Section */}
+      <section id="customer-display" className="space-y-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-stone-50 p-4 rounded-xl border border-stone-200">
+          <div className="flex items-center gap-2">
+            <MonitorSmartphone className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100">
+              {t("Customer-Facing Secondary Display", "顧客專屬副螢幕 (雙螢幕即時連動)")}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCustomerDisplayOpen(!customerDisplayOpen)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 transition"
+            >
+              {customerDisplayOpen ? t("Hide display", "收合副屏") : t("Show display", "展開副屏")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCustomerDisplayMode("modal")}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-[#0040b0] text-white flex items-center gap-1.5 shadow-xs transition"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>{t("Fullscreen display", "全螢幕副屏預覽")}</span>
+            </button>
+          </div>
+        </div>
+
+        {customerDisplayOpen && (
+          <CustomerDisplay
+            cart={cart as CustomerCartLine[]}
+            subtotal={subtotal}
+            totalDiscount={totalDiscount}
+            totalAmount={totalAmount}
+            tenderAmount={tenderAmount}
+            changeAmount={changeAmount}
+            completedTransaction={completedTransaction}
+            onNextCustomer={() => {
+              setCompletedTransaction(null);
+              setCart([]);
+            }}
+            onSimulatePayment={() => {
+              handleCheckout();
+            }}
+          />
+        )}
+      </section>
+
+      {/* Fullscreen Customer Secondary Display Modal */}
+      {customerDisplayMode === "modal" && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 lg:p-10">
+          <div className="w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+            <CustomerDisplay
+              cart={cart as CustomerCartLine[]}
+              subtotal={subtotal}
+              totalDiscount={totalDiscount}
+              totalAmount={totalAmount}
+              tenderAmount={tenderAmount}
+              changeAmount={changeAmount}
+              completedTransaction={completedTransaction}
+              onNextCustomer={() => {
+                setCompletedTransaction(null);
+                setCart([]);
+              }}
+              onSimulatePayment={() => {
+                handleCheckout();
+              }}
+              isFullscreen={true}
+              onCloseFullscreen={() => setCustomerDisplayMode("docked")}
+            />
+          </div>
+        </div>
+      )}
+
       {data && (
         <div id="pos-operations">
           <PosOperations data={data} cart={cart} setCart={setCart} refresh={fetchData} />

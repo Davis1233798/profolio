@@ -17,7 +17,7 @@
 
 .portfolio-particle-canvas { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:550; opacity:0; }
 .portfolio-particle-canvas[data-active=true] { opacity:1; }
-.portfolio-click-wave { position:fixed; z-index:549; pointer-events:none; width:40px; height:40px; border:1px solid #b9fa65b3; background:radial-gradient(circle,#b9fa6540,transparent 68%); border-radius:50%; transform:translate(-50%,-50%); animation:portfolio-wave 850ms cubic-bezier(.15,.65,.2,1) both; }
+.portfolio-click-wave { display: none !important; }
 .portfolio-click-wave.is-language { border-color:#bd91ff; background:radial-gradient(circle,#b9fa6530,#bd91ff30,transparent 70%); }
 .portfolio-click-wave.is-theme { border-color:#ffb900; background:radial-gradient(circle,#ffb90040,#ff9a0020,transparent 70%); }
 @keyframes portfolio-wave { from { opacity:.9; transform:translate(-50%,-50%) scale(.2); } to { opacity:0; transform:translate(-50%,-50%) scale(25); } }

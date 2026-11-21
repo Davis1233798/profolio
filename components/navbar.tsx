@@ -30,15 +30,15 @@ export function Navbar() {
   const { t, theme, toggleTheme, locale, setLocale } = usePortfolioLocale();
 
   const navItems = [
-    { label: "Portfolio", href: "/", icon: Home },
-    { label: "Infrastructure", href: "/platform", icon: Layers },
-    { label: "MES Manufacturing", href: "/mes", icon: Factory },
-    { label: "ERP Operations", href: "/erp", icon: Database },
-    { label: "POS Retail", href: "/pos", icon: Calculator },
-    { label: "CRM Customers", href: "/crm", icon: Users },
-    { label: "Dining", href: "/dining", icon: UtensilsCrossed },
-    { label: "E-commerce", href: "/shop", icon: ShoppingBag },
-    { label: "Commerce Admin", href: "/commerce", icon: SlidersHorizontal },
+    { label: "Portfolio", labelZh: "作品集首頁", href: "/", icon: Home },
+    { label: "Infrastructure", labelZh: "平台基礎設施", href: "/platform", icon: Layers },
+    { label: "MES Manufacturing", labelZh: "ForgeFlow 智慧製造", href: "/mes", icon: Factory },
+    { label: "ERP Operations", labelZh: "LedgerWorks 企業營運", href: "/erp", icon: Database },
+    { label: "POS Retail", labelZh: "CounterPoint 門市零售", href: "/pos", icon: Calculator },
+    { label: "CRM Customers", labelZh: "RelationDesk 客戶關係", href: "/crm", icon: Users },
+    { label: "Dining", labelZh: "TableCraft 智慧餐飲", href: "/dining", icon: UtensilsCrossed },
+    { label: "E-commerce", labelZh: "MarketLane 品牌電商", href: "/shop", icon: ShoppingBag },
+    { label: "Commerce Admin", labelZh: "Commerce 電商管理", href: "/commerce", icon: SlidersHorizontal },
   ];
 
   return (
@@ -82,7 +82,7 @@ export function Navbar() {
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-stone-500 dark:text-stone-400"}`} />
-                <span>{t(item.label)}</span>
+                <span>{locale === "zh-TW" ? item.labelZh : t(item.label)}</span>
               </Link>
             );
           })}
@@ -138,7 +138,7 @@ export function Navbar() {
               }`}
             >
               <item.icon size={16} />
-              {t(item.label)}
+              <span>{locale === "zh-TW" ? item.labelZh : t(item.label)}</span>
             </Link>
           ))}
           <div className="flex items-center justify-between p-3 border-t border-stone-200 dark:border-stone-700 mt-2">

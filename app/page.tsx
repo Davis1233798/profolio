@@ -15,8 +15,47 @@ const projects = [
   { id: "shop", name: "MarketLane", category: "Commerce", title: "From discovery to delivery.", description: "Product variants, carts, promotions and orders with a separate operations workspace.", icon: ShoppingBag, color: "#4338ca", steps: ["Variants and cart", "Promotions and orders", "Simulated payment and fulfillment"], limitation: "Payment and shipping adapters are simulated." },
 ];
 
+const PROJECT_NAMES: Record<string, { en: string; zh: string; categoryEn: string; categoryZh: string }> = {
+  mes: {
+    en: "ForgeFlow",
+    zh: "ForgeFlow 智慧製造",
+    categoryEn: "Manufacturing workspace",
+    categoryZh: "製造管理 工作空間",
+  },
+  erp: {
+    en: "LedgerWorks",
+    zh: "LedgerWorks 企業營運",
+    categoryEn: "Operations workspace",
+    categoryZh: "營運管理 工作空間",
+  },
+  pos: {
+    en: "CounterPoint",
+    zh: "CounterPoint 門市零售",
+    categoryEn: "Retail workspace",
+    categoryZh: "零售收銀 工作空間",
+  },
+  crm: {
+    en: "RelationDesk",
+    zh: "RelationDesk 客戶關係",
+    categoryEn: "Customers workspace",
+    categoryZh: "客戶關係 工作空間",
+  },
+  dining: {
+    en: "TableCraft",
+    zh: "TableCraft 智慧餐飲",
+    categoryEn: "Dining workspace",
+    categoryZh: "餐飲服務 工作空間",
+  },
+  shop: {
+    en: "MarketLane",
+    zh: "MarketLane 品牌電商",
+    categoryEn: "Commerce workspace",
+    categoryZh: "商務與零售 工作空間",
+  },
+};
+
 export default function PortfolioPage() {
-  const { t, theme } = usePortfolioLocale();
+  const { t, theme, locale, setLocale } = usePortfolioLocale();
   const [stationBase, setStationBase] = useState("");
   useEffect(() => {
     const configured = process.env.NEXT_PUBLIC_STATION_URL;
@@ -35,14 +74,63 @@ export default function PortfolioPage() {
         <div className="portfolio-hero-actions"><a href="#work" className="portfolio-primary">{t("Explore six systems")} <ArrowRight size={16}/></a><a href="#about" className="portfolio-secondary">{t("Explore the engineering")} <ArrowUpRight size={16}/></a></div>
         <p className="portfolio-meta">{t("Interactive portfolio · Demo data")}</p>
       </div>
-      <div className="hero-ecosystem"><div className="orbital-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core"><span>BS</span><small>{t("CONNECTED BUSINESS")}</small></div><span className="orbit-label label-one">{t("DESIGN")}</span><span className="orbit-label label-two">{t("BUILD")}</span><span className="orbit-label label-three">{t("CONNECT")}</span></div><div className="portfolio-system-map"><div className="map-title"><span>{t("THE BUSINESS ECOSYSTEM")}</span><span>01 — 06</span></div><div className="map-grid">{projects.map((p,i)=><Link href={demoURL(p.id,"back")} key={p.id}><p.icon size={22} strokeWidth={1.4}/><span><b>{p.name}</b><small>{t(p.category)} {t("workspace", "工作空間")}</small></span><span className="map-number">0{i+1}</span></Link>)}</div><div className="map-caption"><span className="map-dot"/>{t("Six domains, one connected portfolio")}</div></div></div>
+      <div className="hero-ecosystem">
+        <div className="orbital-art" aria-hidden="true">
+          <div className="orbit orbit-one" />
+          <div className="orbit orbit-two" />
+          <div className="orbit-core">
+            <span>BS</span>
+            <small>{t("CONNECTED BUSINESS", "連動商業生態")}</small>
+          </div>
+          <span className="orbit-label label-one">{t("DESIGN", "設計")}</span>
+          <span className="orbit-label label-two">{t("BUILD", "構建")}</span>
+          <span className="orbit-label label-three">{t("CONNECT", "串聯")}</span>
+        </div>
+        <div className="portfolio-system-map">
+          <div className="map-title flex items-center justify-between">
+            <span>{t("THE BUSINESS ECOSYSTEM", "商業系統生態")}</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLocale(locale === "zh-TW" ? "en" : "zh-TW")}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border border-stone-300 dark:border-stone-600 bg-white/80 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-700 transition cursor-pointer"
+                title={locale === "zh-TW" ? "切換至 English" : "Switch to 繁體中文"}
+              >
+                {locale === "zh-TW" ? "EN" : "繁中"}
+              </button>
+              <span>01 — 06</span>
+            </div>
+          </div>
+          <div className="map-grid">
+            {projects.map((p, i) => {
+              const meta = PROJECT_NAMES[p.id] || { en: p.name, zh: p.name, categoryEn: `${p.category} workspace`, categoryZh: `${t(p.category)} 工作空間` };
+              const displayName = locale === "zh-TW" ? meta.zh : meta.en;
+              const displayCategory = locale === "zh-TW" ? meta.categoryZh : meta.categoryEn;
+              return (
+                <Link href={demoURL(p.id, "back")} key={p.id}>
+                  <p.icon size={22} strokeWidth={1.4} />
+                  <span>
+                    <b>{displayName}</b>
+                    <small>{displayCategory}</small>
+                  </span>
+                  <span className="map-number">0{i + 1}</span>
+                </Link>
+              );
+            })}
+          </div>
+          <div className="map-caption">
+            <span className="map-dot" />
+            {t("Six domains, one connected portfolio", "六大領域，一個互動作品集")}
+          </div>
+        </div>
+      </div>
     </section>
     <div className="portfolio-facts"><div><strong>06</strong><span>{t("business domains")}</span></div><div><strong>12</strong><span>{t("front and back-office views")}</span></div><div><strong>React + TypeScript</strong><span>{t("interfaces and data workflows")}</span></div><Link href="/platform">{t("Infrastructure center")} <ArrowUpRight size={17}/></Link></div>
     <section id="work" className="portfolio-work">
       <div className="portfolio-section-heading"><div><p className="portfolio-eyebrow">{t("01 / APPLICATIONS")}</p><h2>{t("Every business has its own way of working.")}</h2><p>{t("Choose a system to explore its workflows.")}</p></div><div className="portfolio-filters" aria-label={t("Filter systems")}>{["All systems","Operations and manufacturing","Sales and service"].map(f=><button key={f} aria-pressed={filter===f} onClick={()=>setFilter(f)}>{t(f)}</button>)}</div></div>
       <div className="portfolio-cards">{visible.map(p=><SpotlightCard key={p.id} className="project-spotlight" spotlightColor={p.color} intensity={0.16} borderGlow={0.8} theme={theme}>
         <div className="project-visual" data-project={p.id}><span className="project-icon"><p.icon size={38} strokeWidth={1.2}/></span><span className="project-watermark" aria-hidden="true">{p.id.toUpperCase()}</span><div className="project-flow">{p.steps.map((step,i)=><div key={step}><span>0{i+1}</span><b>{t(step)}</b><span className="flow-line"/></div>)}</div><span className="project-category">{t(p.category)} / {p.id.toUpperCase()}</span></div>
-        <div className="project-body"><p className="project-name">{p.name}<ArrowUpRight size={17}/></p><h3>{t(p.title)}</h3><p className="project-description">{t(p.description)}</p>
+        <div className="project-body"><p className="project-name">{locale === "zh-TW" ? (PROJECT_NAMES[p.id]?.zh || p.name) : p.name}<ArrowUpRight size={17}/></p><h3>{t(p.title)}</h3><p className="project-description">{t(p.description)}</p>
           {selected===p.id&&<div className="project-boundary" id={`boundary-${p.id}`}><b>{t("Scope")}</b><p>{t(p.limitation)}</p><p>{t("Initial records are demonstration data.")}</p></div>}
           <div className="project-actions"><button aria-expanded={selected===p.id} aria-controls={selected===p.id?`boundary-${p.id}`:undefined} onClick={()=>setSelected(selected===p.id?null:p.id)}>{selected===p.id?t("Hide details"):t("View details")}</button><span>{t("Choose a demo role", "選擇示範角色")}</span></div>
           <div className="project-demo-links"><a data-demo-view="front" href={demoURL(p.id,"front")} target="_blank" rel="noopener noreferrer">{t("Front-office demo", "前台展示")} <ArrowUpRight size={15}/></a><a data-demo-view="back" href={demoURL(p.id,"back")} target="_blank" rel="noopener noreferrer">{t("Back-office demo", "後台展示")} <ArrowUpRight size={15}/></a></div>

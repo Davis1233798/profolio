@@ -102,37 +102,40 @@ function Login({site,onLogin}:{site:string;onLogin:()=>Promise<void>}) {
  const roleName=(account:Row)=>account.role==='admin'?t('Administrator','管理員'):account.role==='readonly'?t('Read-only viewer','唯讀檢視者'):account.scope==='front'?t('Front-office operator','前台人員'):t('Back-office operator','後台人員');
  return <main className="login demo-login" data-site={site}><section className="test-accounts login-demo-primary"><div className="login-top-bar"><p className="eyebrow">{zh?`商業套件 / ${stationNamesZh[site]||site.toUpperCase()}`:`BUSINESS SUITE / ${site.toUpperCase()}`}</p><div className="login-quick-controls"><button type="button" className="secondary theme-toggle-btn" onClick={()=>{const next=toggleTheme();setThemeState(next)}}>{themeState==='dark'?'☀️ '+t('Light mode','淺色'):'🌙 '+t('Dark mode','深色')}</button><label className="login-lang-select"><select aria-label={t('Language','語系')} value={language} onChange={event=>{const next=event.target.value as Language;setLanguageState(next);setLanguage(next)}}><option value="en">English</option><option value="zh-TW">繁體中文</option></select></label></div></div><SystemSwitch site={site} lang={language}/><a className="portal-return-link" href="/">{t('← Back to portal','← 返回企業總覽門戶')}</a><h1>{zh?(stationNamesZh[site]||stationNames[site]):stationNames[site]}</h1><p>{t('Explore the system. Choose your demo role.','選擇示範角色，直接體驗系統。')}</p>
  <nav className="demo-view-switch" aria-label={t('Choose demo view','選擇展示介面')}>
-  {site==='dining'?(
-   <>
-    <a href="https://blockchen.duckdns.org/dining/customer" className="demo-view-btn customer-view-pill" style={{textDecoration:'none',background:'#e11d48',color:'#ffffff',fontWeight:'bold',padding:'6px 12px',borderRadius:'8px',fontSize:'13px',display:'inline-flex',alignItems:'center',gap:'4px'}}>{t('Customer (RWA)','📱 用戶端 (RWA/PWA)')}</a>
-    <a href="https://blockchen.duckdns.org/dining/front" className="demo-view-btn" style={{textDecoration:'none',background:'#2563eb',color:'#ffffff',fontWeight:'bold',padding:'6px 12px',borderRadius:'8px',fontSize:'13px',display:'inline-flex',alignItems:'center',gap:'4px'}}>{t('Front Office','🍽️ 前台現場')}</a>
-    <a href="https://blockchen.duckdns.org/dining/back" className="demo-view-btn" style={{textDecoration:'none',background:'#d97706',color:'#ffffff',fontWeight:'bold',padding:'6px 12px',borderRadius:'8px',fontSize:'13px',display:'inline-flex',alignItems:'center',gap:'4px'}}>{t('Back Kitchen','🍳 後台廚房')}</a>
-    <a href="https://blockchen.duckdns.org/dining/admin" className="demo-view-btn" style={{textDecoration:'none',background:'#9333ea',color:'#ffffff',fontWeight:'bold',padding:'6px 12px',borderRadius:'8px',fontSize:'13px',display:'inline-flex',alignItems:'center',gap:'4px'}}>{t('Manager','📊 店長管理')}</a>
-    <a href="https://blockchen.duckdns.org/dining/franchise" className="demo-view-btn" style={{textDecoration:'none',background:'#059669',color:'#ffffff',fontWeight:'bold',padding:'6px 12px',borderRadius:'8px',fontSize:'13px',display:'inline-flex',alignItems:'center',gap:'4px'}}>{t('Franchise','🏢 加盟門市')}</a>
-   </>
-  ):(
-   <>
-    <button type="button" aria-pressed={view==='front'} disabled={busy} onClick={()=>chooseView('front')}>{t('Front office','前台')}</button>
-    <button type="button" aria-pressed={view==='back'} disabled={busy} onClick={()=>chooseView('back')}>{t('Back office','後台')}</button>
-   </>
-  )}
+  <button type="button" aria-pressed={view==='front'} disabled={busy} onClick={()=>chooseView('front')}>{t('Front office','前台')}</button>
+  <button type="button" aria-pressed={view==='back'} disabled={busy} onClick={()=>chooseView('back')}>{t('Back office','後台')}</button>
  </nav>
- <h2>{t('Choose a demo role','選擇示範角色')}</h2><p className="demo-workspace-note">{t('No registration needed. Your demo workspace is isolated from other visitors; roles in this browser share its data.','無需註冊。五大專屬角色均為獨立分頁與 URL，點擊即可進入體驗。')}</p>
+ <h2>{t('Choose a demo role','選擇示範角色')}</h2><p className="demo-workspace-note">{t('No registration needed. Your demo workspace is isolated from other visitors; roles in this browser share its data.','無需註冊。示範工作區與其他訪客隔離，同一瀏覽器的角色共用示範資料。')}</p>
  <div className="demo-role-grid">
-  {site==='dining'?(
-   <>
-    <a href="https://blockchen.duckdns.org/dining/customer" className="account-card demo-role-card customer-role-card" style={{borderColor:'#e11d48',background:'rgba(225,29,72,0.1)',textDecoration:'none'}}><strong style={{color:'#f43f5e'}}>{t('Customer Mobile App (RWA/PWA)','📱 用戶端：顧客自選手機點餐')}</strong><small>{t('Mobile QR ordering, VIP loyalty cards & push promo notifications','桌席掃碼 · 會員卡面 · 促銷優惠即時推播 · 出餐狀態實時追蹤')}</small><span style={{color:'#f43f5e',fontWeight:'bold'}}>{t('Launch Customer App →','進入客人點餐介面 →')}</span></a>
-    <a href="https://blockchen.duckdns.org/dining/front" className="account-card demo-role-card" style={{borderColor:'#2563eb',background:'rgba(37,99,235,0.1)',textDecoration:'none'}}><strong style={{color:'#3b82f6'}}>{t('Front Office Floor Staff','🍽️ 前台：外場服務員 / 領檯收銀')}</strong><small>{t('Table occupancy, floor ordering & reservation booking','即時桌況 · 外場點餐開桌 · 候位排桌與預約訂位')}</small><span style={{color:'#3b82f6',fontWeight:'bold'}}>{t('Open Front Office →','進入前台外場介面 →')}</span></a>
-    <a href="https://blockchen.duckdns.org/dining/back" className="account-card demo-role-card" style={{borderColor:'#d97706',background:'rgba(217,119,6,0.1)',textDecoration:'none'}}><strong style={{color:'#f59e0b'}}>{t('Back Office Kitchen KDS','🍳 後台：廚房主廚 / 出餐結帳員')}</strong><small>{t('Kitchen KDS tickets, station routing, urgent rush & split bills','出餐 KDS 看板 · 站點分流 · 優先催單 · 拆帳結帳退菜')}</small><span style={{color:'#f59e0b',fontWeight:'bold'}}>{t('Open Kitchen KDS →','進入後台廚房介面 →')}</span></a>
-    <a href="https://blockchen.duckdns.org/dining/admin" className="account-card demo-role-card" style={{borderColor:'#9333ea',background:'rgba(147,51,234,0.1)',textDecoration:'none'}}><strong style={{color:'#a855f7'}}>{t('General Manager Console','📊 管理者：餐廳店長 / 營運總監')}</strong><small>{t('Revenue KPI dashboard, menu catalog & kitchen SLA','全店即時營收 KPI · 菜單目錄定價 · 出餐 SLA 效能監控')}</small><span style={{color:'#a855f7',fontWeight:'bold'}}>{t('Open Manager Console →','進入店長管理者介面 →')}</span></a>
-    <a href="https://blockchen.duckdns.org/dining/franchise" className="account-card demo-role-card" style={{borderColor:'#059669',background:'rgba(5,150,105,0.1)',textDecoration:'none'}}><strong style={{color:'#10b981'}}>{t('Franchisee Portal','🏢 加盟主：連鎖加盟門市投資主')}</strong><small>{t('Store P&L settlement, HQ cold-chain procurement & QSC rating','連鎖加盟多門市分潤對帳 · 央廚冷鏈叫貨 · QSC 稽核評鑑')}</small><span style={{color:'#10b981',fontWeight:'bold'}}>{t('Open Franchise Portal →','進入加盟主介面 →')}</span></a>
-   </>
-  ):(
-   <>
-    {accounts.filter(account=>account.scope===view).map(account=><button type="button" className="account-card demo-role-card" data-demo-role={account.scope==='front'?'front':account.role} key={account.email} disabled={busy} aria-label={zh?`以${roleName(account)}體驗`:`Enter demo as ${roleName(account)}`} onClick={()=>void signIn(account.email,account.password)}><strong>{roleName(account)}</strong><small>{account.scope==='front'?t('Front-office workflows','前台操作流程'):account.role==='admin'?t('Operations, users and permissions','後台作業、使用者與權限'):account.role==='readonly'?t('Explore without changing records','查看後台，不變更資料'):t('Day-to-day back-office operations','日常後台業務作業')}</small><span>{busy?t('Signing in…','登入中…'):t('Enter demo →','進入展示 →')}</span></button>)}
-   </>
-  )}
- </div>{!accountsReady&&<p role="status">{t('Loading demo roles…','正在載入示範角色…')}</p>}
+  {accounts.filter(account=>account.scope===view).map(account=><button type="button" className="account-card demo-role-card" data-demo-role={account.scope==='front'?'front':account.role} key={account.email} disabled={busy} aria-label={zh?`以${roleName(account)}體驗`:`Enter demo as ${roleName(account)}`} onClick={()=>void signIn(account.email,account.password)}><strong>{roleName(account)}</strong><small>{account.scope==='front'?t('Front-office workflows','前台操作流程'):account.role==='admin'?t('Operations, users and permissions','後台作業、使用者與權限'):account.role==='readonly'?t('Explore without changing records','查看後台，不變更資料'):t('Day-to-day back-office operations','日常後台業務作業')}</small><span>{busy?t('Signing in…','登入中…'):t('Enter demo →','進入展示 →')}</span></button>)}
+ </div>
+ {site==='dining'&&(
+  <div className="dining-portal-links" style={{marginTop:'24px',paddingTop:'16px',borderTop:'1px solid rgba(255,255,255,0.2)'}}>
+   <h3 style={{fontSize:'15px',color:'#fff',marginBottom:'12px',fontWeight:'bold'}}>{t('Or explore 5 standalone role pages:','或直接進入五大獨立分頁專屬介面：')}</h3>
+   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:'10px'}}>
+    <a href="https://blockchen.duckdns.org/dining/customer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(225,29,72,0.25)',border:'1px solid #e11d48',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#fda4af',fontSize:'13px',display:'block'}}>{t('📱 Customer App','📱 用戶端點餐')}</strong>
+     <small style={{color:'#ffe4e6',fontSize:'11px'}}>{t('RWA / Mobile QR','手機點餐 · 會員卡')}</small>
+    </a>
+    <a href="https://blockchen.duckdns.org/dining/front" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(37,99,235,0.25)',border:'1px solid #3b82f6',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#93c5fd',fontSize:'13px',display:'block'}}>{t('🍽️ Front Office','🍽️ 前台現場')}</strong>
+     <small style={{color:'#dbeafe',fontSize:'11px'}}>{t('Tables & bookings','桌況 · 開桌 · 預約')}</small>
+    </a>
+    <a href="https://blockchen.duckdns.org/dining/back" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(217,119,6,0.25)',border:'1px solid #f59e0b',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#fcd34d',fontSize:'13px',display:'block'}}>{t('🍳 Back Kitchen','🍳 後台廚房')}</strong>
+     <small style={{color:'#fef3c7',fontSize:'11px'}}>{t('KDS & Settlement','KDS 出餐 · 拆帳結帳')}</small>
+    </a>
+    <a href="https://blockchen.duckdns.org/dining/admin" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(147,51,234,0.25)',border:'1px solid #a855f7',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#d8b4fe',fontSize:'13px',display:'block'}}>{t('📊 Manager','📊 店長管理')}</strong>
+     <small style={{color:'#f3e8ff',fontSize:'11px'}}>{t('Revenue & SLA','營收 KPI · 菜單定價')}</small>
+    </a>
+    <a href="https://blockchen.duckdns.org/dining/franchise" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(5,150,105,0.25)',border:'1px solid #10b981',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#6ee7b7',fontSize:'13px',display:'block'}}>{t('🏢 Franchise','🏢 加盟門市')}</strong>
+     <small style={{color:'#d1fae5',fontSize:'11px'}}>{t('P&L & Cold-chain','門市損益 · 央廚叫貨')}</small>
+    </a>
+   </div>
+  </div>
+ )}{!accountsReady&&<p role="status">{t('Loading demo roles…','正在載入示範角色…')}</p>}
  <a className="demo-return" href="https://blockchen.duckdns.org/">{t('Back to portfolio','返回作品集')}</a></section>
  <section className="login-manual"><h2>{t('Account sign-in','帳號登入')}</h2><p>{t('You can also sign in with your workspace credentials.','也可使用工作區帳號登入。')}</p><form onSubmit={event=>{event.preventDefault();void signIn(email,password)}}><label>{t('Email','電子郵件')}<input type="email" autoComplete="username" required value={email} onChange={event=>setEmail(event.target.value)}/></label><label>{t('Password','密碼')}<input type="password" autoComplete="current-password" required value={password} onChange={event=>setPassword(event.target.value)}/></label><button disabled={busy}>{busy?t('Signing in…','登入中…'):t('Sign in','登入')}</button>{error&&<p role="alert" className="error">{error}</p>}</form></section></main>
 }

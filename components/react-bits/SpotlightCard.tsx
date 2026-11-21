@@ -92,7 +92,7 @@ const SpotlightCard = ({
   proximity = 80,
   smoothing = 0.3,
   ambient = false,
-  flare = true,
+  flare = false,
   grain = 0,
   theme = 'dark',
   ...rest

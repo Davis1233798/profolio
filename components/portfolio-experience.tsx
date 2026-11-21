@@ -56,11 +56,9 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   reducedRef.current = reduced;
   latestPulse.current = pulse;
 
-  // User explicitly requested: "2. 滑鼠點擊仍有爆炸效果,請取消"
   // Completely disable any click explosion or shockwave effect
-  const activate = (x: number, y: number, kind: ParticlePulse['kind']) => {
-    if (kind === 'click') return;
-    setPulse({ id: ++sequence.current, x, y, kind });
+  const activate = (_x: number, _y: number, _kind: ParticlePulse['kind']) => {
+    // Disabled per user requirement: zero click explosion / burst animations
   };
 
   useEffect(() => {
@@ -294,16 +292,9 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
           ref={canvas}
           className="portfolio-particle-canvas"
           aria-hidden="true"
-          data-active={Boolean(pulse && !reduced)}
+          data-active="false"
+          style={{ display: 'none' }}
         />
-        {pulse && !reduced && pulse.kind !== 'click' && (
-          <div
-            key={pulse.id}
-            className={`portfolio-click-wave ${pulse.kind === 'language' ? 'is-language' : pulse.kind === 'theme' ? 'is-theme' : ''}`}
-            style={{ left: pulse.x, top: pulse.y }}
-            aria-hidden="true"
-          />
-        )}
         <span className="sr-only" role="status" aria-live="polite">
           {context.t('Language: English', '語言：繁體中文')} · {theme === 'dark' ? '深色模式' : '淺色模式'}
         </span>

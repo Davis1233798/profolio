@@ -18,37 +18,37 @@ const projects = [
 const PROJECT_NAMES: Record<string, { en: string; zh: string; categoryEn: string; categoryZh: string }> = {
   mes: {
     en: "ForgeFlow",
-    zh: "ForgeFlow 智慧製造",
+    zh: "智慧製造 ForgeFlow",
     categoryEn: "Manufacturing workspace",
     categoryZh: "製造管理 工作空間",
   },
   erp: {
     en: "LedgerWorks",
-    zh: "LedgerWorks 企業營運",
+    zh: "企業營運 LedgerWorks",
     categoryEn: "Operations workspace",
     categoryZh: "營運管理 工作空間",
   },
   pos: {
     en: "CounterPoint",
-    zh: "CounterPoint 門市零售",
+    zh: "門市零售 CounterPoint",
     categoryEn: "Retail workspace",
     categoryZh: "零售收銀 工作空間",
   },
   crm: {
     en: "RelationDesk",
-    zh: "RelationDesk 客戶關係",
+    zh: "客戶關係 RelationDesk",
     categoryEn: "Customers workspace",
     categoryZh: "客戶關係 工作空間",
   },
   dining: {
     en: "TableCraft",
-    zh: "TableCraft 智慧餐飲",
+    zh: "智慧餐飲 TableCraft",
     categoryEn: "Dining workspace",
     categoryZh: "餐飲服務 工作空間",
   },
   shop: {
     en: "MarketLane",
-    zh: "MarketLane 品牌電商",
+    zh: "品牌電商 MarketLane",
     categoryEn: "Commerce workspace",
     categoryZh: "商務與零售 工作空間",
   },
@@ -128,7 +128,7 @@ export default function PortfolioPage() {
     <div className="portfolio-facts"><div><strong>06</strong><span>{t("business domains")}</span></div><div><strong>12</strong><span>{t("front and back-office views")}</span></div><div><strong>React + TypeScript</strong><span>{t("interfaces and data workflows")}</span></div><Link href="/platform">{t("Infrastructure center")} <ArrowUpRight size={17}/></Link></div>
     <section id="work" className="portfolio-work">
       <div className="portfolio-section-heading"><div><p className="portfolio-eyebrow">{t("01 / APPLICATIONS")}</p><h2>{t("Every business has its own way of working.")}</h2><p>{t("Choose a system to explore its workflows.")}</p></div><div className="portfolio-filters" aria-label={t("Filter systems")}>{["All systems","Operations and manufacturing","Sales and service"].map(f=><button key={f} aria-pressed={filter===f} onClick={()=>setFilter(f)}>{t(f)}</button>)}</div></div>
-      <div className="portfolio-cards">{visible.map(p=><SpotlightCard key={p.id} className="project-spotlight" spotlightColor={p.color} intensity={0.16} borderGlow={0.8} theme={theme}>
+      <div className="portfolio-cards">{visible.map(p=><SpotlightCard key={p.id} className="project-spotlight" spotlightColor={p.color} intensity={0.16} borderGlow={0.8} theme={theme} flare={false}>
         <div className="project-visual" data-project={p.id}><span className="project-icon"><p.icon size={38} strokeWidth={1.2}/></span><span className="project-watermark" aria-hidden="true">{p.id.toUpperCase()}</span><div className="project-flow">{p.steps.map((step,i)=><div key={step}><span>0{i+1}</span><b>{t(step)}</b><span className="flow-line"/></div>)}</div><span className="project-category">{t(p.category)} / {p.id.toUpperCase()}</span></div>
         <div className="project-body"><p className="project-name">{locale === "zh-TW" ? (PROJECT_NAMES[p.id]?.zh || p.name) : p.name}<ArrowUpRight size={17}/></p><h3>{t(p.title)}</h3><p className="project-description">{t(p.description)}</p>
           {selected===p.id&&<div className="project-boundary" id={`boundary-${p.id}`}><b>{t("Scope")}</b><p>{t(p.limitation)}</p><p>{t("Initial records are demonstration data.")}</p></div>}

@@ -32,12 +32,12 @@ export function Navbar() {
   const navItems = [
     { label: "Portfolio", labelZh: "作品集首頁", href: "/", icon: Home },
     { label: "Infrastructure", labelZh: "平台基礎設施", href: "/platform", icon: Layers },
-    { label: "MES Manufacturing", labelZh: "ForgeFlow 智慧製造", href: "/mes", icon: Factory },
-    { label: "ERP Operations", labelZh: "LedgerWorks 企業營運", href: "/erp", icon: Database },
-    { label: "POS Retail", labelZh: "CounterPoint 門市零售", href: "/pos", icon: Calculator },
-    { label: "CRM Customers", labelZh: "RelationDesk 客戶關係", href: "/crm", icon: Users },
-    { label: "Dining", labelZh: "TableCraft 智慧餐飲", href: "/dining", icon: UtensilsCrossed },
-    { label: "E-commerce", labelZh: "MarketLane 品牌電商", href: "/shop", icon: ShoppingBag },
+    { label: "MES Manufacturing", labelZh: "智慧製造 ForgeFlow", href: "/mes", icon: Factory },
+    { label: "ERP Operations", labelZh: "企業營運 LedgerWorks", href: "/erp", icon: Database },
+    { label: "POS Retail", labelZh: "門市零售 CounterPoint", href: "/pos", icon: Calculator },
+    { label: "CRM Customers", labelZh: "客戶關係 RelationDesk", href: "/crm", icon: Users },
+    { label: "Dining", labelZh: "智慧餐飲 TableCraft", href: "/dining", icon: UtensilsCrossed },
+    { label: "E-commerce", labelZh: "品牌電商 MarketLane", href: "/shop", icon: ShoppingBag },
     { label: "Commerce Admin", labelZh: "Commerce 電商管理", href: "/commerce", icon: SlidersHorizontal },
   ];
 

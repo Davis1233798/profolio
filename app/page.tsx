@@ -133,7 +133,28 @@ export default function PortfolioPage() {
         <div className="project-body"><p className="project-name">{locale === "zh-TW" ? (PROJECT_NAMES[p.id]?.zh || p.name) : p.name}<ArrowUpRight size={17}/></p><h3>{t(p.title)}</h3><p className="project-description">{t(p.description)}</p>
           {selected===p.id&&<div className="project-boundary" id={`boundary-${p.id}`}><b>{t("Scope")}</b><p>{t(p.limitation)}</p><p>{t("Initial records are demonstration data.")}</p></div>}
           <div className="project-actions"><button aria-expanded={selected===p.id} aria-controls={selected===p.id?`boundary-${p.id}`:undefined} onClick={()=>setSelected(selected===p.id?null:p.id)}>{selected===p.id?t("Hide details"):t("View details")}</button><span>{t("Choose a demo role", "選擇示範角色")}</span></div>
-          <div className="project-demo-links"><a data-demo-view="front" href={demoURL(p.id,"front")} target="_blank" rel="noopener noreferrer">{t("Front-office demo", "前台展示")} <ArrowUpRight size={15}/></a><a data-demo-view="back" href={demoURL(p.id,"back")} target="_blank" rel="noopener noreferrer">{t("Back-office demo", "後台展示")} <ArrowUpRight size={15}/></a></div>
+          <div className="project-demo-links">
+            {p.id === "dining" && (
+              <>
+                <Link data-demo-view="customer" href="/dining?view=customer" className="font-bold text-emerald-700 dark:text-emerald-400">
+                  {t("Customer PWA App", "📱 顧客端 PWA 點餐")} <ArrowUpRight size={15}/>
+                </Link>
+                <Link data-demo-view="admin" href="/dining?view=admin" className="font-semibold text-purple-700 dark:text-purple-400">
+                  {t("Manager Console", "店長管理者")} <ArrowUpRight size={15}/>
+                </Link>
+                <Link data-demo-view="franchise" href="/dining?view=franchise" className="font-semibold text-teal-700 dark:text-teal-400">
+                  {t("Franchisee Portal", "加盟主系統")} <ArrowUpRight size={15}/>
+                </Link>
+              </>
+            )}
+            {p.id === "pos" && (
+              <a data-demo-view="customer" href={demoURL(p.id,"front") + "#customer-display"} target="_blank" rel="noopener noreferrer" className="font-semibold text-amber-700 dark:text-amber-400">
+                {t("Customer Display", "🖥️ 客顯副屏展示")} <ArrowUpRight size={15}/>
+              </a>
+            )}
+            <a data-demo-view="front" href={demoURL(p.id,"front")} target="_blank" rel="noopener noreferrer">{t("Front-office demo", "前台展示")} <ArrowUpRight size={15}/></a>
+            <a data-demo-view="back" href={demoURL(p.id,"back")} target="_blank" rel="noopener noreferrer">{t("Back-office demo", "後台展示")} <ArrowUpRight size={15}/></a>
+          </div>
           <a className="station-entry" href={projectRepositories[p.id as keyof typeof projectRepositories]} target="_blank" rel="noopener noreferrer">{t("View source on GitHub")} <ArrowUpRight size={14}/></a>
         </div>
       </SpotlightCard>)}</div>

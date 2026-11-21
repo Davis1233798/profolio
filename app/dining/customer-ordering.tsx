@@ -25,6 +25,16 @@ import {
   ChevronUp,
   RefreshCw,
   Sparkles,
+  Crown,
+  Ticket,
+  Wallet,
+  CreditCard,
+  Percent,
+  Gift,
+  Download,
+  Radio,
+  Volume2,
+  ShieldCheck,
 } from "lucide-react";
 
 export type Table = { id: string; tableNumber: string; capacity: number; status: string };
@@ -206,8 +216,164 @@ export function CustomerOrdering({
   tables = [],
   onSelectTable,
 }: CustomerOrderingProps) {
-  // Navigation tabs within Customer view: menu vs kitchen status
-  const [activeTab, setActiveTab] = useState<"menu" | "status">("menu");
+  // RWA / PWA mobile frame vs Responsive wide
+  const [displayMode, setDisplayMode] = useState<"pwa" | "responsive">("pwa");
+
+  // Navigation tabs within Customer view: menu vs vip vs status vs push
+  const [activeTab, setActiveTab] = useState<"menu" | "vip" | "status" | "push">("menu");
+
+  // VIP Member Profile & Loyalty
+  const [memberData] = useState({
+    name: "Davis Chen (陳大維)",
+    phone: "0912-345-678",
+    tier: "尊榮黑金會員 VIP BLACK",
+    memberNo: "TC-889201",
+    points: 680,
+    walletBalance: 1250,
+  });
+
+  // Coupons State
+  const [availableCoupons, setAvailableCoupons] = useState([
+    {
+      id: "c_truffle",
+      title: "【主廚限定】黑松露燉飯現折 $80",
+      type: "amount",
+      value: 80,
+      minSpend: 250,
+      desc: "點購松露燉飯或義大利麵系列，結帳立減 NT$ 80",
+      badge: "主廚特惠",
+      expiry: "今日 23:59 截止",
+    },
+    {
+      id: "c_vip90",
+      title: "【尊榮黑金禮】全單 9 折專屬折扣券",
+      type: "percent",
+      value: 10,
+      minSpend: 0,
+      desc: "全店全品項結帳享 9 折（10% OFF）特權",
+      badge: "VIP 特權",
+      expiry: "2026-11-30",
+    },
+    {
+      id: "c_nofee",
+      title: "【免服務費券】內用尊榮免 10% 服務費",
+      type: "service_fee",
+      value: 100,
+      minSpend: 0,
+      desc: "內用點餐免收 10% 服務費",
+      badge: "尊榮特惠",
+      expiry: "2026-12-31",
+    },
+    {
+      id: "c_pudding",
+      title: "【迎賓好禮】主廚特製烤布丁免費兌換券",
+      type: "gift",
+      value: 90,
+      minSpend: 200,
+      desc: "消費滿 NT$ 200 免費獲贈特製手作焦糖布丁一份",
+      badge: "甜點兌換",
+      expiry: "2026-11-25",
+    },
+  ]);
+
+  const [appliedCouponId, setAppliedCouponId] = useState<string | null>("c_vip90");
+  const [useWalletPayment, setUseWalletPayment] = useState(false);
+  const [pwaInstalled, setPwaInstalled] = useState(false);
+
+  // Push Notifications state
+  const [pushNotifications, setPushNotifications] = useState([
+    {
+      id: "p1",
+      title: "🔔【限時推播】今日主廚特選：黑松露燉飯現折 $80！",
+      body: "剛剛出爐的義大利頂級松露醬！專屬優惠券已派發至您的票匣，立即下單自動折抵。",
+      time: "2 分鐘前",
+      tag: "限時優惠",
+      couponId: "c_truffle",
+      unread: true,
+    },
+    {
+      id: "p2",
+      title: "🎉【尊榮會員禮】全單 9 折券已生效！",
+      body: "感謝您蒞臨 TableCraft，黑金會員專屬全單 9 折優惠券已存入票匣，結帳即刻扣抵。",
+      time: "5 分鐘前",
+      tag: "VIP 特權",
+      couponId: "c_vip90",
+      unread: true,
+    },
+    {
+      id: "p3",
+      title: "☕【午後好食光】特調飲品全系列第二杯半價",
+      body: "午後微醺與精品拿鐵系列第二杯 5 折，搭配輕食甜點享受悠閒午後！",
+      time: "20 分鐘前",
+      tag: "促銷推播",
+      couponId: null,
+      unread: false,
+    },
+    {
+      id: "p4",
+      title: "⚡【出餐通知】您的特製飲品已製作完成！",
+      body: "您點選的飲品已由吧台主廚調製完畢，外場夥伴即刻親送至您的桌位，敬請稍候。",
+      time: "剛剛",
+      tag: "出餐提醒",
+      couponId: null,
+      unread: false,
+    },
+  ]);
+
+  const [activePushToast, setActivePushToast] = useState<{
+    id: string;
+    title: string;
+    body: string;
+    couponId?: string | null;
+  } | null>({
+    id: "p1",
+    title: "🔔【限時推播】今日主廚特選：黑松露燉飯現折 $80！",
+    body: "專屬優惠券已派發至您的票匣，立即下單自動折抵。",
+    couponId: "c_truffle",
+  });
+
+  const [pushPrefs, setPushPrefs] = useState({
+    marketing: true,
+    orderSla: true,
+    points: true,
+  });
+
+  function handleSimulatePush() {
+    const promoPool = [
+      {
+        title: "🌧️【雨天暖心推播】主廚濃湯加點享半價優惠！",
+        body: "外頭微雨，來碗主廚現煮松露野菇濃湯，會員加點特惠僅需 $45 元！",
+        couponId: null,
+      },
+      {
+        title: "🔥【主廚快閃推播】特製熟成肋眼牛排現折 $120！",
+        body: "今日限量熟成肋眼牛排最後 3 客，點餐立享現折 $120 元！",
+        couponId: "c_truffle",
+      },
+      {
+        title: "🍰【壽星專屬推播】祝您本月生日快樂！主廚贈甜點一份",
+        body: "憑此推播兌換特製熔岩巧克力蛋糕一份，TableCraft 祝您用餐愉快！",
+        couponId: "c_pudding",
+      },
+      {
+        title: "🍹【暢飲微醺推播】特選精釀生啤買二送一",
+        body: "下班放鬆首選！精釀啤酒買二送一，快與好友暢飲乾杯！",
+        couponId: null,
+      },
+    ];
+    const picked = promoPool[Math.floor(Math.random() * promoPool.length)];
+    const newPush = {
+      id: "p_" + Date.now(),
+      title: picked.title,
+      body: picked.body,
+      time: "剛剛",
+      tag: "最新推播",
+      couponId: picked.couponId,
+      unread: true,
+    };
+    setPushNotifications((prev) => [newPush, ...prev]);
+    setActivePushToast(newPush);
+  }
 
   // Search & category filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -263,11 +429,27 @@ export function CustomerOrdering({
     });
   }, [menuItems, selectedCategory, searchQuery]);
 
-  // Cart calculations
+  // Cart calculations with member coupons
+  const appliedCoupon = availableCoupons.find((c) => c.id === appliedCouponId) || null;
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const cartEstimatedFee = Math.round((cartSubtotal * serviceFeeRate) / 100);
-  const cartEstimatedTotal = cartSubtotal + cartEstimatedFee;
+
+  let couponDiscount = 0;
+  let effectiveServiceFeeRate = serviceFeeRate;
+
+  if (appliedCoupon && cartSubtotal >= appliedCoupon.minSpend) {
+    if (appliedCoupon.type === "amount") {
+      couponDiscount = Math.min(appliedCoupon.value, cartSubtotal);
+    } else if (appliedCoupon.type === "percent") {
+      couponDiscount = Math.round(cartSubtotal * (appliedCoupon.value / 100));
+    } else if (appliedCoupon.type === "service_fee") {
+      effectiveServiceFeeRate = 0;
+    }
+  }
+
+  const discountedSubtotal = Math.max(0, cartSubtotal - couponDiscount);
+  const cartEstimatedFee = Math.round((discountedSubtotal * effectiveServiceFeeRate) / 100);
+  const cartEstimatedTotal = discountedSubtotal + cartEstimatedFee;
 
   // Session tickets & orders for Live Kitchen Status (Feature 7)
   const sessionOrders = useMemo(() => {
@@ -570,7 +752,92 @@ export function CustomerOrdering({
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-4xl pb-32 font-sans text-stone-800">
+    <div className={`relative mx-auto w-full font-sans text-stone-800 transition-all duration-300 ${
+      displayMode === "pwa" ? "max-w-md pb-16" : "max-w-4xl pb-32"
+    }`}>
+      {/* RWA / PWA Experience Toolbar */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-white p-2.5 shadow-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-stone-700">介面模式:</span>
+          <div className="inline-flex rounded-xl bg-stone-100 p-0.5 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setDisplayMode("pwa")}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
+                displayMode === "pwa"
+                  ? "bg-[#006241] text-white shadow-xs font-bold"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <Smartphone size={13} />
+              <span>📱 手機 PWA 模式</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplayMode("responsive")}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
+                displayMode === "responsive"
+                  ? "bg-[#006241] text-white shadow-xs font-bold"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <UtensilsCrossed size={13} />
+              <span>💻 全寬開展模式</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Simulate Push Notification trigger */}
+          <button
+            type="button"
+            onClick={handleSimulatePush}
+            title="發送一則即時會員優惠推播"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-xs cursor-pointer"
+          >
+            <Radio size={13} className="text-amber-600 animate-pulse" />
+            <span>模擬發送推播</span>
+          </button>
+
+          {/* PWA Install simulator */}
+          <button
+            type="button"
+            onClick={() => {
+              setPwaInstalled(true);
+              setOrderNotice({
+                type: "success",
+                message: "📲 已成功將 TableCraft 智慧餐飲 PWA 捷徑新增至手機主畫面！",
+              });
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-xs cursor-pointer"
+          >
+            <Download size={13} className="text-emerald-700" />
+            <span>{pwaInstalled ? "已安裝 PWA" : "安裝 PWA App"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Smartphone Chassis Frame for PWA Mode */}
+      <div className={
+        displayMode === "pwa"
+          ? "relative rounded-[40px] border-[10px] border-stone-900 bg-stone-50 shadow-2xl overflow-hidden ring-1 ring-black/10 min-h-[780px]"
+          : "relative"
+      }>
+        {/* Smartphone Status Bar (Dynamic Island & Time) */}
+        {displayMode === "pwa" && (
+          <div className="flex items-center justify-between bg-stone-900 px-6 pt-2 pb-1.5 text-[11px] font-bold text-white select-none">
+            <span>12:30</span>
+            <div className="flex items-center gap-2 rounded-full bg-stone-800 px-3 py-0.5 border border-white/10">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-stone-200">TableCraft PWA</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <span>5G</span>
+              <span>100%</span>
+            </div>
+          </div>
+        )}
+
       {/* =========================================================================
           FEATURE 1: Mobile-friendly Header
          ========================================================================= */}
@@ -637,7 +904,7 @@ export function CustomerOrdering({
             <button
               onClick={() => setShowQrModal(true)}
               title="掃碼桌邊點餐 QR Code"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-700 shadow-xs hover:bg-stone-50 active:scale-95 transition"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-700 shadow-xs hover:bg-stone-50 active:scale-95 transition cursor-pointer"
             >
               <QrCode size={14} className="text-[#006241]" />
               <span className="hidden sm:inline">桌邊 QR 碼</span>
@@ -645,33 +912,64 @@ export function CustomerOrdering({
           </div>
         </div>
 
-        {/* View Switcher: Menu vs Kitchen Progress */}
-        <div className="flex border-t border-stone-100 bg-stone-50/70 p-1">
+        {/* View Switcher: 4 Tabs - Menu, VIP, Status, Push */}
+        <div className="grid grid-cols-4 border-t border-stone-100 bg-stone-50/70 p-1 gap-1">
           <button
             onClick={() => setActiveTab("menu")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold transition ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "menu"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60"
+                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
             <UtensilsCrossed size={14} />
-            <span>美味菜單 (Menu)</span>
+            <span>美味菜單</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("vip")}
+            className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+              activeTab === "vip"
+                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
+                : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            <Crown size={14} />
+            <span>會員優惠</span>
+            {appliedCouponId && (
+              <span className="h-1.5 w-1.5 rounded-full bg-[#006241]" />
+            )}
+          </button>
+
           <button
             onClick={() => setActiveTab("status")}
-            className={`relative flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold transition ${
+            className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "status"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60"
+                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
             <ChefHat size={14} />
-            <span>我的餐點與出餐進度</span>
+            <span>出餐進度</span>
             {sessionTickets.length > 0 && (
-              <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[10px] font-bold text-white">
+              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-600 px-1 text-[10px] font-bold text-white">
                 {sessionTickets.length}
               </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("push")}
+            className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+              activeTab === "push"
+                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
+                : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            <Bell size={14} />
+            <span>優惠推播</span>
+            {pushNotifications.some((p) => p.unread) && (
+              <span className="inline-flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
             )}
           </button>
         </div>
@@ -943,6 +1241,144 @@ export function CustomerOrdering({
       )}
 
       {/* =========================================================================
+          TAB: VIP Member Center & Exclusive Coupon Wallet
+         ========================================================================= */}
+      {activeTab === "vip" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* 1. VIP Black Gold Card */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-800 to-black p-6 text-white shadow-2xl border border-amber-500/30">
+            {/* Hologram sheen & background glow */}
+            <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <Crown size={22} className="text-amber-400" />
+                <span className="text-sm font-black tracking-wider text-amber-300">
+                  TABLECRAFT VIP LOYALTY
+                </span>
+              </div>
+              <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-300 px-3 py-1 text-[11px] font-black text-stone-950 shadow-sm">
+                BLACK GOLD
+              </span>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs text-stone-400">會員持卡人 (Member Name)</p>
+                <p className="mt-1 text-xl font-black tracking-wide text-white">{memberData.name}</p>
+                <p className="mt-1 font-mono text-xs text-amber-200/80">
+                  No. {memberData.memberNo} · {memberData.phone}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/10 p-2.5 backdrop-blur-xs text-right">
+                  <span className="text-[10px] text-stone-300">累積點數</span>
+                  <p className="text-lg font-black text-amber-300">{memberData.points} 點</p>
+                  <span className="text-[10px] text-stone-400">可折抵 $68</span>
+                </div>
+                <div className="rounded-xl bg-white/10 p-2.5 backdrop-blur-xs text-right">
+                  <span className="text-[10px] text-stone-300">會員儲值金</span>
+                  <p className="text-lg font-black text-emerald-400">{money(memberData.walletBalance)}</p>
+                  <span className="text-[10px] text-stone-400">支援快速扣款</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Privileges Badges */}
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4 text-[11px]">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-400/15 px-2.5 py-1 text-amber-300 border border-amber-400/20">
+                <Percent size={12} /> 全單 9 折尊榮折扣
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-400/15 px-2.5 py-1 text-emerald-300 border border-emerald-400/20">
+                <ShieldCheck size={12} /> 內用免 10% 服務費特權
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-pink-400/15 px-2.5 py-1 text-pink-300 border border-pink-400/20">
+                <Gift size={12} /> 壽星當月贈主廚特製甜點
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Member Coupons Wallet */}
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Ticket size={18} className="text-[#006241]" />
+                <h3 className="text-base font-bold text-stone-900">
+                  會員專屬優惠券匣 ({availableCoupons.length} 張可用)
+                </h3>
+              </div>
+              <span className="text-xs text-stone-500">點擊「立即套用」自動折抵購物車</span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {availableCoupons.map((coupon) => {
+                const isApplied = appliedCouponId === coupon.id;
+                return (
+                  <div
+                    key={coupon.id}
+                    className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 transition ${
+                      isApplied
+                        ? "border-[#006241] bg-emerald-50/50 ring-2 ring-[#006241]/20 shadow-sm"
+                        : "border-stone-200 bg-stone-50/60 hover:border-stone-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="inline-block rounded-md bg-[#006241] px-2 py-0.5 text-[10px] font-bold text-white mb-1">
+                          {coupon.badge}
+                        </span>
+                        <h4 className="text-sm font-bold text-stone-900">{coupon.title}</h4>
+                        <p className="mt-1 text-xs text-stone-600 leading-snug">{coupon.desc}</p>
+                      </div>
+                      <span className="shrink-0 text-xl font-black text-[#006241]">
+                        {coupon.type === "amount" && `-$${coupon.value}`}
+                        {coupon.type === "percent" && `${10 - coupon.value / 10}折`}
+                        {coupon.type === "service_fee" && "0%費"}
+                        {coupon.type === "gift" && "免費"}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-stone-200/60 pt-2.5 text-xs">
+                      <span className="text-[11px] text-stone-400">{coupon.expiry}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isApplied) {
+                            setAppliedCouponId(null);
+                          } else {
+                            setAppliedCouponId(coupon.id);
+                            setOrderNotice({
+                              type: "success",
+                              message: `🎉 已套用優惠券：${coupon.title}，結帳自動折抵！`,
+                            });
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                          isApplied
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                        }`}
+                      >
+                        {isApplied ? (
+                          <>
+                            <Check size={13} /> 已套用折抵
+                          </>
+                        ) : (
+                          "立即套用"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
           TAB 2: FEATURE 7 - My Order & Live Kitchen Status
          ========================================================================= */}
       {activeTab === "status" && (
@@ -1172,6 +1608,139 @@ export function CustomerOrdering({
             <p className="mt-3 text-xs leading-relaxed text-stone-400">
               ※ 用餐完畢後請至櫃檯結帳，或於座位向服務人員索取正式明細結帳。
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB: FEATURE - Push Notifications Center & Settings
+         ========================================================================= */}
+      {activeTab === "push" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Push Broadcast simulation header */}
+          <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 p-5 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <Bell size={20} className="text-[#006241]" />
+                <h3 className="text-base font-bold text-stone-900">
+                  App 會員優惠推播中心 (Push Center)
+                </h3>
+              </div>
+              <p className="mt-1 text-xs text-stone-600">
+                支援 Web Push / PWA 實時推播通知，主廚限時折扣、出餐狀態變更與會員專屬禮遇即刻送達。
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSimulatePush}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#006241] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1e3932] active:scale-95 transition cursor-pointer"
+            >
+              <Radio size={14} className="animate-pulse" />
+              <span>模擬發送最新推播 (Simulate Push)</span>
+            </button>
+          </div>
+
+          {/* Push Notifications Feed */}
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                最新推播通知訊息清單 ({pushNotifications.length} 則)
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setPushNotifications((prev) => prev.map((p) => ({ ...p, unread: false })))
+                }
+                className="text-xs font-medium text-stone-500 hover:text-stone-800"
+              >
+                全部標為已讀
+              </button>
+            </div>
+
+            <div className="divide-y divide-stone-100 mt-2">
+              {pushNotifications.map((push) => (
+                <article
+                  key={push.id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 px-2 rounded-xl transition ${
+                    push.unread ? "bg-emerald-50/40" : "hover:bg-stone-50"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        push.unread ? "bg-[#006241] text-white" : "bg-stone-100 text-stone-500"
+                      }`}
+                    >
+                      <Bell size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                          {push.tag}
+                        </span>
+                        <h4 className="text-sm font-bold text-stone-900">{push.title}</h4>
+                        {push.unread && (
+                          <span className="h-2 w-2 rounded-full bg-rose-500" title="未讀推播" />
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-stone-600">{push.body}</p>
+                      <span className="mt-1.5 block text-[11px] text-stone-400">{push.time}</span>
+                    </div>
+                  </div>
+
+                  {push.couponId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedCouponId(push.couponId);
+                        setActiveTab("vip");
+                        setOrderNotice({
+                          type: "success",
+                          message: `🎉 已為您套用推播推薦之專屬優惠券！`,
+                        });
+                      }}
+                      className="shrink-0 self-end sm:self-center inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200 transition cursor-pointer"
+                    >
+                      <Ticket size={13} />
+                      <span>查看優惠券</span>
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          </div>
+
+          {/* Push Notification Preferences */}
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
+            <h4 className="text-sm font-bold text-stone-900 mb-3">會員推播權限與偏好設定</h4>
+            <div className="space-y-3 text-xs">
+              {[
+                { key: "marketing", label: "促銷優惠與限時推播", desc: "第一時間掌握主廚限定折扣、新菜上市與節慶好禮" },
+                { key: "orderSla", label: "廚房出餐狀態即時推播", desc: "主廚備料、烹調完成與送餐上桌即時通知" },
+                { key: "points", label: "會員點數與錢包異動提醒", desc: "消費積點入帳、點數即將到期與儲值金扣款提醒" },
+              ].map((item) => (
+                <div key={item.key} className="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50">
+                  <div>
+                    <p className="font-bold text-stone-800">{item.label}</p>
+                    <p className="text-stone-500 text-[11px]">{item.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPushPrefs((p: any) => ({ ...p, [item.key]: !p[item.key] }))
+                    }
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                      (pushPrefs as any)[item.key]
+                        ? "bg-[#006241] text-white"
+                        : "bg-stone-200 text-stone-600"
+                    }`}
+                  >
+                    {(pushPrefs as any)[item.key] ? "已開啟 (ON)" : "已關閉 (OFF)"}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -1473,18 +2042,80 @@ export function CustomerOrdering({
               ))}
             </div>
 
+            {/* Member Coupon Selection in Drawer */}
+            <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5 my-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                  <Ticket size={14} className="text-[#006241]" />
+                  <span>會員專屬優惠券折抵</span>
+                </span>
+                <span className="text-[11px] text-emerald-700 font-bold">
+                  {appliedCoupon ? `已折抵 ${appliedCoupon.type === 'service_fee' ? '免服務費' : money(couponDiscount)}` : "未套用"}
+                </span>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {availableCoupons.map((c) => {
+                  const isCur = appliedCouponId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setAppliedCouponId(isCur ? null : c.id)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold transition cursor-pointer ${
+                        isCur
+                          ? "bg-[#006241] text-white border-[#006241] shadow-xs"
+                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      {isCur && "✓ "}
+                      {c.badge}: {c.title.split("】")[1] || c.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Wallet payment toggle */}
+            <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-2.5 text-xs my-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={15} className="text-emerald-700" />
+                <div>
+                  <p className="font-bold text-stone-900">使用會員儲值金扣款</p>
+                  <p className="text-[11px] text-stone-500">目前餘額：{money(memberData.walletBalance)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUseWalletPayment(!useWalletPayment)}
+                className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                  useWalletPayment ? "bg-emerald-600 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                }`}
+              >
+                {useWalletPayment ? "已啟用扣款" : "點擊啟用"}
+              </button>
+            </div>
+
             {/* Subtotal & Fee Preview */}
-            <div className="space-y-2 border-t border-stone-100 pt-3 text-xs text-stone-600">
+            <div className="space-y-1.5 border-t border-stone-100 pt-3 text-xs text-stone-600">
               <div className="flex justify-between">
                 <span>餐點金額小計</span>
                 <span className="font-semibold text-stone-900">{money(cartSubtotal)}</span>
               </div>
+              {appliedCoupon && couponDiscount > 0 && (
+                <div className="flex justify-between text-emerald-700 font-bold">
+                  <span>會員優惠券折抵 ({appliedCoupon.badge})</span>
+                  <span>- {money(couponDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span>預估服務費 ({serviceFeeRate}%)</span>
-                <span className="font-semibold text-stone-900">{money(cartEstimatedFee)}</span>
+                <span>預估服務費 ({effectiveServiceFeeRate}%)</span>
+                <span className="font-semibold text-stone-900">
+                  {effectiveServiceFeeRate === 0 ? "免服務費 (特惠)" : money(cartEstimatedFee)}
+                </span>
               </div>
               <div className="flex justify-between border-t border-stone-100 pt-2 text-sm font-extrabold text-stone-900">
-                <span>預估結帳總額</span>
+                <span>預估結帳實付</span>
                 <span className="text-base text-[#006241]">{money(cartEstimatedTotal)}</span>
               </div>
             </div>
@@ -1513,6 +2144,83 @@ export function CustomerOrdering({
           </div>
         </div>
       )}
+
+      {/* Mobile App Bottom Navigation Dock */}
+      <nav
+        aria-label="App 底部導覽列"
+        className={`${
+          displayMode === "pwa"
+            ? "sticky bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-md shadow-lg"
+            : "fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-md shadow-lg sm:hidden"
+        }`}
+      >
+        <div className="flex items-center justify-around py-2.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab("menu")}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
+              activeTab === "menu" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+            }`}
+          >
+            <UtensilsCrossed size={18} />
+            <span>美味菜單</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("vip")}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
+              activeTab === "vip" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+            }`}
+          >
+            <div className="relative">
+              <Crown size={18} />
+              <span className="absolute -top-1 -right-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-white">
+                4
+              </span>
+            </div>
+            <span>會員優惠</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("status")}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
+              activeTab === "status" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+            }`}
+          >
+            <div className="relative">
+              <ChefHat size={18} />
+              {sessionTickets.length > 0 && (
+                <span className="absolute -top-1 -right-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-orange-600 text-[8px] font-bold text-white">
+                  {sessionTickets.length}
+                </span>
+              )}
+            </div>
+            <span>出餐進度</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("push")}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
+              activeTab === "push" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+            }`}
+          >
+            <div className="relative">
+              <Volume2 size={18} />
+              {pushNotifications.some((p) => p.unread) && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+              )}
+              {pushNotifications.some((p) => p.unread) && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </div>
+            <span>優惠推播</span>
+          </button>
+        </div>
+        {displayMode === "pwa" && (
+          <div className="h-1 w-28 rounded-full bg-stone-300 mx-auto mb-1.5" />
+        )}
+      </nav>
+      </div>
 
       {/* =========================================================================
           FEATURE 8: Dynamic QR Code Modal Simulation

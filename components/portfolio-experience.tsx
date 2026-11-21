@@ -58,10 +58,16 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
 
   // Cancel mouse click explosion effect per user request
   const activate = (x: number, y: number, kind: ParticlePulse['kind']) => {
-    if (kind === 'click') return;
     if (reducedRef.current) return;
     sequence.current += 1;
     setPulse({ id: sequence.current, x, y, kind });
+  };
+
+  const isPulseInViewport = (p: ParticlePulse | null) => {
+    if (!p) return false;
+    if (p.kind === 'click') return false;
+    if (typeof window === 'undefined') return true;
+    return p.y >= 0 && p.y <= window.innerHeight && p.x >= 0 && p.x <= window.innerWidth;
   };
 
   useEffect(() => {
@@ -295,7 +301,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
           ref={canvas}
           className="portfolio-particle-canvas"
           aria-hidden="true"
-          data-active={Boolean(pulse && !reduced)}
+          data-active={Boolean(pulse && !reduced && isPulseInViewport(pulse))}
         />
         {pulse && !reduced && pulse.kind !== 'click' && (
           <div

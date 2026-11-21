@@ -76,7 +76,14 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
       if (width !== window.innerWidth || height !== window.innerHeight) resize();
       generation++;
       if (frame) cancelAnimationFrame(frame);
-      frame = 0; active = true; started = performance.now();
+      frame = 0;
+      if (pulse.kind === 'click') {
+        active = false;
+        material.uniforms.opacity.value = 0;
+        renderer.clear();
+        return;
+      }
+      active = true; started = performance.now();
       const scale = 2 * Math.tan(25 * Math.PI / 180) * 600 / height;
       originX = (pulse.x - width / 2) * scale;
       originY = (height / 2 - pulse.y) * scale;

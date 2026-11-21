@@ -95,6 +95,7 @@ export default function PortfolioPage() {
                 onClick={() => setLocale(locale === "zh-TW" ? "en" : "zh-TW")}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border border-stone-300 dark:border-stone-600 bg-white/80 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-700 transition cursor-pointer"
                 title={locale === "zh-TW" ? "切換至 English" : "Switch to 繁體中文"}
+                aria-label={locale === "zh-TW" ? "Switch ecosystem to English" : "切換商業生態至繁體中文"}
               >
                 {locale === "zh-TW" ? "EN" : "繁中"}
               </button>

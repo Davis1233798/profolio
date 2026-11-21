@@ -40,7 +40,7 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<PortfolioLocale>('en');
   const [theme, setTheme] = useState<PortfolioTheme>('light');
   const [pulse, setPulse] = useState<ParticlePulse | null>(null);
-  const [reduced, setReduced] = useState(true);
+  const [reduced, setReduced] = useState(false);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
   const canvas = useRef<HTMLCanvasElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -56,9 +56,12 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
   reducedRef.current = reduced;
   latestPulse.current = pulse;
 
-  // Completely disable any click explosion or shockwave effect
-  const activate = (_x: number, _y: number, _kind: ParticlePulse['kind']) => {
-    // Disabled per user requirement: zero click explosion / burst animations
+  // Cancel mouse click explosion effect per user request
+  const activate = (x: number, y: number, kind: ParticlePulse['kind']) => {
+    if (kind === 'click') return;
+    if (reducedRef.current) return;
+    sequence.current += 1;
+    setPulse({ id: sequence.current, x, y, kind });
   };
 
   useEffect(() => {
@@ -292,9 +295,16 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
           ref={canvas}
           className="portfolio-particle-canvas"
           aria-hidden="true"
-          data-active="false"
-          style={{ display: 'none' }}
+          data-active={Boolean(pulse && !reduced)}
         />
+        {pulse && !reduced && pulse.kind !== 'click' && (
+          <div
+            key={pulse.id}
+            className={`portfolio-click-wave ${pulse.kind === 'language' ? 'is-language' : pulse.kind === 'theme' ? 'is-theme' : ''}`}
+            style={{ left: pulse.x, top: pulse.y }}
+            aria-hidden="true"
+          />
+        )}
         <span className="sr-only" role="status" aria-live="polite">
           {context.t('Language: English', '語言：繁體中文')} · {theme === 'dark' ? '深色模式' : '淺色模式'}
         </span>

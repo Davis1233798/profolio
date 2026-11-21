@@ -1754,19 +1754,19 @@ export function CustomerOrdering({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4 backdrop-blur-xs"
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-stone-200 bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6 animate-in slide-in-from-bottom duration-200">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-2xl sm:rounded-3xl sm:p-6 animate-in slide-in-from-bottom duration-200">
             {/* Modal Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-stone-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-3">
               <div>
-                <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600">
+                <span className="rounded bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
                   {customizingItem.category}
                 </span>
-                <h3 className="mt-1 text-lg font-bold text-stone-900">{customizingItem.name}</h3>
-                <p className="text-sm font-bold text-[#006241]">{money(customizingItem.price)} 起</p>
+                <h3 className="mt-1 text-lg font-bold text-stone-900 dark:text-stone-100">{customizingItem.name}</h3>
+                <p className="text-sm font-bold text-[#006241] dark:text-emerald-400">{money(customizingItem.price)} 起</p>
               </div>
               <button
                 onClick={() => setCustomizingItem(null)}
-                className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200"
                 aria-label="關閉客製化選單"
               >
                 <X size={18} />
@@ -1963,11 +1963,11 @@ export function CustomerOrdering({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4 backdrop-blur-xs"
         >
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-stone-200 bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6 animate-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-2xl sm:rounded-3xl sm:p-6 animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
-                <ShoppingBag size={18} className="text-[#006241]" />
-                <h3 className="text-base font-bold text-stone-900">
+                <ShoppingBag size={18} className="text-[#006241] dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                   購物車清單 ({cartItemCount} 項餐點)
                 </h3>
               </div>
@@ -1981,7 +1981,7 @@ export function CustomerOrdering({
                 </button>
                 <button
                   onClick={() => setCartDrawerOpen(false)}
-                  className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                  className="rounded-full p-1 text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200"
                   aria-label="關閉購物車"
                 >
                   <X size={18} />
@@ -2231,15 +2231,15 @@ export function CustomerOrdering({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-sm rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div className="w-full max-w-sm rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
-                <QrCode size={18} className="text-[#006241]" />
-                <h3 className="text-base font-bold text-stone-900">掃碼桌邊自主點餐</h3>
+                <QrCode size={18} className="text-[#006241] dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">掃碼桌邊自主點餐</h3>
               </div>
               <button
                 onClick={() => setShowQrModal(false)}
-                className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                className="rounded-full p-1 text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200"
                 aria-label="關閉 QR Code"
               >
                 <X size={18} />
@@ -2247,12 +2247,12 @@ export function CustomerOrdering({
             </div>
 
             <div className="my-5 flex flex-col items-center text-center">
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-stone-500 dark:text-stone-400">
                 顧客以手機相機掃描下方 QR Code，即可免安裝 App 直接點餐：
               </p>
 
               {/* Dynamic QR SVG */}
-              <div className="mt-4 rounded-2xl border-2 border-stone-200/80 bg-stone-50 p-3 shadow-sm">
+              <div className="mt-4 rounded-2xl border-2 border-stone-200/80 dark:border-stone-700 bg-stone-50 dark:bg-stone-950 p-3 shadow-sm">
                 <QrCodeSvg text={simulatedUrl} size={180} />
               </div>
 

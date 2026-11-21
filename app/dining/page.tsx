@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { WorkspaceHeader } from "@/components/workspace-header";
+import { DiningRoleNav } from "./role-nav";
 import { TakeoutHistory } from "./takeout-history";
 import { CustomerOrdering } from "./customer-ordering";
 import { DiningManager } from "./dining-manager";
@@ -85,7 +86,7 @@ const money = (n: number) =>
   new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 }).format(n);
 const button =
   "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors";
-const field = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm";
+const field = "w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
 const next: Record<string, "cooking" | "done" | "served"> = { received: "cooking", cooking: "done", done: "served" };
 
 export default function DiningPage() {
@@ -115,23 +116,15 @@ export default function DiningPage() {
       const params = new URLSearchParams(window.location.search);
       const v = params.get("view") || params.get("interface") || params.get("tab") || params.get("role");
       if (v === "customer" || v === "guest") {
-        setSystemInterface("customer");
-      } else if (v === "front" || v === "floor") {
-        setSystemInterface("front");
-        setFrontSubtab("floor");
-      } else if (v === "reservations") {
-        setSystemInterface("front");
-        setFrontSubtab("reservations");
-      } else if (v === "back" || v === "kitchen") {
-        setSystemInterface("back");
-        setBackSubtab("kitchen");
-      } else if (v === "billing") {
-        setSystemInterface("back");
-        setBackSubtab("billing");
+        window.location.replace("/dining/customer");
+      } else if (v === "front" || v === "floor" || v === "reservations") {
+        window.location.replace("/dining/front");
+      } else if (v === "back" || v === "kitchen" || v === "billing") {
+        window.location.replace("/dining/back");
       } else if (v === "admin" || v === "manager") {
-        setSystemInterface("admin");
+        window.location.replace("/dining/admin");
       } else if (v === "franchise" || v === "owner") {
-        setSystemInterface("franchise");
+        window.location.replace("/dining/franchise");
       }
     }
   }, []);
@@ -363,6 +356,7 @@ export default function DiningPage() {
           {notice}
         </div>
       )}
+      <DiningRoleNav currentRole={systemInterface} />
       {data && (
         <>
           <section aria-label={t("Operations overview", "營運總覽")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -462,16 +456,16 @@ export default function DiningPage() {
                 const Icon = role.icon;
                 const isActive = systemInterface === role.id;
                 return (
-                  <button
+                  <Link
                     key={role.id}
-                    type="button"
+                    href={`/dining/${role.id}`}
                     onClick={() => {
                       setSystemInterface(role.id as typeof systemInterface);
                     }}
-                    className={`flex flex-col text-left p-3 rounded-xl border transition cursor-pointer ${
+                    className={`flex flex-col text-left p-3 rounded-xl border transition cursor-pointer no-underline ${
                       isActive
                         ? role.activeClass
-                        : `border-stone-200 bg-gradient-to-br ${role.colorClass} hover:border-stone-400 hover:shadow-xs`
+                        : `border-stone-200 dark:border-stone-800 bg-gradient-to-br ${role.colorClass} dark:from-stone-900 dark:to-stone-900/60 hover:border-stone-400 dark:hover:border-stone-700 hover:shadow-xs`
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
@@ -480,18 +474,21 @@ export default function DiningPage() {
                         <span className="font-black text-sm">{role.nameZh}</span>
                       </div>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        isActive ? "bg-white/20 text-white" : "bg-white/80 text-stone-700"
+                        isActive ? "bg-white/20 text-white" : "bg-white/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300"
                       }`}>
                         {role.nameEn}
                       </span>
                     </div>
-                    <span className={`text-xs font-semibold ${isActive ? "text-white/90" : "text-stone-800"}`}>
+                    <span className={`text-xs font-semibold ${isActive ? "text-white/90" : "text-stone-800 dark:text-stone-200"}`}>
                       {role.roleZh}
                     </span>
-                    <span className={`mt-1 text-[11px] leading-tight ${isActive ? "text-white/80" : "text-stone-500"}`}>
+                    <span className={`mt-1 text-[11px] leading-tight ${isActive ? "text-white/80" : "text-stone-500 dark:text-stone-400"}`}>
                       {role.descZh}
                     </span>
-                  </button>
+                    <span className="mt-2 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                      進入獨立頁面 →
+                    </span>
+                  </Link>
                 );
               })}
             </div>
@@ -818,15 +815,15 @@ export default function DiningPage() {
 
           {frontSubtab === "reservations" && (
             <section className="grid gap-6 lg:grid-cols-[340px_1fr]">
-              <form onSubmit={e => void reserve(e)} className="h-fit space-y-4 rounded-xl border border-stone-200 bg-white p-5">
-                <h2 className="text-lg font-bold">{t("New reservation", "預約訂位")}</h2>
-                <p className="text-xs leading-relaxed text-stone-500">
+              <form onSubmit={e => void reserve(e)} className="h-fit space-y-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">{t("New reservation", "預約訂位")}</h2>
+                <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
                   {t(
                     "Reservations last 90 minutes. Overlapping reservations for the same table are blocked.",
                     "訂位保留時間為 90 分鐘。同一桌位若有重疊時段將自動阻擋防止衝突。"
                   )}
                 </p>
-                <label className="block text-sm">
+                <label className="block text-sm text-stone-700 dark:text-stone-300">
                   {t("Table", "桌號")}
                   <select
                     className={`${field} mt-2`}
@@ -834,13 +831,13 @@ export default function DiningPage() {
                     onChange={e => setReservationTable(e.target.value)}
                   >
                     {data.tables.map(tInfo => (
-                      <option key={tInfo.id} value={tInfo.id}>
+                      <option key={tInfo.id} value={tInfo.id} className="dark:bg-stone-900 dark:text-stone-100">
                         {tInfo.tableNumber} · {tInfo.capacity} {t("seats", "人座")}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label className="block text-sm">
+                <label className="block text-sm text-stone-700 dark:text-stone-300">
                   {t("Customer name", "顧客姓名")}
                   <input
                     className={`${field} mt-2`}
@@ -850,7 +847,7 @@ export default function DiningPage() {
                     onChange={e => setReservationName(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="block text-sm text-stone-700 dark:text-stone-300">
                   {t("Phone", "聯絡電話")}
                   <input
                     className={`${field} mt-2`}
@@ -862,7 +859,7 @@ export default function DiningPage() {
                     onChange={e => setReservationPhone(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="block text-sm text-stone-700 dark:text-stone-300">
                   {t("Party size", "用餐人數")}
                   <input
                     className={`${field} mt-2`}
@@ -874,7 +871,7 @@ export default function DiningPage() {
                     onChange={e => setReservationGuests(Number(e.target.value))}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="block text-sm text-stone-700 dark:text-stone-300">
                   {t("Dining time (Taipei)", "用餐時間 (台北時間)")}
                   <input
                     className={`${field} mt-2`}
@@ -897,13 +894,13 @@ export default function DiningPage() {
                 {data.reservations.map(r => (
                   <article
                     key={r.id}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-200 bg-white p-5"
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs"
                   >
                     <div>
-                      <h2 className="font-semibold">
+                      <h2 className="font-semibold text-stone-900 dark:text-stone-100">
                         {r.customerName} · {r.guestCount} {t("guests", "位")}
                       </h2>
-                      <p className="mt-2 text-sm text-stone-500">
+                      <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
                         {new Date(
                           r.reservationTime.includes("T")
                             ? r.reservationTime
@@ -911,7 +908,7 @@ export default function DiningPage() {
                         ).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}
                       </p>
                     </div>
-                    <span className="rounded-lg bg-stone-100 px-3 py-2 text-sm">
+                    <span className="rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 px-3 py-2 text-sm">
                       {data.tables.find(tInfo => tInfo.id === r.tableId)?.tableNumber} {t("table", "桌")} ·{" "}
                       {r.status === "confirmed" ? t("Confirmed", "已確認") : r.status}
                     </span>

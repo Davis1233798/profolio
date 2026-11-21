@@ -4,6 +4,8 @@
 @import "./suite.css";
 @import "./expressive.css";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 html { scroll-behavior: smooth; }
 body { overflow-wrap: break-word; }
 button, a, input, select, textarea { touch-action: manipulation; }

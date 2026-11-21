@@ -2302,3 +2302,56 @@
   border-top-color: #30363d;
   color: #8b949e;
 }
+
+/* Dark theme adjustments for Station login and manual authentication card */
+[data-theme="dark"] .login-manual {
+  background: #161b22;
+  border-color: #30363d;
+  color: #e6edf3;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .login-manual h2 {
+  color: #f0f6fc;
+}
+
+[data-theme="dark"] .login-manual p {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .login-manual label {
+  color: #c9d1d9;
+}
+
+[data-theme="dark"] .login-manual input {
+  background: #0d1117;
+  color: #f0f6fc;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] [data-site="dining"] .login-demo-primary {
+  background: linear-gradient(145deg, #2b1f14, #140e08);
+  border: 1px solid #4a3828;
+}
+
+[data-theme="dark"] .demo-role-card.customer-role-card {
+  background: rgba(0, 98, 65, 0.15) !important;
+  border-color: rgba(0, 98, 65, 0.4) !important;
+}
+
+[data-theme="dark"] .demo-role-card.customer-role-card strong,
+[data-theme="dark"] .demo-role-card.customer-role-card span {
+  color: #3fb950 !important;
+}
+
+[data-theme="dark"] .demo-view-btn {
+  background: #21262d;
+  color: #f0f6fc;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .demo-view-btn.customer-view-pill {
+  background: #006241 !important;
+  color: #ffffff !important;
+}
+

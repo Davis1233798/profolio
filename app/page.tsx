@@ -136,14 +136,20 @@ export default function PortfolioPage() {
           <div className="project-demo-links">
             {p.id === "dining" && (
               <>
-                <Link data-demo-view="customer" href="/dining?view=customer" className="font-bold text-emerald-700 dark:text-emerald-400">
-                  {t("Customer PWA App", "📱 顧客端 PWA 點餐")} <ArrowUpRight size={15}/>
+                <Link data-demo-view="customer" href="/dining/customer" className="font-bold text-rose-600 dark:text-rose-400">
+                  {t("Customer App (RWA)", "📱 用戶端 (RWA/PWA)")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link data-demo-view="admin" href="/dining?view=admin" className="font-semibold text-purple-700 dark:text-purple-400">
-                  {t("Manager Console", "店長管理者")} <ArrowUpRight size={15}/>
+                <Link href="/dining/front" className="font-semibold text-blue-600 dark:text-blue-400">
+                  {t("Front Office", "🍽️ 前台現場")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link data-demo-view="franchise" href="/dining?view=franchise" className="font-semibold text-teal-700 dark:text-teal-400">
-                  {t("Franchisee Portal", "加盟主系統")} <ArrowUpRight size={15}/>
+                <Link href="/dining/back" className="font-semibold text-amber-600 dark:text-amber-400">
+                  {t("Back Kitchen", "🍳 後台廚房")} <ArrowUpRight size={15}/>
+                </Link>
+                <Link data-demo-view="admin" href="/dining/admin" className="font-semibold text-purple-600 dark:text-purple-400">
+                  {t("Manager Console", "📊 店長管理")} <ArrowUpRight size={15}/>
+                </Link>
+                <Link data-demo-view="franchise" href="/dining/franchise" className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {t("Franchisee Portal", "🏢 加盟門市")} <ArrowUpRight size={15}/>
                 </Link>
               </>
             )}

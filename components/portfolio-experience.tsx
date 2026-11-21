@@ -247,10 +247,32 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     [locale, theme]
   );
 
+  const click = (event: MouseEvent<HTMLDivElement>) => {
+    const element = event.target instanceof Element ? event.target.closest('a,button,summary,input,select,textarea') : null;
+    if (
+      !element ||
+      element.closest('[data-no-particles]') ||
+      !shouldAnimateInteraction({
+        tag: element.tagName,
+        button: event.button,
+        metaKey: event.metaKey,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        download: element.hasAttribute('download'),
+        disabled: element.hasAttribute('disabled') || element.getAttribute('aria-disabled') === 'true',
+      })
+    )
+      return;
+    const rect = element.getBoundingClientRect();
+    activate(event.detail ? event.clientX : rect.left + rect.width / 2, event.detail ? event.clientY : rect.top + rect.height / 2, 'click');
+  };
+
   return (
     <LocaleContext.Provider value={context}>
       <div
         className="portfolio-experience"
+        onClickCapture={click}
         data-locale={locale}
         data-theme={theme}
         data-motion={reduced ? 'reduced' : 'full'}

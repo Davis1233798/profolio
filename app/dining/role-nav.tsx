@@ -83,7 +83,7 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
           const Icon = r.icon;
           const isActive = currentRole === r.id;
           return (
-            <Link
+            <a
               key={r.id}
               href={r.href}
               target={isActive ? undefined : "_blank"}
@@ -112,7 +112,7 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
               <span className={`text-xs font-semibold line-clamp-1 ${isActive ? "text-white/95" : "text-stone-800 dark:text-stone-200"}`}>
                 {r.roleZh}
               </span>
-            </Link>
+            </a>
           );
         })}
       </div>

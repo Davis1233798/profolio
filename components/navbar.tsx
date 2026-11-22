@@ -36,7 +36,7 @@ export function Navbar() {
     { label: "ERP Operations", labelZh: "企業營運 LedgerWorks", href: "/erp", icon: Database },
     { label: "POS Retail", labelZh: "門市零售 CounterPoint", href: "/pos", icon: Calculator },
     { label: "CRM Customers", labelZh: "客戶關係 RelationDesk", href: "/crm", icon: Users },
-    { label: "Dining", labelZh: "智慧餐飲 TableCraft", href: "/dining", icon: UtensilsCrossed },
+    { label: "Dining", labelZh: "智慧餐飲 TableCraft", href: "/dining/front", icon: UtensilsCrossed },
     { label: "E-commerce", labelZh: "品牌電商 MarketLane", href: "/shop", icon: ShoppingBag },
     { label: "Commerce Admin", labelZh: "Commerce 電商管理", href: "/commerce", icon: SlidersHorizontal },
   ];

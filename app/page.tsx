@@ -137,19 +137,19 @@ export default function PortfolioPage() {
           <div className="project-demo-links">
             {p.id === "dining" && (
               <>
-                <Link data-demo-view="customer" href="/dining/customer" className="font-bold text-rose-600 dark:text-rose-400">
+                <Link data-demo-view="customer" href="/dining/customer" target="_blank" rel="noopener noreferrer" className="font-bold text-rose-600 dark:text-rose-400">
                   {t("Customer App (RWA)", "📱 用戶端 (RWA/PWA)")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link href="/dining/front" className="font-semibold text-blue-600 dark:text-blue-400">
+                <Link href="/dining/front" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 dark:text-blue-400">
                   {t("Front Office", "🍽️ 前台現場")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link href="/dining/back" className="font-semibold text-amber-600 dark:text-amber-400">
+                <Link href="/dining/back" target="_blank" rel="noopener noreferrer" className="font-semibold text-amber-600 dark:text-amber-400">
                   {t("Back Kitchen", "🍳 後台廚房")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link data-demo-view="admin" href="/dining/admin" className="font-semibold text-purple-600 dark:text-purple-400">
+                <Link data-demo-view="admin" href="/dining/admin" target="_blank" rel="noopener noreferrer" className="font-semibold text-purple-600 dark:text-purple-400">
                   {t("Manager Console", "📊 店長管理")} <ArrowUpRight size={15}/>
                 </Link>
-                <Link data-demo-view="franchise" href="/dining/franchise" className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <Link data-demo-view="franchise" href="/dining/franchise" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-600 dark:text-emerald-400">
                   {t("Franchisee Portal", "🏢 加盟門市")} <ArrowUpRight size={15}/>
                 </Link>
               </>

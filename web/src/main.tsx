@@ -113,24 +113,24 @@ function Login({site,onLogin}:{site:string;onLogin:()=>Promise<void>}) {
   <div className="dining-portal-links" style={{marginTop:'24px',paddingTop:'16px',borderTop:'1px solid rgba(255,255,255,0.2)'}}>
    <h3 style={{fontSize:'15px',color:'#fff',marginBottom:'12px',fontWeight:'bold'}}>{t('Or explore 5 standalone role pages:','或直接進入五大獨立分頁專屬介面：')}</h3>
    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:'10px'}}>
-    <a href="https://blockchen.duckdns.org/dining/customer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(225,29,72,0.25)',border:'1px solid #e11d48',borderRadius:'10px',color:'#fff'}}>
-     <strong style={{color:'#fda4af',fontSize:'13px',display:'block'}}>{t('📱 Customer App','📱 用戶端點餐')}</strong>
+    <a href="https://blockchen.duckdns.org/dining/customer" target="_blank" rel="noopener noreferrer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(225,29,72,0.25)',border:'1px solid #e11d48',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#fda4af',fontSize:'13px',display:'block'}}>{t('📱 Customer App','📱 用戶端點餐')} ↗</strong>
      <small style={{color:'#ffe4e6',fontSize:'11px'}}>{t('RWA / Mobile QR','手機點餐 · 會員卡')}</small>
     </a>
-    <a href="https://blockchen.duckdns.org/dining/front" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(37,99,235,0.25)',border:'1px solid #3b82f6',borderRadius:'10px',color:'#fff'}}>
-     <strong style={{color:'#93c5fd',fontSize:'13px',display:'block'}}>{t('🍽️ Front Office','🍽️ 前台現場')}</strong>
+    <a href="https://blockchen.duckdns.org/dining/front" target="_blank" rel="noopener noreferrer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(37,99,235,0.25)',border:'1px solid #3b82f6',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#93c5fd',fontSize:'13px',display:'block'}}>{t('🍽️ Front Office','🍽️ 前台現場')} ↗</strong>
      <small style={{color:'#dbeafe',fontSize:'11px'}}>{t('Tables & bookings','桌況 · 開桌 · 預約')}</small>
     </a>
-    <a href="https://blockchen.duckdns.org/dining/back" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(217,119,6,0.25)',border:'1px solid #f59e0b',borderRadius:'10px',color:'#fff'}}>
-     <strong style={{color:'#fcd34d',fontSize:'13px',display:'block'}}>{t('🍳 Back Kitchen','🍳 後台廚房')}</strong>
+    <a href="https://blockchen.duckdns.org/dining/back" target="_blank" rel="noopener noreferrer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(217,119,6,0.25)',border:'1px solid #f59e0b',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#fcd34d',fontSize:'13px',display:'block'}}>{t('🍳 Back Kitchen','🍳 後台廚房')} ↗</strong>
      <small style={{color:'#fef3c7',fontSize:'11px'}}>{t('KDS & Settlement','KDS 出餐 · 拆帳結帳')}</small>
     </a>
-    <a href="https://blockchen.duckdns.org/dining/admin" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(147,51,234,0.25)',border:'1px solid #a855f7',borderRadius:'10px',color:'#fff'}}>
-     <strong style={{color:'#d8b4fe',fontSize:'13px',display:'block'}}>{t('📊 Manager','📊 店長管理')}</strong>
+    <a href="https://blockchen.duckdns.org/dining/admin" target="_blank" rel="noopener noreferrer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(147,51,234,0.25)',border:'1px solid #a855f7',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#d8b4fe',fontSize:'13px',display:'block'}}>{t('📊 Manager','📊 店長管理')} ↗</strong>
      <small style={{color:'#f3e8ff',fontSize:'11px'}}>{t('Revenue & SLA','營收 KPI · 菜單定價')}</small>
     </a>
-    <a href="https://blockchen.duckdns.org/dining/franchise" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(5,150,105,0.25)',border:'1px solid #10b981',borderRadius:'10px',color:'#fff'}}>
-     <strong style={{color:'#6ee7b7',fontSize:'13px',display:'block'}}>{t('🏢 Franchise','🏢 加盟門市')}</strong>
+    <a href="https://blockchen.duckdns.org/dining/franchise" target="_blank" rel="noopener noreferrer" className="account-card" style={{padding:'10px',textDecoration:'none',background:'rgba(5,150,105,0.25)',border:'1px solid #10b981',borderRadius:'10px',color:'#fff'}}>
+     <strong style={{color:'#6ee7b7',fontSize:'13px',display:'block'}}>{t('🏢 Franchise','🏢 加盟門市')} ↗</strong>
      <small style={{color:'#d1fae5',fontSize:'11px'}}>{t('P&L & Cold-chain','門市損益 · 央廚叫貨')}</small>
     </a>
    </div>

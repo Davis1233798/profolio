@@ -64,16 +64,16 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
             {t("SMART DINING INDEPENDENT ROLE PAGES", "智慧餐飲五大專屬角色獨立分頁")}
           </span>
           <span className="rounded bg-rose-100 dark:bg-rose-950/60 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:text-rose-300">
-            獨立路由 / 分頁
+            獨立路由 · 新分頁跳轉
           </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">
-            點擊切換為不同角色的獨立工作頁面
+            點擊各角色皆以獨立新分頁（New Tab）開啟專屬工作台
           </span>
-          <Link href="/#work" className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition">
+          <Link href="/#work" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition">
             <ArrowLeft size={13} />
-            <span>返回作品集</span>
+            <span>返回作品集 ↗</span>
           </Link>
         </div>
       </div>
@@ -86,6 +86,9 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
             <Link
               key={r.id}
               href={r.href}
+              target={isActive ? undefined : "_blank"}
+              rel={isActive ? undefined : "noopener noreferrer"}
+              title={isActive ? "目前所在專屬頁面" : `以新分頁開啟 ${r.nameZh} (${r.href})`}
               className={`flex flex-col text-left p-3 rounded-xl border transition cursor-pointer no-underline ${
                 isActive
                   ? r.activeColor
@@ -97,11 +100,14 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
                   <Icon size={16} />
                   <span className="font-black text-sm">{r.nameZh}</span>
                 </div>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  isActive ? "bg-white/20 text-white" : "bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300"
-                }`}>
-                  {r.nameEn}
-                </span>
+                <div className="flex items-center gap-1">
+                  {!isActive && <span className="text-[11px] opacity-75 font-bold">↗</span>}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    isActive ? "bg-white/20 text-white" : "bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300"
+                  }`}>
+                    {r.nameEn}
+                  </span>
+                </div>
               </div>
               <span className={`text-xs font-semibold line-clamp-1 ${isActive ? "text-white/95" : "text-stone-800 dark:text-stone-200"}`}>
                 {r.roleZh}

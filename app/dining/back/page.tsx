@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DiningRoleNav } from "../role-nav";
+import Link from "next/link";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
-import { ChefHat, Receipt, Trash2, RefreshCw } from "lucide-react";
+import { ChefHat, Receipt, Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 
 type Table = { id: string; tableNumber: string; capacity: number; status: string };
 type Session = { id: string; tableId: string; sessionToken: string; guestCount: number; status: string };
@@ -126,11 +126,18 @@ export default function BackOfficePage() {
       >
         <span className="dining-service-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold">
           <ChefHat size={14} />
-          <span>獨立分頁 · 內場廚房與結帳</span>
+          <span>主廚 KDS 與備餐結帳控制台</span>
         </span>
+        <Link
+          href="/#work"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-bold transition shadow-xs"
+        >
+          <ArrowLeft size={13} />
+          <span>返回作品集 ↗</span>
+        </Link>
       </WorkspaceHeader>
-
-      <DiningRoleNav currentRole="back" />
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">

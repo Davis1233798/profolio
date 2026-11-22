@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { DiningRoleNav } from "../role-nav";
+import Link from "next/link";
 import { TakeoutHistory } from "../takeout-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
@@ -24,6 +24,7 @@ import {
   X,
   Compass,
   ArrowRight,
+  ArrowLeft,
   UserCheck,
 } from "lucide-react";
 
@@ -312,9 +313,21 @@ export default function FrontOfficePage() {
         description="場地配置平面圖 · 掃碼開桌計時 · 結帳後空桌5分鐘清潔緩衝 · 智慧預約排桌"
         onRefresh={() => void load()}
         busy={busy}
-      />
-
-      <DiningRoleNav currentRole="front" />
+      >
+        <span className="dining-service-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
+          <Armchair size={14} />
+          <span>外場領檯與收銀控制台</span>
+        </span>
+        <Link
+          href="/#work"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-bold transition shadow-xs"
+        >
+          <ArrowLeft size={13} />
+          <span>返回作品集 ↗</span>
+        </Link>
+      </WorkspaceHeader>
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DiningRoleNav } from "../role-nav";
+import Link from "next/link";
 import { DiningFranchise } from "../dining-franchise";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
-import { Building2 } from "lucide-react";
+import { Building2, ArrowLeft } from "lucide-react";
 
 type Data = {
   tables: any[];
@@ -62,11 +62,18 @@ export default function FranchisePage() {
       >
         <span className="dining-service-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold">
           <Building2 size={14} />
-          <span>獨立分頁 · 加盟連鎖門市主系統</span>
+          <span>連鎖加盟門市投資主專屬系統</span>
         </span>
+        <Link
+          href="/#work"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-bold transition shadow-xs"
+        >
+          <ArrowLeft size={13} />
+          <span>返回作品集 ↗</span>
+        </Link>
       </WorkspaceHeader>
-
-      <DiningRoleNav currentRole="franchise" />
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">

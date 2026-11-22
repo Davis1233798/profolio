@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DiningRoleNav } from "../role-nav";
+import Link from "next/link";
 import { DiningManager } from "../dining-manager";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, ArrowLeft } from "lucide-react";
 
 type Data = {
   tables: any[];
@@ -60,11 +60,18 @@ export default function AdminPage() {
       >
         <span className="dining-service-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold">
           <LayoutDashboard size={14} />
-          <span>獨立分頁 · 店長管理者營運中心</span>
+          <span>店長營運管理者專屬控制台</span>
         </span>
+        <Link
+          href="/#work"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-bold transition shadow-xs"
+        >
+          <ArrowLeft size={13} />
+          <span>返回作品集 ↗</span>
+        </Link>
       </WorkspaceHeader>
-
-      <DiningRoleNav currentRole="admin" />
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">

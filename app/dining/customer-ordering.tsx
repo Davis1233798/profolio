@@ -216,9 +216,6 @@ export function CustomerOrdering({
   tables = [],
   onSelectTable,
 }: CustomerOrderingProps) {
-  // RWA / PWA mobile frame vs Responsive wide
-  const [displayMode, setDisplayMode] = useState<"pwa" | "responsive">("pwa");
-
   // Navigation tabs within Customer view: menu vs vip vs status vs push
   const [activeTab, setActiveTab] = useState<"menu" | "vip" | "status" | "push">("menu");
 
@@ -752,92 +749,7 @@ export function CustomerOrdering({
   }
 
   return (
-    <div className={`relative mx-auto w-full font-sans text-stone-800 dark:text-stone-100 transition-all duration-300 ${
-      displayMode === "pwa" ? "max-w-md pb-16" : "max-w-4xl pb-32"
-    }`}>
-      {/* RWA / PWA Experience Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-2.5 shadow-xs">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-stone-700 dark:text-stone-300">介面模式:</span>
-          <div className="inline-flex rounded-xl bg-stone-100 dark:bg-stone-800 p-0.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setDisplayMode("pwa")}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
-                displayMode === "pwa"
-                  ? "bg-[#006241] text-white shadow-xs font-bold"
-                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
-              }`}
-            >
-              <Smartphone size={13} />
-              <span>📱 手機 PWA 模式</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDisplayMode("responsive")}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
-                displayMode === "responsive"
-                  ? "bg-[#006241] text-white shadow-xs font-bold"
-                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
-              }`}
-            >
-              <UtensilsCrossed size={13} />
-              <span>💻 全寬開展模式</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Simulate Push Notification trigger */}
-          <button
-            type="button"
-            onClick={handleSimulatePush}
-            title="發送一則即時會員優惠推播"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 text-xs font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition shadow-xs cursor-pointer"
-          >
-            <Radio size={13} className="text-amber-600 animate-pulse" />
-            <span>模擬發送推播</span>
-          </button>
-
-          {/* PWA Install simulator */}
-          <button
-            type="button"
-            onClick={() => {
-              setPwaInstalled(true);
-              setOrderNotice({
-                type: "success",
-                message: "📲 已成功將 TableCraft 智慧餐飲 PWA 捷徑新增至手機主畫面！",
-              });
-            }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-xs cursor-pointer"
-          >
-            <Download size={13} className="text-emerald-700" />
-            <span>{pwaInstalled ? "已安裝 PWA" : "安裝 PWA App"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Smartphone Chassis Frame for PWA Mode */}
-      <div className={
-        displayMode === "pwa"
-          ? "relative rounded-[40px] border-[10px] border-stone-900 bg-stone-50 dark:bg-stone-950 dark:border-stone-800 shadow-2xl overflow-hidden ring-1 ring-black/10 min-h-[780px]"
-          : "relative"
-      }>
-        {/* Smartphone Status Bar (Dynamic Island & Time) */}
-        {displayMode === "pwa" && (
-          <div className="flex items-center justify-between bg-stone-900 px-6 pt-2 pb-1.5 text-[11px] font-bold text-white select-none">
-            <span>12:30</span>
-            <div className="flex items-center gap-2 rounded-full bg-stone-800 px-3 py-0.5 border border-white/10">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-stone-200">TableCraft PWA</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span>5G</span>
-              <span>100%</span>
-            </div>
-          </div>
-        )}
-
+    <div className="relative mx-auto w-full max-w-xl font-sans text-stone-800 dark:text-stone-100 pb-28">
       {/* =========================================================================
           FEATURE 1: Mobile-friendly Header
          ========================================================================= */}
@@ -2148,13 +2060,9 @@ export function CustomerOrdering({
       {/* Mobile App Bottom Navigation Dock */}
       <nav
         aria-label="App 底部導覽列"
-        className={`${
-          displayMode === "pwa"
-            ? "sticky bottom-0 left-0 right-0 z-40 border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg"
-            : "fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg sm:hidden"
-        }`}
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg"
       >
-        <div className="flex items-center justify-around py-2.5">
+        <div className="mx-auto max-w-xl flex items-center justify-around py-2.5">
           <button
             type="button"
             onClick={() => setActiveTab("menu")}
@@ -2216,11 +2124,7 @@ export function CustomerOrdering({
             <span>優惠推播</span>
           </button>
         </div>
-        {displayMode === "pwa" && (
-          <div className="h-1 w-28 rounded-full bg-stone-300 dark:bg-stone-700 mx-auto mb-1.5" />
-        )}
       </nav>
-      </div>
 
       {/* =========================================================================
           FEATURE 8: Dynamic QR Code Modal Simulation

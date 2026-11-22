@@ -13,7 +13,7 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
       href: "/dining/customer",
       nameZh: "用戶端點餐",
       nameEn: "Customer",
-      roleZh: "顧客手機自選點餐 (RWA/PWA)",
+      roleZh: "顧客桌邊手機掃碼點餐 (純顧客端 RWA / 無內部權限)",
       icon: Smartphone,
       activeColor: "border-rose-600 bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-100 ring-2 ring-rose-500",
       accentBg: "bg-rose-600 text-white",
@@ -77,7 +77,7 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
         <div className="flex flex-wrap items-center gap-2">
           <span className="flex h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs font-black tracking-wide text-stone-900 dark:text-stone-100">
-            {t("SMART DINING INDEPENDENT SUBSYSTEMS", "智慧餐飲五大專屬獨立系統頁面")}
+            {t("SMART DINING INDEPENDENT SUBSYSTEMS", "智慧餐飲 · 門市營運四大控制台與顧客端 RWA")}
           </span>
           <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-[11px] font-mono font-semibold text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
             目前所在獨立路由：<strong className="text-primary font-bold">{currentRoleInfo.href}</strong>
@@ -161,7 +161,7 @@ export function DiningRoleNav({ currentRole }: { currentRole: "customer" | "fron
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 font-bold text-primary group-hover:underline">
-                    <span>新分頁開啟系統</span>
+                    <span>{r.id === "customer" ? "新分頁開啟顧客點餐" : "新分頁開啟系統"}</span>
                     <ExternalLink size={12} />
                   </span>
                 )}

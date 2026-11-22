@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DiningRoleNav } from "../role-nav";
+import Link from "next/link";
 import { CustomerOrdering } from "../customer-ordering";
-import { WorkspaceHeader } from "@/components/workspace-header";
 import { usePortfolioLocale } from "@/components/portfolio-experience";
-import { Smartphone, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 type Table = { id: string; tableNumber: string; capacity: number; status: string };
 type Session = { id: string; tableId: string; sessionToken: string; guestCount: number; status: string };
@@ -88,22 +87,19 @@ export default function CustomerPage() {
   const rate = data?.locations[0]?.serviceFeeRate ?? 10;
 
   return (
-    <main data-site="dining" data-role="customer" className="suite-page suite-dining space-y-6">
-      <WorkspaceHeader
-        brand="TableCraft"
-        eyebrow="Dining operations / CUSTOMER APP"
-        title="TableCraft 智慧餐飲 · 顧客自選點餐 (RWA/PWA)"
-        description="手機掃碼點餐、尊榮會員卡面、專屬優惠券匣、即時出餐追蹤與促銷優惠推播。"
-        onRefresh={() => void load()}
-        busy={busy || loading}
-      >
-        <span className="dining-service-tag inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold">
-          <Smartphone size={14} />
-          <span>獨立分頁 · 顧客端 RWA/PWA</span>
-        </span>
-      </WorkspaceHeader>
-
-      <DiningRoleNav currentRole="customer" />
+    <main data-site="dining" data-role="customer" className="min-h-screen pb-16">
+      {/* Discreet floating return link for reviewers */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Link
+          href="/#work"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-full bg-stone-900/90 dark:bg-stone-100/90 hover:bg-stone-900 dark:hover:bg-white text-white dark:text-stone-900 px-3.5 py-2 text-xs font-bold shadow-xl backdrop-blur-md transition cursor-pointer"
+        >
+          <ArrowLeft size={13} />
+          <span>返回作品集 ↗</span>
+        </Link>
+      </div>
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">

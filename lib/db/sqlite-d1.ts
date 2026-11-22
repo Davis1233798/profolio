@@ -46,6 +46,17 @@ export function createSqliteD1(dbPath: string = ":memory:"): any {
     if (fs.existsSync(projection)) db.exec(fs.readFileSync(projection, "utf-8"));
     const identity = path.resolve(process.cwd(), "drizzle/0004_station_identity.sql");
     if (fs.existsSync(identity)) db.exec(fs.readFileSync(identity, "utf-8"));
+    const cleaning = path.resolve(process.cwd(), "drizzle/0005_dining_cleaning.sql");
+    if (fs.existsSync(cleaning)) {
+      const columns = db.prepare("PRAGMA table_info(dining_tables)").all() as Array<{ name: string }>;
+      if (!columns.some(column => column.name === "cleaned_until")) {
+        const sqlContent = fs.readFileSync(cleaning, "utf-8");
+        for (const statement of sqlContent.split("--> statement-breakpoint")) {
+          const trimmed = statement.trim();
+          if (trimmed) db.exec(trimmed);
+        }
+      }
+    }
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");

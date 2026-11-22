@@ -52,11 +52,11 @@ export function TakeoutHistory({
           return (
             <article
               key={order.id}
-              className="flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 py-4"
+              className="flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 dark:border-stone-800 py-4"
             >
               <div className="min-w-0">
-                <p className="break-all font-mono text-sm font-semibold">{order.takeoutNumber}</p>
-                <p className="mt-2 text-xs text-stone-500">
+                <p className="break-all font-mono text-sm font-semibold text-stone-900 dark:text-stone-100">{order.takeoutNumber}</p>
+                <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
                   {order.status === "cancelled"
                     ? t("Canceled", "已取消")
                     : order.status === "completed"
@@ -69,7 +69,7 @@ export function TakeoutHistory({
               <button
                 disabled={busy || !reason.trim() || bill?.status !== "paid"}
                 onClick={() => onRefund(order.id, reason)}
-                className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-40"
+                className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/60 disabled:opacity-40"
               >
                 {t("Refund in full and cancel", "全額退款並取消")}
               </button>

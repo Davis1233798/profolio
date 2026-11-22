@@ -706,6 +706,11 @@ export const diningTables = sqliteTable("dining_tables", {
   tableNumber: text("table_number").notNull(),
   capacity: integer("capacity").notNull(),
   status: text("status").notNull().default("vacant"), // vacant, occupied, reserved, cleaning
+  zone: text("zone").notNull().default("main"), // main, window, vip, bar
+  shape: text("shape").notNull().default("square"), // square, round, rectangle, bar
+  coordX: integer("coord_x").notNull().default(0),
+  coordY: integer("coord_y").notNull().default(0),
+  cleanedUntil: text("cleaned_until"), // 5-minute cleaning deadline timestamp (ISO)
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -761,6 +766,7 @@ export const diningTableSessions = sqliteTable("dining_table_sessions", {
   status: text("status").notNull().default("active"), // active, billed, closed
   openedAt: text("opened_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   closedAt: text("closed_at"),
+  durationMinutes: integer("duration_minutes"),
 });
 
 export const diningOrders = sqliteTable("dining_orders", {

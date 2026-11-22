@@ -516,14 +516,24 @@ export class DiningService {
       }));
     }
 
-    // Close session
+    // Close session: Calculate actual dining duration (from QR scan / openedAt to checkout)
+    const openedAtMs = session.openedAt ? new Date(session.openedAt).getTime() : Date.now() - 3600000;
+    const closedAtDate = new Date();
+    const durationMinutes = Math.max(1, Math.round((closedAtDate.getTime() - openedAtMs) / 60000));
+    // Reserve 5 minutes for cleaning buffer: table is vacant but uncleared
+    const cleanedUntil = new Date(closedAtDate.getTime() + 5 * 60 * 1000).toISOString();
+
     queries.push(db.update(diningTableSessions).set({
       status: "closed",
-      closedAt: new Date().toISOString(),
+      closedAt: closedAtDate.toISOString(),
+      durationMinutes: durationMinutes,
     }).where(and(eq(diningTableSessions.id, params.sessionId), eq(diningTableSessions.organizationId, context.organizationId))));
 
-    // Release table
-    queries.push(db.update(diningTables).set({status: "vacant"}).where(and(eq(diningTables.id, session.tableId), eq(diningTables.organizationId, context.organizationId))));
+    // Release table to cleaning state (空桌 未清潔，預留5分鐘清潔時間)
+    queries.push(db.update(diningTables).set({
+      status: "cleaning",
+      cleanedUntil: cleanedUntil,
+    }).where(and(eq(diningTables.id, session.tableId), eq(diningTables.organizationId, context.organizationId))));
     queries.push(db.update(diningOrders).set({status: "completed"}).where(and(eq(diningOrders.sessionId, session.id), eq(diningOrders.organizationId, context.organizationId))));
     try {await db.batch(queries as any);} catch(error) {throw new Error("帳單已變更或已由其他人結帳，請重新整理，不會重複收款", {cause: error});}
 
@@ -534,6 +544,80 @@ export class DiningService {
       serviceCharge: calc.serviceCharge,
       finalAmount: calc.finalAmount,
       paidSplits: params.splits.length,
+      durationMinutes,
+      cleanedUntil,
     };
+  }
+
+  /**
+   * Complete cleaning and make table available (vacant)
+   */
+  static async cleanTable(context: TenantContext, params: { tableId: string }) {
+    writable(context);
+    const db = getDb();
+    const [table] = await db.select().from(diningTables)
+      .where(and(eq(diningTables.organizationId, context.organizationId), eq(diningTables.id, params.tableId)))
+      .limit(1);
+    if (!table) throw new Error("桌位不存在");
+
+    await db.update(diningTables).set({
+      status: "vacant",
+      cleanedUntil: null,
+    }).where(and(eq(diningTables.organizationId, context.organizationId), eq(diningTables.id, params.tableId)));
+
+    return { success: true, tableId: params.tableId, status: "vacant" };
+  }
+
+  /**
+   * Seat a confirmed reservation: creates session and marks table occupied
+   */
+  static async seatReservation(context: TenantContext, params: { reservationId: string }) {
+    writable(context);
+    const db = getDb();
+    const [reservation] = await db.select().from(diningReservations)
+      .where(and(eq(diningReservations.organizationId, context.organizationId), eq(diningReservations.id, params.reservationId)))
+      .limit(1);
+    if (!reservation) throw new Error("預約資料不存在");
+    if (reservation.status !== "confirmed") throw new Error("該預約非待入座狀態");
+
+    const [table] = await db.select().from(diningTables)
+      .where(and(eq(diningTables.organizationId, context.organizationId), eq(diningTables.id, reservation.tableId)))
+      .limit(1);
+    if (!table) throw new Error("指定桌位不存在");
+    if (table.status === "occupied") throw new Error("指定桌位目前仍有用餐中的顧客，無法入座");
+
+    const newSessionId = crypto.randomUUID();
+    const sessionToken = crypto.randomUUID();
+    await db.batch([
+      db.update(diningReservations).set({ status: "seated" }).where(and(eq(diningReservations.organizationId, context.organizationId), eq(diningReservations.id, reservation.id))),
+      db.insert(diningTableSessions).values({
+        id: newSessionId,
+        organizationId: context.organizationId,
+        tableId: table.id,
+        guestCount: reservation.guestCount,
+        sessionToken,
+        status: "active",
+        openedAt: new Date().toISOString(),
+      }),
+      db.update(diningTables).set({ status: "occupied", cleanedUntil: null }).where(and(eq(diningTables.organizationId, context.organizationId), eq(diningTables.id, table.id))),
+    ]);
+
+    return { success: true, reservationId: reservation.id, sessionId: newSessionId, sessionToken };
+  }
+
+  /**
+   * Cancel a reservation
+   */
+  static async cancelReservation(context: TenantContext, params: { reservationId: string }) {
+    writable(context);
+    const db = getDb();
+    const [reservation] = await db.select().from(diningReservations)
+      .where(and(eq(diningReservations.organizationId, context.organizationId), eq(diningReservations.id, params.reservationId)))
+      .limit(1);
+    if (!reservation) throw new Error("預約資料不存在");
+
+    await db.update(diningReservations).set({ status: "cancelled" }).where(and(eq(diningReservations.organizationId, context.organizationId), eq(diningReservations.id, reservation.id)));
+
+    return { success: true, reservationId: reservation.id, status: "cancelled" };
   }
 }

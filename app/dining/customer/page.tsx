@@ -55,6 +55,7 @@ export default function CustomerPage() {
   }
 
   useEffect(() => {
+    document.title = "TableCraft · 顧客點餐 (用戶端 RWA/PWA)";
     void load();
   }, []);
 

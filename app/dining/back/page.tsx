@@ -73,6 +73,7 @@ export default function BackOfficePage() {
   }
 
   useEffect(() => {
+    document.title = "TableCraft · 後台廚房 (KDS備餐與結帳)";
     void load();
   }, []);
 

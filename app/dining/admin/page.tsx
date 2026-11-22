@@ -44,6 +44,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    document.title = "TableCraft · 店長管理 (營收KPI與菜單定價)";
     void load();
   }, []);
 
@@ -85,6 +86,8 @@ export default function AdminPage() {
           bills={data.bills || []}
           tablesCount={data.tables?.length || 0}
           activeSessionsCount={data.sessions?.filter(s => s.status === "active").length || 0}
+          sessions={data.sessions || []}
+          tables={data.tables || []}
           onRefresh={() => void load()}
         />
       )}

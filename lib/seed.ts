@@ -534,10 +534,13 @@ export async function seedOrganization(orgId: string = "org_demo_default") {
   const loc1 = { id: `din_loc_01_${orgId}`, organizationId: orgId, name: "TableCraft 示範餐廳 A", serviceFeeRate: 10 };
   await db.insert(diningLocations).values(loc1).onConflictDoNothing();
 
-  const tblA1 = { id: `din_tbl_a1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "A1", capacity: 4, status: "vacant" };
-  const tblA2 = { id: `din_tbl_a2_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "A2", capacity: 4, status: "occupied" };
-  const tblB1 = { id: `din_tbl_b1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "B1", capacity: 2, status: "vacant" };
-  await db.insert(diningTables).values([tblA1, tblA2, tblB1]).onConflictDoNothing();
+  const tblA1 = { id: `din_tbl_a1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "A1", capacity: 4, status: "vacant", zone: "window", shape: "square", coordX: 1, coordY: 1 };
+  const tblA2 = { id: `din_tbl_a2_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "A2", capacity: 4, status: "occupied", zone: "window", shape: "square", coordX: 2, coordY: 1 };
+  const tblB1 = { id: `din_tbl_b1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "B1", capacity: 2, status: "vacant", zone: "main", shape: "square", coordX: 1, coordY: 2 };
+  const tblB2 = { id: `din_tbl_b2_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "B2", capacity: 4, status: "cleaning", zone: "main", shape: "square", coordX: 2, coordY: 2, cleanedUntil: new Date(Date.now() + 4 * 60 * 1000).toISOString() };
+  const tblC1 = { id: `din_tbl_c1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "C1", capacity: 6, status: "vacant", zone: "vip", shape: "round", coordX: 3, coordY: 1 };
+  const tblBar1 = { id: `din_tbl_bar1_${orgId}`, organizationId: orgId, locationId: loc1.id, tableNumber: "BAR-1", capacity: 1, status: "vacant", zone: "bar", shape: "bar", coordX: 3, coordY: 2 };
+  await db.insert(diningTables).values([tblA1, tblA2, tblB1, tblB2, tblC1, tblBar1]).onConflictDoNothing();
 
   const steak = { id: `din_menu_01_${orgId}`, organizationId: orgId, name: "炭烤特級肋眼牛排", category: "排餐", price: 450, isSoldOut: false, station: "hot_kitchen" };
   const pasta = { id: `din_menu_02_${orgId}`, organizationId: orgId, name: "松露黑醋牛肝菌燉飯", category: "主食", price: 320, isSoldOut: false, station: "hot_kitchen" };
@@ -566,8 +569,22 @@ export async function seedOrganization(orgId: string = "org_demo_default") {
     sessionToken: `token_tbl_a2_${orgId}`,
     guestCount: 2,
     status: "active",
+    openedAt: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
   };
-  await db.insert(diningTableSessions).values(sessionA2).onConflictDoNothing();
+
+  // Historical closed session for table turnover & average dining time statistics
+  const closedSessionB2 = {
+    id: `din_sess_b2_hist_${orgId}`,
+    organizationId: orgId,
+    tableId: tblB2.id,
+    sessionToken: `token_tbl_b2_old_${orgId}`,
+    guestCount: 3,
+    status: "closed",
+    openedAt: new Date(Date.now() - 95 * 60 * 1000).toISOString(),
+    closedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    durationMinutes: 60,
+  };
+  await db.insert(diningTableSessions).values([sessionA2, closedSessionB2]).onConflictDoNothing();
 
   // Sample order: 100 + 200 = 300, service 30 = 330
   const orderA2 = {

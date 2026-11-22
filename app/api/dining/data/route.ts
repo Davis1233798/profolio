@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { resolveTenantContext } from "@/lib/tenant";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { getDb } from "@/db/index";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import {
   diningLocations,
   diningTables,
@@ -25,6 +25,16 @@ export async function GET(request: NextRequest) {
     const context = resolveTenantContext(request);
     const db = getDb();
     const orgId = context.organizationId;
+
+    // Auto-release tables whose 5-minute cleaning period has expired
+    const nowIso = new Date().toISOString();
+    await db.update(diningTables)
+      .set({ status: "vacant", cleanedUntil: null })
+      .where(and(
+        eq(diningTables.organizationId, orgId),
+        eq(diningTables.status, "cleaning"),
+        sql`cleaned_until IS NOT NULL AND julianday(cleaned_until) <= julianday(${nowIso})`
+      ));
 
     const [locations, tables, reservations, menuItems, modifierGroups, modifierOptions, sessions, orders, kdsTickets, orderItems, bills, payments] =
       await Promise.all([

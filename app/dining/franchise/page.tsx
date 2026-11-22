@@ -42,6 +42,7 @@ export default function FranchisePage() {
   }
 
   useEffect(() => {
+    document.title = "TableCraft · 連鎖門市加盟主 (門市損益與央廚叫貨)";
     void load();
   }, []);
 

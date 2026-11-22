@@ -38,6 +38,8 @@ export interface DiningManagerProps {
   bills: Bill[];
   tablesCount: number;
   activeSessionsCount: number;
+  sessions?: any[];
+  tables?: any[];
   onRefresh?: () => void | Promise<void>;
 }
 
@@ -54,6 +56,8 @@ export function DiningManager({
   bills,
   tablesCount,
   activeSessionsCount,
+  sessions,
+  tables,
   onRefresh,
 }: DiningManagerProps) {
   const [managerTab, setManagerTab] = useState<"kpi" | "menu" | "sla" | "rbac">("kpi");
@@ -66,6 +70,16 @@ export function DiningManager({
   const [newItemPrice, setNewItemPrice] = useState(250);
   const [showAddModal, setShowAddModal] = useState(false);
   const [actionNotice, setActionNotice] = useState("");
+
+  // Average Dining Duration from sessions (from QR scan / openedAt to checkout / closedAt)
+  const closedSessions = (sessions || []).filter(s => s.status === "closed" && s.openedAt && s.closedAt);
+  const durations = closedSessions.map(s => {
+    if (s.durationMinutes && s.durationMinutes > 0) return s.durationMinutes;
+    return Math.max(1, Math.round((new Date(s.closedAt).getTime() - new Date(s.openedAt).getTime()) / 60000));
+  });
+  const avgDiningTime = durations.length > 0
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : 60;
 
   const allMenuItems = [...menuItems, ...addedItems].map(item => ({
     ...item,
@@ -215,7 +229,7 @@ export function DiningManager({
       {/* VIEW 1: KPI Dashboard */}
       {managerTab === "kpi" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
               <span className="text-xs font-medium text-stone-500 dark:text-stone-400">今日實收營業額 (Gross Revenue)</span>
               <p className="mt-2 text-2xl font-bold text-stone-900 dark:text-stone-100">{money(totalRevenue)}</p>
@@ -234,6 +248,13 @@ export function DiningManager({
               <span className="text-xs font-medium text-stone-500 dark:text-stone-400">平均客單價 (Avg Check / AOV)</span>
               <p className="mt-2 text-2xl font-bold text-purple-700 dark:text-purple-400">{money(avgCheck)}</p>
               <span className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">包含 10% 服務費</span>
+            </div>
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
+              <span className="text-xs font-medium text-stone-500 dark:text-stone-400">平均用餐時長 (Dining Time)</span>
+              <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{avgDiningTime} 分鐘</p>
+              <span className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">
+                掃碼至結帳 · 清潔預留5m
+              </span>
             </div>
             <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
               <span className="text-xs font-medium text-stone-500 dark:text-stone-400">即時桌況入座率 (Occupancy)</span>

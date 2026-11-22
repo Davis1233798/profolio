@@ -14,7 +14,16 @@ export async function POST(request: NextRequest) {
     const input = z.object({tableId: z.string().min(1), guestCount: z.number().int().positive().max(100)}).parse(await request.json());
     const db = getDb();
     const [table] = await db.select().from(diningTables).where(and(eq(diningTables.id, input.tableId), eq(diningTables.organizationId, context.organizationId))).limit(1);
-    if (!table || table.status !== "vacant") throw new Error("桌位不存在或尚未空桌");
+    if (!table) throw new Error("桌位不存在");
+    if (table.status === "cleaning") {
+      if (table.cleanedUntil && new Date(table.cleanedUntil).getTime() <= Date.now()) {
+        await db.update(diningTables).set({ status: "vacant", cleanedUntil: null }).where(and(eq(diningTables.id, table.id), eq(diningTables.organizationId, context.organizationId)));
+        table.status = "vacant";
+      } else {
+        throw new Error("桌位清潔消毒中（結帳後預留5分鐘翻桌），請先點選「完成清潔」或稍後開桌");
+      }
+    }
+    if (table.status !== "vacant") throw new Error("桌位不存在或尚未空桌");
     if (input.guestCount > table.capacity) throw new Error("用餐人數超過桌位容量");
     const session = {id: crypto.randomUUID(), organizationId: context.organizationId, tableId: table.id, guestCount: input.guestCount, sessionToken: crypto.randomUUID(), status: "active"};
     // The NOT NULL audit actor guard aborts the entire batch if another request

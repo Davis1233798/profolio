@@ -820,7 +820,7 @@ export function CustomerOrdering({
       {/* Smartphone Chassis Frame for PWA Mode */}
       <div className={
         displayMode === "pwa"
-          ? "relative rounded-[40px] border-[10px] border-stone-900 bg-stone-50 shadow-2xl overflow-hidden ring-1 ring-black/10 min-h-[780px]"
+          ? "relative rounded-[40px] border-[10px] border-stone-900 bg-stone-50 dark:bg-stone-950 dark:border-stone-800 shadow-2xl overflow-hidden ring-1 ring-black/10 min-h-[780px]"
           : "relative"
       }>
         {/* Smartphone Status Bar (Dynamic Island & Time) */}
@@ -995,7 +995,7 @@ export function CustomerOrdering({
           </div>
           <button
             onClick={() => setOrderNotice(null)}
-            className="text-stone-400 hover:text-stone-700"
+            className="text-stone-400 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
             aria-label="關閉提示"
           >
             <X size={14} />
@@ -1008,35 +1008,35 @@ export function CustomerOrdering({
         <div className="mb-5 overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 font-bold text-amber-900">
-                <AlertCircle size={18} className="text-amber-600" />
+              <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-300">
+                <AlertCircle size={18} className="text-amber-600 dark:text-amber-400" />
                 <span>此桌位尚未開桌 (No Active Session)</span>
               </div>
-              <p className="text-xs text-amber-800/80">
+              <p className="text-xs text-amber-800/80 dark:text-amber-200/90">
                 您目前處於顧客桌邊點餐模式。請先開桌以產生用餐 Session，即可送出點單給廚房備料。
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-2 py-1 shadow-xs">
-                <span className="text-xs font-medium text-stone-600">用餐人數:</span>
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-stone-900 px-2 py-1 shadow-xs">
+                <span className="text-xs font-medium text-stone-600 dark:text-stone-300">用餐人數:</span>
                 <button
                   type="button"
                   disabled={quickPartySize <= 1 || openingTable || busy}
                   onClick={() => setQuickPartySize((s) => Math.max(1, s - 1))}
-                  className="rounded p-1 hover:bg-stone-100 disabled:opacity-30"
+                  className="rounded p-1 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 disabled:opacity-30"
                   aria-label="減少人數"
                 >
                   <Minus size={12} />
                 </button>
-                <span className="w-5 text-center text-xs font-bold text-stone-900">
+                <span className="w-5 text-center text-xs font-bold text-stone-900 dark:text-stone-100">
                   {quickPartySize}
                 </span>
                 <button
                   type="button"
                   disabled={quickPartySize >= (table.capacity || 8) || openingTable || busy}
                   onClick={() => setQuickPartySize((s) => Math.min(table.capacity || 8, s + 1))}
-                  className="rounded p-1 hover:bg-stone-100 disabled:opacity-30"
+                  className="rounded p-1 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 disabled:opacity-30"
                   aria-label="增加人數"
                 >
                   <Plus size={12} />
@@ -1184,22 +1184,22 @@ export function CustomerOrdering({
                       </div>
 
                       {/* Item Name */}
-                      <h2 className="mt-2.5 text-base font-bold text-stone-900 group-hover:text-[#006241] transition">
+                      <h2 className="mt-2.5 text-base font-bold text-stone-900 dark:text-stone-100 group-hover:text-[#006241] dark:group-hover:text-emerald-400 transition">
                         {item.name}
                       </h2>
 
                       {/* Description / Extra hint */}
-                      <p className="mt-1 text-xs text-stone-500 line-clamp-2">
+                      <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
                         {isDrink
                           ? "可客製化甜度、冰塊與精選加料"
                           : "主廚新鮮手作，現點現做熱騰騰上桌"}
                       </p>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-stone-100">
+                    <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-stone-100 dark:border-stone-800">
                       <div>
-                        <span className="text-xs text-stone-400">單價</span>
-                        <p className="text-lg font-black text-stone-900">{money(item.price)}</p>
+                        <span className="text-xs text-stone-400 dark:text-stone-500">單價</span>
+                        <p className="text-lg font-black text-stone-900 dark:text-stone-100">{money(item.price)}</p>
                       </div>
 
                       {/* Add Button */}
@@ -1438,27 +1438,27 @@ export function CustomerOrdering({
               </div>
 
               {/* 4. Served */}
-              <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-center">
-                <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-stone-200 text-stone-700">
+              <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/50 p-3 text-center">
+                <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
                   <CheckCircle2 size={15} />
                 </div>
-                <p className="mt-1.5 text-xs font-bold text-stone-800">已送達餐桌</p>
-                <p className="text-[11px] text-stone-500">Served</p>
-                <p className="mt-1 text-lg font-extrabold text-stone-900">{ticketCounts.served}</p>
+                <p className="mt-1.5 text-xs font-bold text-stone-800 dark:text-stone-200">已送達餐桌</p>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400">Served</p>
+                <p className="mt-1 text-lg font-extrabold text-stone-900 dark:text-stone-100">{ticketCounts.served}</p>
               </div>
             </div>
 
             {/* Progress bar */}
             {ticketCounts.total > 0 && (
               <div className="mt-4">
-                <div className="flex justify-between text-xs text-stone-500">
+                <div className="flex justify-between text-xs text-stone-500 dark:text-stone-400">
                   <span>出餐進度</span>
                   <span>
                     已送達 {ticketCounts.served} / 總共 {ticketCounts.total} 項餐點 (
                     {Math.round((ticketCounts.served / ticketCounts.total) * 100)}%)
                   </span>
                 </div>
-                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-stone-100">
+                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-[#006241] transition-all duration-500"
                     style={{
@@ -1472,15 +1472,15 @@ export function CustomerOrdering({
 
           {/* List of Ordered Tickets */}
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-stone-700">餐點詳細列表 ({sessionTickets.length})</h3>
+            <h3 className="text-sm font-bold text-stone-700 dark:text-stone-300">餐點詳細列表 ({sessionTickets.length})</h3>
 
             {sessionTickets.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-400">
+              <div className="rounded-2xl border border-dashed border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-10 text-center text-stone-400 dark:text-stone-500">
                 <ChefHat size={36} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">此桌位尚未有送至廚房的餐點</p>
                 <button
                   onClick={() => setActiveTab("menu")}
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#006241] underline"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#006241] dark:text-emerald-400 underline"
                 >
                   前往菜單挑選美味餐點 <ArrowRight size={13} />
                 </button>
@@ -1491,20 +1491,20 @@ export function CustomerOrdering({
                 const isServed = ticket.status === "served";
 
                 // Visual status pill style
-                let badgeStyle = "bg-amber-100 text-amber-900 border-amber-300";
+                let badgeStyle = "bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800";
                 let statusName = "排隊待備料 (Queued)";
                 let StatusIcon = Clock;
 
                 if (ticket.status === "cooking" || ticket.status === "preparing") {
-                  badgeStyle = "bg-orange-100 text-orange-900 border-orange-300 animate-pulse";
+                  badgeStyle = "bg-orange-100 dark:bg-orange-950/60 text-orange-900 dark:text-orange-200 border-orange-300 dark:border-orange-800 animate-pulse";
                   statusName = "主廚烹調中 (Preparing)";
                   StatusIcon = Flame;
                 } else if (ticket.status === "done" || ticket.status === "ready") {
-                  badgeStyle = "bg-emerald-100 text-emerald-900 border-emerald-300 ring-1 ring-emerald-400";
+                  badgeStyle = "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800 ring-1 ring-emerald-400";
                   statusName = "餐點已備妥 (Ready to Serve)";
                   StatusIcon = Bell;
                 } else if (ticket.status === "served") {
-                  badgeStyle = "bg-stone-100 text-stone-600 border-stone-200";
+                  badgeStyle = "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700";
                   statusName = "已送達餐桌 (Served)";
                   StatusIcon = CheckCircle2;
                 }
@@ -1512,14 +1512,14 @@ export function CustomerOrdering({
                 return (
                   <article
                     key={ticket.id}
-                    className="flex flex-col justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-xs transition sm:flex-row sm:items-center"
+                    className="flex flex-col justify-between gap-3 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs transition sm:flex-row sm:items-center"
                   >
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-base font-bold text-stone-900">
+                        <h4 className="text-base font-bold text-stone-900 dark:text-stone-100">
                           {ticket.itemName}
                         </h4>
-                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-extrabold text-stone-700">
+                        <span className="rounded-full bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-extrabold text-stone-700 dark:text-stone-300">
                           × {ticket.quantity}
                         </span>
                         <span
@@ -1775,7 +1775,7 @@ export function CustomerOrdering({
 
             {/* Error banner */}
             {modalError && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+              <div className="mt-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs text-red-700 dark:text-red-300">
                 {modalError}
               </div>
             )}
@@ -1788,20 +1788,20 @@ export function CustomerOrdering({
                 const isSingle = group.maxSelection === 1;
 
                 return (
-                  <fieldset key={group.id} className="rounded-xl border border-stone-100 bg-stone-50/50 p-3.5">
+                  <fieldset key={group.id} className="rounded-xl border border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 p-3.5">
                     <div className="flex items-center justify-between">
-                      <legend className="text-sm font-bold text-stone-800">{group.name}</legend>
+                      <legend className="text-sm font-bold text-stone-800 dark:text-stone-200">{group.name}</legend>
                       <div className="flex items-center gap-1.5 text-[11px]">
                         {group.isRequired ? (
-                          <span className="rounded bg-red-50 px-1.5 py-0.5 font-bold text-red-600 border border-red-200">
+                          <span className="rounded bg-red-50 dark:bg-red-950/60 px-1.5 py-0.5 font-bold text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800">
                             必選
                           </span>
                         ) : (
-                          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-stone-500">
+                          <span className="rounded bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 text-stone-500 dark:text-stone-400">
                             選填
                           </span>
                         )}
-                        <span className="text-stone-400">
+                        <span className="text-stone-400 dark:text-stone-500">
                           {isSingle ? "單選" : `最多選 ${group.maxSelection} 項`}
                         </span>
                       </div>
@@ -1815,8 +1815,8 @@ export function CustomerOrdering({
                             key={opt.id}
                             className={`flex cursor-pointer items-center justify-between rounded-xl border p-2.5 text-xs font-semibold transition ${
                               isChecked
-                                ? "border-[#006241] bg-[#d4e9e2] text-[#1e3932] shadow-xs"
-                                : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                                ? "border-[#006241] dark:border-emerald-500 bg-[#d4e9e2] dark:bg-emerald-950/80 text-[#1e3932] dark:text-emerald-200 shadow-xs"
+                                : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:border-stone-300 dark:hover:border-stone-600"
                             }`}
                           >
                             <div className="flex items-center gap-1.5">
@@ -1863,23 +1863,23 @@ export function CustomerOrdering({
             </div>
 
             {/* Quantity Stepper & Add Button */}
-            <div className="flex items-center justify-between gap-4 border-t border-stone-100 pt-4">
-              <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-1">
+            <div className="flex items-center justify-between gap-4 border-t border-stone-100 dark:border-stone-800 pt-4">
+              <div className="flex items-center gap-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 p-1">
                 <button
                   type="button"
                   disabled={modalQuantity <= 1}
                   onClick={() => setModalQuantity((q) => Math.max(1, q - 1))}
-                  className="rounded-lg p-1.5 hover:bg-white disabled:opacity-30"
+                  className="rounded-lg p-1.5 hover:bg-white dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 disabled:opacity-30"
                   aria-label="減少數量"
                 >
                   <Minus size={14} />
                 </button>
-                <span className="w-8 text-center text-sm font-bold">{modalQuantity}</span>
+                <span className="w-8 text-center text-sm font-bold text-stone-900 dark:text-stone-100">{modalQuantity}</span>
                 <button
                   type="button"
                   disabled={modalQuantity >= 50}
                   onClick={() => setModalQuantity((q) => Math.min(50, q + 1))}
-                  className="rounded-lg p-1.5 hover:bg-white disabled:opacity-30"
+                  className="rounded-lg p-1.5 hover:bg-white dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 disabled:opacity-30"
                   aria-label="增加數量"
                 >
                   <Plus size={14} />
@@ -1994,35 +1994,35 @@ export function CustomerOrdering({
               {cart.map((line) => (
                 <div
                   key={line.key}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-stone-100 bg-stone-50/50 p-3"
+                  className="flex items-start justify-between gap-3 rounded-xl border border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/60 p-3"
                 >
                   <div className="space-y-0.5">
-                    <h4 className="text-sm font-bold text-stone-900">{line.name}</h4>
+                    <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">{line.name}</h4>
                     {line.description && (
-                      <p className="text-xs text-stone-500">{line.description}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400">{line.description}</p>
                     )}
-                    <p className="text-xs font-semibold text-[#006241]">
+                    <p className="text-xs font-semibold text-[#006241] dark:text-emerald-400">
                       {money(line.unitPrice)}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-1.5 py-1">
+                    <div className="flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-1.5 py-1">
                       <button
                         type="button"
                         onClick={() => updateCartQuantity(line.key, -1)}
-                        className="rounded p-0.5 hover:bg-stone-100 text-stone-600"
+                        className="rounded p-0.5 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300"
                         aria-label="減少"
                       >
                         <Minus size={12} />
                       </button>
-                      <span className="w-5 text-center text-xs font-bold text-stone-800">
+                      <span className="w-5 text-center text-xs font-bold text-stone-800 dark:text-stone-200">
                         {line.quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => updateCartQuantity(line.key, 1)}
-                        className="rounded p-0.5 hover:bg-stone-100 text-stone-600"
+                        className="rounded p-0.5 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300"
                         aria-label="增加"
                       >
                         <Plus size={12} />
@@ -2043,13 +2043,13 @@ export function CustomerOrdering({
             </div>
 
             {/* Member Coupon Selection in Drawer */}
-            <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5 my-2">
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/60 p-2.5 my-2">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
-                  <Ticket size={14} className="text-[#006241]" />
+                <span className="flex items-center gap-1.5 text-xs font-bold text-stone-800 dark:text-stone-200">
+                  <Ticket size={14} className="text-[#006241] dark:text-emerald-400" />
                   <span>會員專屬優惠券折抵</span>
                 </span>
-                <span className="text-[11px] text-emerald-700 font-bold">
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
                   {appliedCoupon ? `已折抵 ${appliedCoupon.type === 'service_fee' ? '免服務費' : money(couponDiscount)}` : "未套用"}
                 </span>
               </div>
@@ -2065,7 +2065,7 @@ export function CustomerOrdering({
                       className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold transition cursor-pointer ${
                         isCur
                           ? "bg-[#006241] text-white border-[#006241] shadow-xs"
-                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
+                          : "bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700"
                       }`}
                     >
                       {isCur && "✓ "}
@@ -2077,19 +2077,19 @@ export function CustomerOrdering({
             </div>
 
             {/* Wallet payment toggle */}
-            <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-2.5 text-xs my-2">
+            <div className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-2.5 text-xs my-2">
               <div className="flex items-center gap-2">
-                <Wallet size={15} className="text-emerald-700" />
+                <Wallet size={15} className="text-emerald-700 dark:text-emerald-400" />
                 <div>
-                  <p className="font-bold text-stone-900">使用會員儲值金扣款</p>
-                  <p className="text-[11px] text-stone-500">目前餘額：{money(memberData.walletBalance)}</p>
+                  <p className="font-bold text-stone-900 dark:text-stone-100">使用會員儲值金扣款</p>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400">目前餘額：{money(memberData.walletBalance)}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setUseWalletPayment(!useWalletPayment)}
                 className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
-                  useWalletPayment ? "bg-emerald-600 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  useWalletPayment ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700"
                 }`}
               >
                 {useWalletPayment ? "已啟用扣款" : "點擊啟用"}
@@ -2097,26 +2097,26 @@ export function CustomerOrdering({
             </div>
 
             {/* Subtotal & Fee Preview */}
-            <div className="space-y-1.5 border-t border-stone-100 pt-3 text-xs text-stone-600">
+            <div className="space-y-1.5 border-t border-stone-100 dark:border-stone-800 pt-3 text-xs text-stone-600 dark:text-stone-400">
               <div className="flex justify-between">
                 <span>餐點金額小計</span>
-                <span className="font-semibold text-stone-900">{money(cartSubtotal)}</span>
+                <span className="font-semibold text-stone-900 dark:text-stone-100">{money(cartSubtotal)}</span>
               </div>
               {appliedCoupon && couponDiscount > 0 && (
-                <div className="flex justify-between text-emerald-700 font-bold">
+                <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold">
                   <span>會員優惠券折抵 ({appliedCoupon.badge})</span>
                   <span>- {money(couponDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>預估服務費 ({effectiveServiceFeeRate}%)</span>
-                <span className="font-semibold text-stone-900">
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
                   {effectiveServiceFeeRate === 0 ? "免服務費 (特惠)" : money(cartEstimatedFee)}
                 </span>
               </div>
-              <div className="flex justify-between border-t border-stone-100 pt-2 text-sm font-extrabold text-stone-900">
+              <div className="flex justify-between border-t border-stone-100 dark:border-stone-800 pt-2 text-sm font-extrabold text-stone-900 dark:text-stone-100">
                 <span>預估結帳實付</span>
-                <span className="text-base text-[#006241]">{money(cartEstimatedTotal)}</span>
+                <span className="text-base text-[#006241] dark:text-emerald-400">{money(cartEstimatedTotal)}</span>
               </div>
             </div>
 
@@ -2159,7 +2159,7 @@ export function CustomerOrdering({
             type="button"
             onClick={() => setActiveTab("menu")}
             className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
-              activeTab === "menu" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+              activeTab === "menu" ? "text-[#006241] dark:text-emerald-400" : "text-stone-400 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
             }`}
           >
             <UtensilsCrossed size={18} />
@@ -2169,7 +2169,7 @@ export function CustomerOrdering({
             type="button"
             onClick={() => setActiveTab("vip")}
             className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
-              activeTab === "vip" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+              activeTab === "vip" ? "text-[#006241] dark:text-emerald-400" : "text-stone-400 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
             }`}
           >
             <div className="relative">
@@ -2184,7 +2184,7 @@ export function CustomerOrdering({
             type="button"
             onClick={() => setActiveTab("status")}
             className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
-              activeTab === "status" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+              activeTab === "status" ? "text-[#006241] dark:text-emerald-400" : "text-stone-400 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
             }`}
           >
             <div className="relative">
@@ -2201,7 +2201,7 @@ export function CustomerOrdering({
             type="button"
             onClick={() => setActiveTab("push")}
             className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition cursor-pointer ${
-              activeTab === "push" ? "text-[#006241]" : "text-stone-400 hover:text-stone-700"
+              activeTab === "push" ? "text-[#006241] dark:text-emerald-400" : "text-stone-400 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
             }`}
           >
             <div className="relative">
@@ -2217,7 +2217,7 @@ export function CustomerOrdering({
           </button>
         </div>
         {displayMode === "pwa" && (
-          <div className="h-1 w-28 rounded-full bg-stone-300 mx-auto mb-1.5" />
+          <div className="h-1 w-28 rounded-full bg-stone-300 dark:bg-stone-700 mx-auto mb-1.5" />
         )}
       </nav>
       </div>
@@ -2257,10 +2257,10 @@ export function CustomerOrdering({
               </div>
 
               <div className="mt-3 flex items-center gap-2">
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-[#006241]">
+                <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-[#006241] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                   {table?.tableNumber ? `桌號 ${table.tableNumber}` : "預設桌位"}
                 </span>
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-stone-400 dark:text-stone-500">
                   Token: {session?.sessionToken ? session.sessionToken.slice(0, 8) : "無Session"}
                 </span>
               </div>
@@ -2268,17 +2268,17 @@ export function CustomerOrdering({
 
             {/* URL input and copy */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 p-1.5 text-xs">
-                <span className="truncate pl-1 font-mono text-[11px] text-stone-600">
+              <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 p-1.5 text-xs">
+                <span className="truncate pl-1 font-mono text-[11px] text-stone-600 dark:text-stone-300">
                   {simulatedUrl}
                 </span>
                 <button
                   type="button"
                   onClick={() => void handleCopyUrl()}
-                  className="shrink-0 rounded-lg bg-white px-2 py-1 font-semibold text-stone-700 shadow-xs hover:bg-stone-100 border border-stone-200"
+                  className="shrink-0 rounded-lg bg-white dark:bg-stone-700 px-2 py-1 font-semibold text-stone-700 dark:text-stone-200 shadow-xs hover:bg-stone-100 dark:hover:bg-stone-600 border border-stone-200 dark:border-stone-600"
                 >
                   {copiedUrl ? (
-                    <span className="flex items-center gap-1 text-emerald-600">
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                       <Check size={12} /> 已複製
                     </span>
                   ) : (
@@ -2292,7 +2292,7 @@ export function CustomerOrdering({
               <button
                 type="button"
                 onClick={() => setShowQrModal(false)}
-                className="w-full rounded-xl bg-stone-100 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-200 transition"
+                className="w-full rounded-xl bg-stone-100 dark:bg-stone-800 py-2.5 text-xs font-bold text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition"
               >
                 完成
               </button>

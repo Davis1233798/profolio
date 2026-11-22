@@ -58,7 +58,7 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
       positions[offset + 2] = vectors[offset + 2] * spread * .6;
     }
     geometry.attributes.position.needsUpdate = true;
-    material.uniforms.opacity.value = Math.sin(Math.PI * Math.min(t * 1.3, 1)) * (1 - t * .55);
+    material.uniforms.opacity.value = 0;
     renderer.render(scene, camera);
     if (t < 1) frame = requestAnimationFrame(next => draw(next, token));
     else { material.uniforms.opacity.value = 0; renderer.clear(); frame = 0; active = false; }
@@ -77,7 +77,7 @@ export function createParticleController(canvas: HTMLCanvasElement): { play(puls
       generation++;
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      if (pulse.kind === 'click') {
+      if (pulse.kind === 'click' || pulse.kind === 'route' || pulse.kind === 'theme') {
         active = false;
         material.uniforms.opacity.value = 0;
         renderer.clear();

@@ -752,21 +752,21 @@ export function CustomerOrdering({
   }
 
   return (
-    <div className={`relative mx-auto w-full font-sans text-stone-800 transition-all duration-300 ${
+    <div className={`relative mx-auto w-full font-sans text-stone-800 dark:text-stone-100 transition-all duration-300 ${
       displayMode === "pwa" ? "max-w-md pb-16" : "max-w-4xl pb-32"
     }`}>
       {/* RWA / PWA Experience Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-white p-2.5 shadow-xs">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-2.5 shadow-xs">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-stone-700">介面模式:</span>
-          <div className="inline-flex rounded-xl bg-stone-100 p-0.5 text-xs font-semibold">
+          <span className="text-xs font-bold text-stone-700 dark:text-stone-300">介面模式:</span>
+          <div className="inline-flex rounded-xl bg-stone-100 dark:bg-stone-800 p-0.5 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setDisplayMode("pwa")}
               className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
                 displayMode === "pwa"
                   ? "bg-[#006241] text-white shadow-xs font-bold"
-                  : "text-stone-600 hover:text-stone-900"
+                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
               }`}
             >
               <Smartphone size={13} />
@@ -778,7 +778,7 @@ export function CustomerOrdering({
               className={`flex items-center gap-1 rounded-lg px-2.5 py-1 transition cursor-pointer ${
                 displayMode === "responsive"
                   ? "bg-[#006241] text-white shadow-xs font-bold"
-                  : "text-stone-600 hover:text-stone-900"
+                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
               }`}
             >
               <UtensilsCrossed size={13} />
@@ -793,7 +793,7 @@ export function CustomerOrdering({
             type="button"
             onClick={handleSimulatePush}
             title="發送一則即時會員優惠推播"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 text-xs font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition shadow-xs cursor-pointer"
           >
             <Radio size={13} className="text-amber-600 animate-pulse" />
             <span>模擬發送推播</span>
@@ -841,40 +841,40 @@ export function CustomerOrdering({
       {/* =========================================================================
           FEATURE 1: Mobile-friendly Header
          ========================================================================= */}
-      <header className="sticky top-0 z-30 mb-4 overflow-hidden rounded-2xl border border-stone-200/80 bg-white/95 shadow-sm backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-30 mb-4 overflow-hidden rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 shadow-sm backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#006241] text-white shadow-sm">
               <Smartphone size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-stone-900 sm:text-lg">
+                <h1 className="text-base font-bold text-stone-900 dark:text-stone-100 sm:text-lg">
                   {table ? `${table.tableNumber} 桌邊點餐` : "顧客掃碼自選點餐"}
                 </h1>
                 {table ? (
-                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-[#006241] border border-emerald-200">
+                  <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-xs font-semibold text-[#006241] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     內用點餐
                   </span>
                 ) : (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 border border-amber-200">
+                  <span className="rounded-full bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                     外帶/未指派桌位
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-stone-500">
+              <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
                 <span>
                   容納 {table?.capacity || 4} 人 ·{" "}
                   {session ? `現有用餐 ${session.guestCount} 人` : "未開桌"}
                 </span>
                 <span>·</span>
                 {session ? (
-                  <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                  <span className="inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
                     <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     用餐中 (Active)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 font-medium text-amber-700">
+                  <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
                     <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
                     待開桌
                   </span>
@@ -889,11 +889,11 @@ export function CustomerOrdering({
               <select
                 value={table?.id || ""}
                 onChange={(e) => onSelectTable(e.target.value)}
-                className="h-8 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-medium text-stone-700 focus:outline-none focus:ring-1 focus:ring-[#006241]"
+                className="h-8 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-2 text-xs font-medium text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-1 focus:ring-[#006241]"
                 aria-label="選擇測試桌號"
               >
                 {tables.map((t) => (
-                  <option key={t.id} value={t.id}>
+                  <option key={t.id} value={t.id} className="dark:bg-stone-900 dark:text-stone-100">
                     桌號 {t.tableNumber} ({t.status === "occupied" ? "用餐中" : "空桌"})
                   </option>
                 ))}
@@ -904,22 +904,22 @@ export function CustomerOrdering({
             <button
               onClick={() => setShowQrModal(true)}
               title="掃碼桌邊點餐 QR Code"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-700 shadow-xs hover:bg-stone-50 active:scale-95 transition cursor-pointer"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-2.5 text-xs font-medium text-stone-700 dark:text-stone-300 shadow-xs hover:bg-stone-50 dark:hover:bg-stone-800 active:scale-95 transition cursor-pointer"
             >
-              <QrCode size={14} className="text-[#006241]" />
+              <QrCode size={14} className="text-[#006241] dark:text-emerald-400" />
               <span className="hidden sm:inline">桌邊 QR 碼</span>
             </button>
           </div>
         </div>
 
         {/* View Switcher: 4 Tabs - Menu, VIP, Status, Push */}
-        <div className="grid grid-cols-4 border-t border-stone-100 bg-stone-50/70 p-1 gap-1">
+        <div className="grid grid-cols-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/60 p-1 gap-1">
           <button
             onClick={() => setActiveTab("menu")}
             className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "menu"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
-                : "text-stone-600 hover:text-stone-900"
+                ? "bg-white dark:bg-stone-900 text-[#006241] dark:text-emerald-400 shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold"
+                : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             }`}
           >
             <UtensilsCrossed size={14} />
@@ -930,8 +930,8 @@ export function CustomerOrdering({
             onClick={() => setActiveTab("vip")}
             className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "vip"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
-                : "text-stone-600 hover:text-stone-900"
+                ? "bg-white dark:bg-stone-900 text-[#006241] dark:text-emerald-400 shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold"
+                : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             }`}
           >
             <Crown size={14} />
@@ -945,8 +945,8 @@ export function CustomerOrdering({
             onClick={() => setActiveTab("status")}
             className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "status"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
-                : "text-stone-600 hover:text-stone-900"
+                ? "bg-white dark:bg-stone-900 text-[#006241] dark:text-emerald-400 shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold"
+                : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             }`}
           >
             <ChefHat size={14} />
@@ -962,8 +962,8 @@ export function CustomerOrdering({
             onClick={() => setActiveTab("push")}
             className={`relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
               activeTab === "push"
-                ? "bg-white text-[#006241] shadow-xs ring-1 ring-stone-200/60 font-bold"
-                : "text-stone-600 hover:text-stone-900"
+                ? "bg-white dark:bg-stone-900 text-[#006241] dark:text-emerald-400 shadow-xs ring-1 ring-stone-200/60 dark:ring-stone-700 font-bold"
+                : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             }`}
           >
             <Bell size={14} />
@@ -1074,7 +1074,7 @@ export function CustomerOrdering({
           {/* =====================================================================
               FEATURE 2: Menu Categories Bar & Quick Search
              ===================================================================== */}
-          <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-xs sm:p-4">
+          <div className="space-y-3 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-3.5 shadow-xs sm:p-4">
             {/* Search Input */}
             <div className="relative">
               <Search
@@ -1086,12 +1086,12 @@ export function CustomerOrdering({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜尋美味餐點、特調飲品或甜點..."
-                className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2.5 pl-10 pr-9 text-sm text-stone-800 placeholder-stone-400 transition focus:border-[#006241] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#006241]"
+                className="w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 py-2.5 pl-10 pr-9 text-sm transition focus:border-[#006241] focus:bg-white dark:focus:bg-stone-900 focus:outline-none focus:ring-1 focus:ring-[#006241]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
                   aria-label="清除搜尋"
                 >
                   <X size={15} />
@@ -1111,16 +1111,16 @@ export function CustomerOrdering({
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
                       isSelected
                         ? "bg-[#006241] text-white shadow-sm ring-1 ring-[#006241]"
-                        : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
+                        : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-stone-700"
                     }`}
                   >
                     <span>{cat === "All" ? "全部餐點" : cat}</span>
                     <span
                       className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                        isSelected ? "bg-white/20 text-white" : "bg-stone-200 text-stone-600"
+                        isSelected ? "bg-white/20 text-white" : "bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300"
                       }`}
                     >
                       {count}
@@ -1135,7 +1135,7 @@ export function CustomerOrdering({
               FEATURE 3: Item Cards Grid
              ===================================================================== */}
           {filteredItems.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-12 text-center text-stone-400">
+            <div className="rounded-2xl border border-dashed border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-12 text-center text-stone-400 dark:text-stone-500">
               <UtensilsCrossed size={36} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm font-medium">沒有找到符合條件的菜品</p>
               <button
@@ -1143,7 +1143,7 @@ export function CustomerOrdering({
                   setSearchQuery("");
                   setSelectedCategory("All");
                 }}
-                className="mt-3 text-xs font-semibold text-[#006241] underline"
+                className="mt-3 text-xs font-semibold text-[#006241] dark:text-emerald-400 underline cursor-pointer"
               >
                 清除篩選條件
               </button>
@@ -1159,16 +1159,16 @@ export function CustomerOrdering({
                 return (
                   <article
                     key={item.id}
-                    className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-4 shadow-xs transition hover:shadow-md ${
+                    className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white dark:bg-stone-900 p-4 shadow-xs transition hover:shadow-md ${
                       item.isSoldOut
-                        ? "border-stone-200/60 bg-stone-50/70 opacity-60"
-                        : "border-stone-200 hover:border-stone-300"
+                        ? "border-stone-200/60 dark:border-stone-800/60 bg-stone-50/70 dark:bg-stone-900/60 opacity-60"
+                        : "border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700"
                     }`}
                   >
                     <div>
                       {/* Top Category Badge & In-Cart Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                        <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-[11px] font-medium text-stone-600 dark:text-stone-300">
                           {item.category}
                         </span>
 
@@ -1301,15 +1301,15 @@ export function CustomerOrdering({
           </div>
 
           {/* 2. Member Coupons Wallet */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
-                <Ticket size={18} className="text-[#006241]" />
-                <h3 className="text-base font-bold text-stone-900">
+                <Ticket size={18} className="text-[#006241] dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                   會員專屬優惠券匣 ({availableCoupons.length} 張可用)
                 </h3>
               </div>
-              <span className="text-xs text-stone-500">點擊「立即套用」自動折抵購物車</span>
+              <span className="text-xs text-stone-500 dark:text-stone-400">點擊「立即套用」自動折抵購物車</span>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1320,19 +1320,19 @@ export function CustomerOrdering({
                     key={coupon.id}
                     className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 transition ${
                       isApplied
-                        ? "border-[#006241] bg-emerald-50/50 ring-2 ring-[#006241]/20 shadow-sm"
-                        : "border-stone-200 bg-stone-50/60 hover:border-stone-300"
+                        ? "border-[#006241] dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/40 ring-2 ring-[#006241]/20 shadow-sm"
+                        : "border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/40 hover:border-stone-300 dark:hover:border-stone-700"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="inline-block rounded-md bg-[#006241] px-2 py-0.5 text-[10px] font-bold text-white mb-1">
+                        <span className="inline-block rounded-md bg-[#006241] dark:bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white mb-1">
                           {coupon.badge}
                         </span>
-                        <h4 className="text-sm font-bold text-stone-900">{coupon.title}</h4>
-                        <p className="mt-1 text-xs text-stone-600 leading-snug">{coupon.desc}</p>
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">{coupon.title}</h4>
+                        <p className="mt-1 text-xs text-stone-600 dark:text-stone-400 leading-snug">{coupon.desc}</p>
                       </div>
-                      <span className="shrink-0 text-xl font-black text-[#006241]">
+                      <span className="shrink-0 text-xl font-black text-[#006241] dark:text-emerald-400">
                         {coupon.type === "amount" && `-$${coupon.value}`}
                         {coupon.type === "percent" && `${10 - coupon.value / 10}折`}
                         {coupon.type === "service_fee" && "0%費"}
@@ -1340,8 +1340,8 @@ export function CustomerOrdering({
                       </span>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between border-t border-stone-200/60 pt-2.5 text-xs">
-                      <span className="text-[11px] text-stone-400">{coupon.expiry}</span>
+                    <div className="mt-3 flex items-center justify-between border-t border-stone-200/60 dark:border-stone-700/60 pt-2.5 text-xs">
+                      <span className="text-[11px] text-stone-400 dark:text-stone-500">{coupon.expiry}</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -1358,7 +1358,7 @@ export function CustomerOrdering({
                         className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                           isApplied
                             ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                            : "bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700"
                         }`}
                       >
                         {isApplied ? (
@@ -1384,13 +1384,13 @@ export function CustomerOrdering({
       {activeTab === "status" && (
         <div className="space-y-4">
           {/* Order Progress Summary Card */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-stone-900">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
                   {table?.tableNumber || "桌邊"} · 我的餐點與即時廚房進度
                 </h2>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   出餐狀態隨 KDS 廚房看板即時連動，主廚備料至送餐全程掌握。
                 </p>
               </div>
@@ -1587,25 +1587,25 @@ export function CustomerOrdering({
           </div>
 
           {/* Live Bill & Service Fee Preview (Feature 7) */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-            <h3 className="text-base font-bold text-stone-900">即時帳單與服務費試算</h3>
-            <div className="mt-3 space-y-2 border-b border-stone-100 pb-3 text-sm">
-              <div className="flex justify-between text-stone-600">
+          <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+            <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">即時帳單與服務費試算</h3>
+            <div className="mt-3 space-y-2 border-b border-stone-100 dark:border-stone-800 pb-3 text-sm">
+              <div className="flex justify-between text-stone-600 dark:text-stone-400">
                 <span>已點餐點小計 ({activeOrderedItems.length} 項)</span>
-                <span className="font-medium text-stone-900">{money(liveFoodSubtotal)}</span>
+                <span className="font-medium text-stone-900 dark:text-stone-100">{money(liveFoodSubtotal)}</span>
               </div>
-              <div className="flex justify-between text-stone-600">
+              <div className="flex justify-between text-stone-600 dark:text-stone-400">
                 <span>內用服務費 ({serviceFeeRate}%)</span>
-                <span className="font-medium text-stone-900">{money(liveServiceFee)}</span>
+                <span className="font-medium text-stone-900 dark:text-stone-100">{money(liveServiceFee)}</span>
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between text-base font-black text-stone-900">
+            <div className="mt-3 flex items-center justify-between text-base font-black text-stone-900 dark:text-stone-100">
               <span>目前應付總計</span>
-              <span className="text-xl text-[#006241]">{money(liveTotalDue)}</span>
+              <span className="text-xl text-[#006241] dark:text-emerald-400">{money(liveTotalDue)}</span>
             </div>
 
-            <p className="mt-3 text-xs leading-relaxed text-stone-400">
+            <p className="mt-3 text-xs leading-relaxed text-stone-400 dark:text-stone-500">
               ※ 用餐完畢後請至櫃檯結帳，或於座位向服務人員索取正式明細結帳。
             </p>
           </div>
@@ -1618,15 +1618,15 @@ export function CustomerOrdering({
       {activeTab === "push" && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Push Broadcast simulation header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 dark:from-emerald-950/40 dark:via-stone-900 dark:to-stone-900 p-5 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
-                <Bell size={20} className="text-[#006241]" />
-                <h3 className="text-base font-bold text-stone-900">
+                <Bell size={20} className="text-[#006241] dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                   App 會員優惠推播中心 (Push Center)
                 </h3>
               </div>
-              <p className="mt-1 text-xs text-stone-600">
+              <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
                 支援 Web Push / PWA 實時推播通知，主廚限時折扣、出餐狀態變更與會員專屬禮遇即刻送達。
               </p>
             </div>
@@ -1642,9 +1642,9 @@ export function CustomerOrdering({
           </div>
 
           {/* Push Notifications Feed */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+              <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                 最新推播通知訊息清單 ({pushNotifications.length} 則)
               </span>
               <button
@@ -1652,40 +1652,40 @@ export function CustomerOrdering({
                 onClick={() =>
                   setPushNotifications((prev) => prev.map((p) => ({ ...p, unread: false })))
                 }
-                className="text-xs font-medium text-stone-500 hover:text-stone-800"
+                className="text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 cursor-pointer"
               >
                 全部標為已讀
               </button>
             </div>
 
-            <div className="divide-y divide-stone-100 mt-2">
+            <div className="divide-y divide-stone-100 dark:divide-stone-800 mt-2">
               {pushNotifications.map((push) => (
                 <article
                   key={push.id}
                   className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 px-2 rounded-xl transition ${
-                    push.unread ? "bg-emerald-50/40" : "hover:bg-stone-50"
+                    push.unread ? "bg-emerald-50/40 dark:bg-emerald-950/40" : "hover:bg-stone-50 dark:hover:bg-stone-800"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                        push.unread ? "bg-[#006241] text-white" : "bg-stone-100 text-stone-500"
+                        push.unread ? "bg-[#006241] text-white" : "bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400"
                       }`}
                     >
                       <Bell size={16} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                        <span className="rounded bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 text-[10px] font-bold text-stone-600 dark:text-stone-300">
                           {push.tag}
                         </span>
-                        <h4 className="text-sm font-bold text-stone-900">{push.title}</h4>
+                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">{push.title}</h4>
                         {push.unread && (
                           <span className="h-2 w-2 rounded-full bg-rose-500" title="未讀推播" />
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-stone-600">{push.body}</p>
-                      <span className="mt-1.5 block text-[11px] text-stone-400">{push.time}</span>
+                      <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">{push.body}</p>
+                      <span className="mt-1.5 block text-[11px] text-stone-400 dark:text-stone-500">{push.time}</span>
                     </div>
                   </div>
 
@@ -1700,7 +1700,7 @@ export function CustomerOrdering({
                           message: `🎉 已為您套用推播推薦之專屬優惠券！`,
                         });
                       }}
-                      className="shrink-0 self-end sm:self-center inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200 transition cursor-pointer"
+                      className="shrink-0 self-end sm:self-center inline-flex items-center gap-1 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition cursor-pointer"
                     >
                       <Ticket size={13} />
                       <span>查看優惠券</span>
@@ -1712,18 +1712,18 @@ export function CustomerOrdering({
           </div>
 
           {/* Push Notification Preferences */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-            <h4 className="text-sm font-bold text-stone-900 mb-3">會員推播權限與偏好設定</h4>
+          <div className="overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 mb-3">會員推播權限與偏好設定</h4>
             <div className="space-y-3 text-xs">
               {[
                 { key: "marketing", label: "促銷優惠與限時推播", desc: "第一時間掌握主廚限定折扣、新菜上市與節慶好禮" },
                 { key: "orderSla", label: "廚房出餐狀態即時推播", desc: "主廚備料、烹調完成與送餐上桌即時通知" },
                 { key: "points", label: "會員點數與錢包異動提醒", desc: "消費積點入帳、點數即將到期與儲值金扣款提醒" },
               ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50">
+                <div key={item.key} className="flex items-center justify-between p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800">
                   <div>
-                    <p className="font-bold text-stone-800">{item.label}</p>
-                    <p className="text-stone-500 text-[11px]">{item.desc}</p>
+                    <p className="font-bold text-stone-800 dark:text-stone-200">{item.label}</p>
+                    <p className="text-stone-500 dark:text-stone-400 text-[11px]">{item.desc}</p>
                   </div>
                   <button
                     type="button"
@@ -1733,7 +1733,7 @@ export function CustomerOrdering({
                     className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
                       (pushPrefs as any)[item.key]
                         ? "bg-[#006241] text-white"
-                        : "bg-stone-200 text-stone-600"
+                        : "bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300"
                     }`}
                   >
                     {(pushPrefs as any)[item.key] ? "已開啟 (ON)" : "已關閉 (OFF)"}
@@ -2150,8 +2150,8 @@ export function CustomerOrdering({
         aria-label="App 底部導覽列"
         className={`${
           displayMode === "pwa"
-            ? "sticky bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-md shadow-lg"
-            : "fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur-md shadow-lg sm:hidden"
+            ? "sticky bottom-0 left-0 right-0 z-40 border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg"
+            : "fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg sm:hidden"
         }`}
       >
         <div className="flex items-center justify-around py-2.5">

@@ -291,8 +291,8 @@ export default function DiningPage() {
             }}
             className={`rounded-xl border p-5 text-left transition cursor-pointer ${
               tInfo.id === tableId
-                ? "border-primary bg-[#d4e9e2] ring-1 ring-primary"
-                : "border-stone-200 bg-white hover:border-stone-400"
+                ? "border-primary bg-[#d4e9e2] dark:bg-emerald-950/40 text-stone-900 dark:text-stone-100 ring-1 ring-primary"
+                : "border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 hover:border-stone-400 dark:hover:border-stone-600"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -380,22 +380,22 @@ export default function DiningPage() {
                 ),
               ],
             ].map(([name, value]) => (
-              <div key={name as string} className="rounded-xl border border-stone-200 bg-white p-4">
-                <p className="text-xs text-stone-500">{name}</p>
-                <p className="mt-2 text-2xl font-bold">{value}</p>
+              <div key={name as string} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+                <p className="text-xs text-stone-500 dark:text-stone-400">{name}</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900 dark:text-stone-100">{value}</p>
               </div>
             ))}
           </section>
           {/* 5-Interface System Switcher */}
-          <section aria-label="智慧餐飲五大專屬角色系統介面" className="rounded-2xl border border-stone-200 bg-white p-3 shadow-xs space-y-2">
-            <div className="flex flex-wrap items-center justify-between px-2 pt-1 pb-2 border-b border-stone-100">
+          <section aria-label="智慧餐飲五大專屬角色系統介面" className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-3 shadow-xs space-y-2">
+            <div className="flex flex-wrap items-center justify-between px-2 pt-1 pb-2 border-b border-stone-100 dark:border-stone-800">
               <div className="flex items-center gap-2">
                 <span className="flex h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
-                <span className="text-xs font-bold text-stone-900">
+                <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
                   {t("SMART DINING 5-ROLE INTERFACES", "智慧餐飲五大專屬角色系統介面")}
                 </span>
               </div>
-              <span className="text-[11px] text-stone-500 font-medium">
+              <span className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">
                 {t("Click to switch interface perspective and role permissions", "點擊即時切換視角與功能權限")}
               </span>
             </div>
@@ -525,10 +525,10 @@ export default function DiningPage() {
                   <button
                     type="button"
                     onClick={() => setFrontSubtab("floor")}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
                       frontSubtab === "floor"
                         ? "bg-blue-600 text-white shadow-xs"
-                        : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                        : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800"
                     }`}
                   >
                     <Armchair size={15} />
@@ -537,17 +537,17 @@ export default function DiningPage() {
                   <button
                     type="button"
                     onClick={() => setFrontSubtab("reservations")}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
                       frontSubtab === "reservations"
                         ? "bg-blue-600 text-white shadow-xs"
-                        : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                        : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800"
                     }`}
                   >
                     <CalendarDays size={15} />
                     {t("Reservations", "候位排桌與預約訂位")}
                   </button>
                 </div>
-                <span className="text-xs text-blue-800 font-semibold bg-blue-50 px-2.5 py-1 rounded-lg">
+                <span className="text-xs text-blue-800 dark:text-blue-300 font-semibold bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 px-2.5 py-1 rounded-lg">
                   🛎️ 外場前台工作區 · 領檯、開桌與收銀代點即時連動
                 </span>
               </div>
@@ -555,7 +555,7 @@ export default function DiningPage() {
               {frontSubtab === "floor" && (
                 <>
                   {orderMode === "dine_in" && renderTableCards(data)}
-                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
                 <span className="text-sm font-medium">{t("Order type", "用餐方式")}</span>
                 {(["dine_in", "takeout"] as const).map(mode => (
                   <button
@@ -585,7 +585,7 @@ export default function DiningPage() {
                     e.preventDefault();
                     void mutate("session", { tableId, guestCount: guests }, `${table.tableNumber} ${t("Table opened", "已開桌")}`);
                   }}
-                  className="flex flex-wrap items-end gap-4 rounded-xl border border-stone-200 bg-white p-5"
+                  className="flex flex-wrap items-end gap-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5"
                 >
                   <label className="text-sm">
                     {table.tableNumber} {t("Party size", "用餐人數")}
@@ -598,7 +598,7 @@ export default function DiningPage() {
                       onChange={e => setGuests(Number(e.target.value))}
                     />
                   </label>
-                  <button disabled={busy || table.status !== "vacant"} className={`${button} bg-primary text-white`}>
+                  <button disabled={busy || table.status !== "vacant"} className={`${button} bg-primary text-white cursor-pointer`}>
                     {t("Open table", "確認開桌帶位")}
                   </button>
                 </form>
@@ -609,8 +609,10 @@ export default function DiningPage() {
                     {["All", ...new Set(data.menuItems.map(i => i.category))].map(c => (
                       <button
                         key={c}
-                        className={`${button} ${
-                          category === c ? "bg-[#d4e9e2] text-[#1e3932]" : "bg-white text-stone-500"
+                        className={`${button} cursor-pointer ${
+                          category === c
+                            ? "bg-[#d4e9e2] dark:bg-emerald-950/60 text-[#1e3932] dark:text-emerald-300 font-bold"
+                            : "bg-white dark:bg-stone-900 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-800"
                         }`}
                         onClick={() => setCategory(c)}
                       >
@@ -624,7 +626,7 @@ export default function DiningPage() {
                       .map(item => (
                         <article
                           key={item.id}
-                          className="flex flex-col rounded-xl border border-stone-200 bg-white p-5"
+                          className="flex flex-col rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5"
                         >
                           <span className="text-xs text-orange-700">{t(item.category)}</span>
                           <h2 className="mt-2 text-lg font-semibold">{item.name}</h2>
@@ -676,7 +678,7 @@ export default function DiningPage() {
                       ))}
                   </div>
                 </section>
-                <aside className="dining-order h-fit space-y-4 rounded-xl border border-stone-200 bg-white p-5">
+                <aside className="dining-order h-fit space-y-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
                   <h2 className="text-lg font-bold">
                     {orderMode === "takeout"
                       ? t("Prepaid takeout", "外帶自取")
@@ -697,7 +699,7 @@ export default function DiningPage() {
                     </p>
                   )}
                   {cart.map(line => (
-                    <div key={line.key} className="border-b border-stone-100 pb-4">
+                    <div key={line.key} className="border-b border-stone-100 dark:border-stone-800 pb-4">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-medium">{line.name}</p>
@@ -928,10 +930,10 @@ export default function DiningPage() {
               <button
                 type="button"
                 onClick={() => setBackSubtab("kitchen")}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
                   backSubtab === "kitchen"
                     ? "bg-amber-600 text-white shadow-xs"
-                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                    : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800"
                 }`}
               >
                 <ChefHat size={15} />
@@ -940,17 +942,17 @@ export default function DiningPage() {
               <button
                 type="button"
                 onClick={() => setBackSubtab("billing")}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
                   backSubtab === "billing"
                     ? "bg-amber-600 text-white shadow-xs"
-                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                    : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800"
                 }`}
               >
                 <Receipt size={15} />
                 {t("Bills and splits", "帳單結算與清桌核銷")}
               </button>
             </div>
-            <span className="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg">
+            <span className="text-xs text-amber-800 dark:text-amber-300 font-semibold bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/40 px-2.5 py-1 rounded-lg">
               👨‍🍳 內場後台工作區 · 站點即時出餐、急單提醒與結帳清桌
             </span>
           </div>
@@ -989,7 +991,7 @@ export default function DiningPage() {
                         ? `${t("Takeout", "外帶")} ${order.takeoutNumber}`
                         : data.tables.find(t => t.id === sess?.tableId)?.tableNumber;
                     return (
-                      <article key={ticket.id} className="rounded-xl border border-stone-200 bg-white p-5">
+                      <article key={ticket.id} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
                         <div className="flex items-center justify-between">
                           <span className="break-all font-bold">
                             {order?.orderType === "takeout" ? tableName : `${tableName || "—"} ${t("table", "桌")}`}
@@ -1051,7 +1053,7 @@ export default function DiningPage() {
           )}
           {backSubtab === "billing" && (
             <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
-              <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-5">
+              <div className="space-y-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
                 <h2 className="text-lg font-bold">
                   {table?.tableNumber} {t("table", "桌")} · {t("Bill details", "帳單明細")}
                 </h2>
@@ -1063,7 +1065,7 @@ export default function DiningPage() {
                   items.map(i => (
                     <div
                       key={i.id}
-                      className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 py-3"
                     >
                       <div>
                         <p
@@ -1088,7 +1090,7 @@ export default function DiningPage() {
                               )
                             }
                             aria-label={`Void item ${i.itemName}`}
-                            className="rounded-lg p-2 text-red-700 disabled:opacity-30"
+                            className="rounded-lg p-2 text-red-700 disabled:opacity-30 cursor-pointer"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1097,7 +1099,7 @@ export default function DiningPage() {
                     </div>
                   ))
                 )}
-                <label className="block text-xs text-stone-600">
+                <label className="block text-xs text-stone-600 dark:text-stone-400">
                   {t(
                     "Void reason (preparing items require a manager)",
                     "退菜原因 (製作中品項須主管核准)"
@@ -1111,7 +1113,7 @@ export default function DiningPage() {
                   />
                 </label>
               </div>
-              <aside className="h-fit space-y-4 rounded-xl border border-stone-200 bg-white p-5">
+              <aside className="h-fit space-y-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
                 <h2 className="text-lg font-bold">{t("Split bill checkout", "分帳結帳")}</h2>
                 <div className="flex justify-between text-sm">
                   <span>{t("Active items", "有效餐點金額")}</span>

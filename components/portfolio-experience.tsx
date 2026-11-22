@@ -98,7 +98,6 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
       initialized.current = true;
       return;
     }
-    activate(window.innerWidth / 2, window.innerHeight * 0.35, 'route');
   }, [pathname]);
 
   useEffect(() => {
@@ -206,12 +205,8 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
     }
   };
 
-  const changeTheme = (nextTheme: PortfolioTheme, target?: HTMLElement | null) => {
+  const changeTheme = (nextTheme: PortfolioTheme, _target?: HTMLElement | null) => {
     if (nextTheme === theme) return;
-    if (target) {
-      const rect = target.getBoundingClientRect();
-      activate(rect.left + rect.width / 2, rect.top + rect.height / 2, 'theme');
-    }
     setTheme(nextTheme);
     try {
       savePortfolioTheme(window.localStorage, nextTheme);
@@ -325,10 +320,10 @@ export function PortfolioExperience({ children }: { children: ReactNode }) {
           aria-hidden="true"
           data-active={Boolean(pulse && !reduced && isPulseInViewport(pulse))}
         />
-        {pulse && !reduced && pulse.kind !== 'click' && (
+        {pulse && !reduced && pulse.kind === 'language' && (
           <div
             key={pulse.id}
-            className={`portfolio-click-wave ${pulse.kind === 'language' ? 'is-language' : pulse.kind === 'theme' ? 'is-theme' : ''}`}
+            className="portfolio-click-wave is-language"
             style={{ left: pulse.x, top: pulse.y }}
             aria-hidden="true"
           />

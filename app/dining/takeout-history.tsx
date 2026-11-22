@@ -21,20 +21,20 @@ export function TakeoutHistory({
   const net = bills.filter(b => orders.some(o => o.id === b.orderId)).reduce((sum, b) => sum + b.paidAmount, 0);
 
   return (
-    <section className="space-y-4 rounded-xl border border-stone-200 bg-white p-5">
+    <section className="space-y-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
       <div className="flex flex-wrap justify-between gap-3">
-        <h2 className="text-lg font-bold">{t("Takeout pickup history", "外帶取餐紀錄歷程")}</h2>
-        <p className="text-sm text-stone-600">
+        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">{t("Takeout pickup history", "外帶取餐紀錄歷程")}</h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
           {t("Net takeout receipts:", "外帶實收淨額:")} NT$ {net.toLocaleString("zh-TW")}
         </p>
       </div>
-      <label className="block text-xs text-stone-600">
+      <label className="block text-xs text-stone-600 dark:text-stone-400">
         {t(
           "Full refund reason (manager required; demo ledger only)",
           "全額退款原因 (須主管權限；僅限示範台帳)"
         )}
         <input
-          className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+          className="mt-2 w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 px-3 py-2.5 text-sm"
           maxLength={500}
           value={reason}
           onChange={e => setReason(e.target.value)}

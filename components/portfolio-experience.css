@@ -15,12 +15,12 @@
 [data-theme="dark"] .portfolio-language button { color:#8b949e; }
 [data-theme="dark"] .portfolio-language button[aria-pressed=true] { background:#388bfd; color:#ffffff; }
 
-.portfolio-particle-canvas { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:550; opacity:0; }
-.portfolio-particle-canvas[data-active=true] { opacity:1; }
-.portfolio-click-wave { position:fixed; width:22px; height:22px; border-radius:999px; border:2px solid #58a6ff; pointer-events:none; z-index:540; transform:translate(-50%,-50%); animation:portfolio-wave .85s cubic-bezier(.1,.7,.2,1) forwards; }
-.portfolio-click-wave.is-language { border-color:#bd91ff; background:radial-gradient(circle,#b9fa6530,#bd91ff30,transparent 70%); }
-.portfolio-click-wave.is-theme { border-color:#ffb900; background:radial-gradient(circle,#ffb90040,#ff9a0020,transparent 70%); }
-@keyframes portfolio-wave { from { opacity:.9; transform:translate(-50%,-50%) scale(.2); } to { opacity:0; transform:translate(-50%,-50%) scale(25); } }
+.portfolio-particle-canvas { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:550; opacity:0 !important; }
+.portfolio-particle-canvas[data-active=true] { opacity:0 !important; }
+.portfolio-click-wave { position:fixed; width:1px; height:1px; border:none; background:transparent; opacity:0 !important; pointer-events:none; z-index:-1; transform:scale(0); animation:portfolio-wave .01s forwards; }
+.portfolio-click-wave.is-language { border:none; background:transparent; opacity:0 !important; }
+.portfolio-click-wave.is-theme { border:none; background:transparent; opacity:0 !important; }
+@keyframes portfolio-wave { from { opacity:0; transform:scale(0); } to { opacity:0; transform:scale(0); } }
 @media(max-width:640px) { .portfolio-controls { top:10px; right:10px; gap:4px; } .portfolio-language button { min-height:24px; min-width:28px; padding:2px 5px; font-size:10px; } }
 @media(max-width:640px) { [data-locale=zh-TW] .portfolio-hero h1 { font-size:clamp(30px,10vw,54px); letter-spacing:-.045em; } }
 @media(prefers-reduced-motion:reduce) { .portfolio-click-wave,.portfolio-particle-canvas { display:none; } .portfolio-language button, .portfolio-theme-toggle { transition:none; } }
